@@ -40,14 +40,15 @@ Se è la prima installazione, segui tutti i passaggi della sezione seguente.
 
 ---
 
-## ✅ Prerequisiti
+## Prerequisiti
 
-| Strumento | Versione / indicazione |
-| **Git** | Installato |
-| **Node.js** | **22.23.4**, indicata in `.nvmrc` e `package.json` |
-| **npm** | Gestore dipendenze; nel setup iniziale: **10.9.9** |
-| **Docker + Compose** | Docker Desktop o Docker Engine, con motore attivo |
-| **Editor** | Consigliato Visual Studio Code |
+| Strumento            | Versione / indicazione                                                          |
+| :------------------- | :------------------------------------------------------------------------------ |
+| **Git**              | Installato                                                                      |
+| **Node.js**          | **26.13.0** (Node 26 LTS), indicata in `.nvmrc`; `package.json` accetta Node 26 |
+| **npm**              | Gestore dipendenze; versione **11.x** (inclusa con Node 26)                     |
+| **Docker + Compose** | Docker Desktop o Docker Engine, con motore attivo                               |
+| **Editor**           | Consigliato Visual Studio Code                                                  |
 
 Controlla l'ambiente dal terminale:
 
@@ -86,7 +87,17 @@ node -v
 
 ```
 
-La versione richiesta è **22.23.4**. Se ne hai una diversa, installa o seleziona quella richiesta tramite il gestore di versioni Node adottato dal team.
+La versione richiesta è **26.13.0** (Node 26 LTS). Se ne hai una diversa, installa o seleziona quella richiesta tramite il gestore di versioni Node adottato dal team.
+
+> **Nota sulla versione di Node.js:** la versione di riferimento è quella indicata in `.nvmrc` (**26.13.0**, Node 26 LTS). Con una versione di Node diversa dalla 26 `npm` mostra l'avviso `EBADENGINE`, perché non corrisponde al campo `engines` di `package.json` (`>=26 <27`). Per allinearti con nvm:
+>
+> ```powershell
+> nvm install 26.13.0
+> nvm use 26.13.0
+> node -v
+> ```
+>
+> `node -v` deve restituire `v26.13.0`. Con nvm per macOS/Linux, dalla cartella del progetto basta anche `nvm install` e `nvm use`, che leggono la versione da `.nvmrc`.
 
 ### 3. Installa le dipendenze
 
@@ -284,7 +295,7 @@ Una **task di codice** è completata soltanto quando:
 | **TypeScript**            | Tipi statici per ridurre errori e facilitare lo sviluppo in team           |
 | **PostgreSQL 17**         | Database relazionale persistente                                           |
 | **Docker Compose**        | Avvio riproducibile del database con un comando                            |
-| **Node.js 22.23.4 + npm** | Versione condivisa e dipendenze bloccate tramite `package-lock.json`       |
+| **Node.js 26.13.0 + npm** | Versione condivisa e dipendenze bloccate tramite `package-lock.json`       |
 | **ESLint + Prettier**     | Stile coerente e controllo del codice                                      |
 | **Vitest + V8 Coverage**  | Test automatici e misurazione della copertura                              |
 
