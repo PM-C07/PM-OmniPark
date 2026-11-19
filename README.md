@@ -24,12 +24,29 @@ cd PM-OmniPark
 nvm use
 npm ci
 cp .env.example .env
+# in .env: imposta DATABASE_URL, lascia OMNIPARK_AMBIENTE al valore segnaposto
+npm run db:migrate
 npm run dev
 ```
 
 Su Windows (PowerShell) al posto di `cp` si usa `Copy-Item .env.example .env`. L'applicazione è su http://localhost:3000 e si arresta con `Ctrl + C`.
 
-Il file `.env` contiene la variabile `DATABASE_URL`. Per ora il valore di esempio basta: lint, test e build non si collegano al database. La connessione a PostgreSQL 17 su Neon e i comandi del database arrivano con il task del database (OMP-31), che aggiornerà questa sezione. Il file `.env` è ignorato da Git e non va mai condiviso: nel repository c'è solo `.env.example`.
+**Connessione al database.** Il database è PostgreSQL 17 su Neon. Lo sviluppo usa un unico database condiviso da tutto il team: il database `omnipark` del branch Neon `dev-teamc07`. La produzione è sul branch Neon `production`. L'applicazione e i comandi del database leggono la connessione solo da `DATABASE_URL`, nel file `.env`:
+
+- usa la stringa **pooled** del branch `dev-teamc07` (host con `-pooler`);
+- la stringa copiata da Neon termina con `?sslmode=require&channel_binding=require`: sostituiscila con `?sslmode=verify-full`;
+- lascia `OMNIPARK_AMBIENTE` al valore segnaposto di `.env.example`, così `db:reset` resta bloccato.
+
+I valori reali li distribuiscono i PM. Le credenziali del database di produzione le hanno solo i PM. Il file `.env` è ignorato da Git e non va mai condiviso: nel repository c'è solo `.env.example`, con i nomi delle variabili e valori segnaposto. Lint, test e build non si collegano al database e non richiedono `DATABASE_URL`.
+
+**Migrazioni.** `npm run db:migrate` applica in ordine i file di `src/persistence/migrations/` non ancora applicati e li registra nella tabella `registro_migrazioni`. Se il database è aggiornato non fa nulla e lo dice. Poiché il database di sviluppo è condiviso, `db:migrate` su di esso si esegue solo dal branch `main` aggiornato, quindi solo con migrazioni già integrate. Una migrazione nuova si prova sul database di test (issue #4) oppure, finché non esiste, su un branch Neon temporaneo creato dai PM. Se il database condiviso si blocca, un PM esegue `db:reset` da `main`. Regole per i file:
+
+- nome `NNNN_descrizione.sql`: 4 cifre da `0001`, descrizione in minuscolo con parole separate da `_`, versioni senza duplicati e successive all'ultima applicata;
+- le migrazioni sono immutabili: una migrazione integrata nel `main` non si modifica, ogni cambiamento va in una nuova migrazione (il comando si blocca se il checksum di una migrazione applicata non corrisponde più al file);
+- ogni file viene eseguito in una transazione insieme alla sua registrazione: non scrivere `BEGIN` o `COMMIT` nel file;
+- le connessioni passano dal pooler di Neon in modalità transaction: niente stato di sessione, quindi niente `SET` fuori transazione (usa `SET LOCAL`), `LISTEN`/`NOTIFY` o `CREATE INDEX CONCURRENTLY`.
+
+**Reset.** `npm run db:reset` elimina e ricrea lo schema `public` (con proprietario e privilegi predefiniti) e riapplica tutte le migrazioni: **tutti i dati del database vengono cancellati**, per tutto il team. Per questo `db:reset` lo eseguono solo i PM, dopo aver avvisato il team. Prima di agire il comando mostra host e nome del database. Parte solo se `OMNIPARK_AMBIENTE` vale `sviluppo` o `test`, e rifiuta comunque se è impostata `VERCEL_ENV` o se `NODE_ENV` vale `production`.
 
 ## Comandi
 
@@ -43,6 +60,8 @@ Il file `.env` contiene la variabile `DATABASE_URL`. Per ora il valore di esempi
 | `npm run test:watch`    | riesegue i test durante lo sviluppo         |
 | `npm run test:coverage` | test con report di copertura in `coverage/` |
 | `npm run build`         | build di produzione                         |
+| `npm run db:migrate`    | applica le migrazioni non ancora applicate  |
+| `npm run db:reset`      | ricrea lo schema e riapplica le migrazioni  |
 
 ## Come si lavora
 
