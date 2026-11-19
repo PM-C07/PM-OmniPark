@@ -11,7 +11,9 @@
     "format:check": "prettier --check .",
     "test": "vitest run",
     "test:watch": "vitest",
-    "test:coverage": "vitest run --coverage"
+    "test:coverage": "vitest run --coverage",
+    "db:migrate": "node --env-file-if-exists=.env --disable-warning=MODULE_TYPELESS_PACKAGE_JSON src/persistence/cli/migra.ts",
+    "db:reset": "node --env-file-if-exists=.env --disable-warning=MODULE_TYPELESS_PACKAGE_JSON src/persistence/cli/reset.ts"
   },
   "dependencies": {
     "next": "16.4.6",
