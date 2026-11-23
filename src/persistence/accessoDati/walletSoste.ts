@@ -308,6 +308,20 @@ export async function sosteInCorsoDiAutomobilista(
   return r.rows.map(sostaDa);
 }
 
+/**
+ * Soste ATTIVA e SCADUTA del veicolo con la targa, su qualsiasi stallo (OMP-46, riscontro ANPR),
+ * per orario di avvio e id decrescenti.
+ */
+export async function sosteInCorsoDiTarga(es: Esecutore, targa: string): Promise<Sosta[]> {
+  const r = await interroga<RigaSosta>(
+    es,
+    `${SELEZIONE_SOSTA} WHERE v.targa = $1 AND so.stato IN ('ATTIVA', 'SCADUTA')
+     ORDER BY so.orario_di_avvio DESC, so.id DESC`,
+    [targa],
+  );
+  return r.rows.map(sostaDa);
+}
+
 /** Posticipa la scadenza di una sosta ATTIVA; false se la sosta non esiste o non è attiva. */
 export async function aggiornaScadenza(
   es: Esecutore,

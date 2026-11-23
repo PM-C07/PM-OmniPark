@@ -1,13 +1,13 @@
 # TCS — Persistenza: wallet, movimenti e soste
 
-- **Task:** OMP-34 (issue #5); TF-WS-44…49 aggiunti con OMP-45 (issue #9). Metodo: category partition.
+- **Task:** OMP-34 (issue #5); TF-WS-44…49 aggiunti con OMP-45 (issue #9); TF-WS-50…52 con OMP-46 (issue #10). Metodo: category partition.
 - **Oggetto:** le funzioni di accesso di `src/persistence/accessoDati/walletSoste.ts`. `addebita` è già verificata in `cp_persistenza_base.md` (TF-BASE-37…44).
 - **Fonti dell'esito atteso:** sequence diagram e casi d'uso indicati per ogni funzione (inventario del piano approvato); vincoli dello schema; `docs/rad/requisiti.md`; `docs/rad/vincoli_dominio.md` §2; statechart `SCD_2` e `sincronizzazione_eventi.md`; codici di errore di `docs/test/cp_persistenza_base.md`.
 - **File di test:** `src/persistence/accessoDati/walletSoste.db.test.ts` (eseguito da `npm run test:db`).
 
 ## 1. Tracciabilità
 
-Ogni frame riporta un solo riferimento, scelto in quest'ordine: un requisito dell'Elenco (`RF_…`, `NRF_…`) se il suo testo copre davvero il comportamento; altrimenti il vincolo di dominio `VD_<n>` (`docs/rad/vincoli_dominio.md` §2); altrimenti `SCHEMA` se il frame verifica un vincolo specifico dello schema; altrimenti `ISSUE_9` per le scelte dell'issue #9 e del piano approvato di OMP-45.
+Ogni frame riporta un solo riferimento, scelto in quest'ordine: un requisito dell'Elenco (`RF_…`, `NRF_…`) se il suo testo copre davvero il comportamento; altrimenti il vincolo di dominio `VD_<n>` (`docs/rad/vincoli_dominio.md` §2); altrimenti `SCHEMA` se il frame verifica un vincolo specifico dello schema; altrimenti `ISSUE_9` o `ISSUE_10` per le scelte delle issue #9 e #10 e dei piani approvati di OMP-45 e OMP-46.
 
 Nome del test: `<riferimento> · <frame> · <descrizione> → <esito>`, per esempio `RF_WALLET_3 · TF-WS-08 · cronologia del wallet 2 → 6 movimenti dal più recente`.
 
@@ -44,9 +44,10 @@ terminaSosteScaduteDelloStallo(es, stalloId: number): Promise<number>;
 // SCADUTA → TERMINATA per tutte le soste scadute dello stallo, con dichiarazione e foto eliminate; restituisce quante
 sostaInCorsoSuStallo(es, stalloId: number): Promise<Sosta | null>;                // OMP-45: la ATTIVA, altrimenti la SCADUTA con scadenza più recente
 sosteInCorsoDiAutomobilista(es, automobilistaId: number): Promise<Sosta[]>;       // OMP-45: ATTIVA e SCADUTA, dalla più recente
+sosteInCorsoDiTarga(es, targa: string): Promise<Sosta[]>;                         // OMP-46: ATTIVA e SCADUTA del veicolo con la targa, dalla più recente
 ```
 
-Ordinamento degli elenchi (sempre con l'id come ultimo criterio di spareggio): `movimenti` per `data_e_ora` decrescente, poi id decrescente; `sosteAttiveDiAutomobilista` per `orario_di_avvio` crescente, poi id crescente; `sosteDaScadere` per `orario_di_scadenza` crescente, poi id crescente. `sostaPerTargaSuStallo` sceglie la sosta con `orario_di_avvio` più recente e, a parità, l'id maggiore. `sostaInCorsoSuStallo` considera solo le soste `ATTIVA` e `SCADUTA` e sceglie prima la `ATTIVA`, poi la `orario_di_scadenza` più recente, poi l'id maggiore; `sosteInCorsoDiAutomobilista` restituisce le soste `ATTIVA` e `SCADUTA` per `orario_di_avvio` decrescente, poi id decrescente.
+Ordinamento degli elenchi (sempre con l'id come ultimo criterio di spareggio): `movimenti` per `data_e_ora` decrescente, poi id decrescente; `sosteAttiveDiAutomobilista` per `orario_di_avvio` crescente, poi id crescente; `sosteDaScadere` per `orario_di_scadenza` crescente, poi id crescente. `sostaPerTargaSuStallo` sceglie la sosta con `orario_di_avvio` più recente e, a parità, l'id maggiore. `sostaInCorsoSuStallo` considera solo le soste `ATTIVA` e `SCADUTA` e sceglie prima la `ATTIVA`, poi la `orario_di_scadenza` più recente, poi l'id maggiore; `sosteInCorsoDiAutomobilista` restituisce le soste `ATTIVA` e `SCADUTA` per `orario_di_avvio` decrescente, poi id decrescente; `sosteInCorsoDiTarga` fa lo stesso per le soste del veicolo con la targa indicata, su qualsiasi stallo.
 
 ## 3. Ambiente
 
@@ -59,7 +60,7 @@ Ordinamento degli elenchi (sempre con l'id come ultimo criterio di spareggio): `
 
 | Tabella                             | id                | Contenuto                                                                                                                                                                              |
 | :---------------------------------- | :---------------- | :------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `automobilista` / `wallet_virtuale` | 7 / 1             | Elena Bianchi; veicoli 1 `EF456GH`, 2 `GH321JK`; saldo 1700                                                                                                                            |
+| `automobilista` / `wallet_virtuale` | 7 / 1             | Elena Bianchi; veicoli 1 `EF456GH` (sosta 4, `TERMINATA`, TF-WS-51), 2 `GH321JK`; saldo 1700                                                                                           |
 | `automobilista` / `wallet_virtuale` | 8 / 2             | Marco Rossi; veicolo 3 `MN234PQ`; saldo 600                                                                                                                                            |
 | `automobilista` / `wallet_virtuale` | 9 / 3             | Luigi Verde; veicolo 4; un solo movimento, ricarica 10 da 500 il `2026-11-01 09:30:00+01`                                                                                              |
 | `automobilista`                     | 11                | Davide Conte; veicoli 6 `AB123CD`, 7 `FK771PS`, 8 `EB917RT`; soste 5, 6, 8, tutte `TERMINATA` (TF-WS-47)                                                                               |
@@ -104,8 +105,9 @@ Id inesistente: `999999`.
 | `terminaSosteScaduteDelloStallo` | più soste scadute con permesso · solo una sosta attiva · nessuna sosta                                                                                         |
 | `sostaInCorsoSuStallo`           | attiva e scaduta · più soste scadute · solo soste terminate                                                                                                    |
 | `sosteInCorsoDiAutomobilista`    | attive, scadute e terminate · solo soste terminate · automobilista inesistente                                                                                 |
+| `sosteInCorsoDiTarga`            | attive e scadute su stalli diversi · solo soste terminate · targa inesistente                                                                                  |
 
-## 5. Test frame (49)
+## 5. Test frame (52)
 
 | Frame    | Funzione e scelte                                                                                                                | Esito atteso                                                                                                                                               | Riferimento |
 | :------- | :------------------------------------------------------------------------------------------------------------------------------- | :--------------------------------------------------------------------------------------------------------------------------------------------------------- | :---------- |
@@ -158,6 +160,9 @@ Id inesistente: `999999`.
 | TF-WS-47 | soste inserite con SQL: `SCADUTA` (11, 6, 16, I → I+1h) e `ATTIVA` (11, 7, 17, I+30m → I+90m); `sosteInCorsoDiAutomobilista(11)` | due soste: prima quella sullo stallo 17 (`ATTIVA`), poi quella sullo stallo 16 (`SCADUTA`); le soste terminate 5, 6, 8 dell'automobilista 11 non compaiono | ISSUE_9     |
 | TF-WS-48 | `sosteInCorsoDiAutomobilista(8)` (solo soste terminate)                                                                          | `[]`                                                                                                                                                       | ISSUE_9     |
 | TF-WS-49 | `sosteInCorsoDiAutomobilista(999999)`                                                                                            | `[]`                                                                                                                                                       | ISSUE_9     |
+| TF-WS-50 | soste inserite con SQL: `SCADUTA` (8, 3, 16, I → I+1h) e `ATTIVA` (8, 3, 17, I+2h → I+3h); `sosteInCorsoDiTarga("MN234PQ")`      | due soste: prima quella sullo stallo 17 (`ATTIVA`), poi quella sullo stallo 16 (`SCADUTA`); le soste terminate 1, 2, 9 della targa non compaiono           | ISSUE_10    |
+| TF-WS-51 | `sosteInCorsoDiTarga("EF456GH")` (solo la sosta terminata 4)                                                                     | `[]`                                                                                                                                                       | ISSUE_10    |
+| TF-WS-52 | `sosteInCorsoDiTarga("ZZ000ZZ")` (targa inesistente)                                                                             | `[]`                                                                                                                                                       | ISSUE_10    |
 
 Note sui riferimenti:
 
@@ -168,6 +173,7 @@ Note sui riferimenti:
 - TF-WS-42: `terminaSosta` termina tutte le soste `Scadute` dello stallo (`sincronizzazione_eventi.md` §1) ed elimina dichiarazione e foto (NRF_LEG_2).
 - TF-WS-44, 46: la sosta `Attiva` o `Scaduta` sullo stallo serve alla segnalazione ANPR (RF_ANPR_1, `SD_ANPR_1` 2.1 `sostaInCorso()`); la priorità della sosta `ATTIVA` e, tra le scadute, della scadenza più recente (TF-WS-45) è del piano approvato di OMP-45, perché sullo stesso stallo possono esserci più soste non terminate (`cp_inserimento_sosta.md` §6).
 - TF-WS-47…49: le soste in corso dell'Automobilista (`ATTIVA` e `SCADUTA`, dalla più recente) sono la scelta D2 del piano approvato di OMP-45 (`np_01_automobilista`, «Sosta in corso»).
+- TF-WS-50…52: le soste in corso di una targa, su qualsiasi stallo, servono al riscontro ANPR per riconoscere la sosta attiva della targa letta su un altro stallo e la sua sosta scaduta sullo stallo letto (piano approvato di OMP-46, `cp_riscontroAnpr.md`).
 
 ## 6. Regole lasciate ai sottosistemi
 

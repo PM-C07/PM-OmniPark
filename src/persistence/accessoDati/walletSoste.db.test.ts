@@ -21,6 +21,7 @@ import {
   sosteAttiveDiAutomobilista,
   sosteDaScadere,
   sosteInCorsoDiAutomobilista,
+  sosteInCorsoDiTarga,
   terminaSosteScaduteDelloStallo,
   trovaSosta,
   trovaWalletDiAutomobilista,
@@ -686,5 +687,45 @@ describe("OMP-34 · TCS persistenza · wallet, movimenti e soste", () => {
 
   it("ISSUE_9 · TF-WS-49 · automobilista inesistente → elenco vuoto", async () => {
     expect(await sosteInCorsoDiAutomobilista(client, ID_INESISTENTE)).toEqual([]);
+  });
+
+  // Test frame TF-WS-50…52 (OMP-46).
+
+  // sosteInCorsoDiTarga
+
+  it("ISSUE_10 · TF-WS-50 · sosta scaduta sul 16 e sosta attiva sul 17 di MN234PQ → ATTIVA sul 17 poi SCADUTA sul 16", async () => {
+    const scaduta = await inserisciSosta({
+      automobilistaId: 8,
+      veicoloId: 3,
+      stalloId: 16,
+      stato: "SCADUTA",
+      orarioDiAvvio: I,
+      orarioDiScadenza: I_PIU_1H,
+    });
+    const attiva = await inserisciSosta({
+      automobilistaId: 8,
+      veicoloId: 3,
+      stalloId: 17,
+      stato: "ATTIVA",
+      orarioDiAvvio: new Date("2026-11-20T11:00:00+01:00"),
+      orarioDiScadenza: new Date("2026-11-20T12:00:00+01:00"),
+    });
+    const elenco = await sosteInCorsoDiTarga(client, "MN234PQ");
+    expect(elenco.map((s) => [s.id, s.stalloId, s.stato, s.targa])).toEqual([
+      [attiva, 17, "ATTIVA", "MN234PQ"],
+      [scaduta, 16, "SCADUTA", "MN234PQ"],
+    ]);
+    const ids = elenco.map((s) => s.id);
+    for (const terminata of [1, 2, 9]) {
+      expect(ids).not.toContain(terminata);
+    }
+  });
+
+  it("ISSUE_10 · TF-WS-51 · targa EF456GH con sola sosta terminata → elenco vuoto", async () => {
+    expect(await sosteInCorsoDiTarga(client, "EF456GH")).toEqual([]);
+  });
+
+  it("ISSUE_10 · TF-WS-52 · targa inesistente ZZ000ZZ → elenco vuoto", async () => {
+    expect(await sosteInCorsoDiTarga(client, "ZZ000ZZ")).toEqual([]);
   });
 });

@@ -28,7 +28,7 @@ import {
   type FacadeGestioneSoste,
 } from "./facade";
 
-// Test frame TF-CNS-01…15 di docs/test/cp_consultazione.md (OMP-45).
+// Test frame TF-CNS-01…18 di docs/test/cp_consultazione.md (OMP-45; TF-CNS-16…18 OMP-46).
 
 const ADESSO = new Date("2026-11-20T10:00:00+01:00");
 const orologio = { adesso: () => ADESSO };
@@ -284,5 +284,36 @@ describe("OMP-45 · cp_consultazione", () => {
 
   it("ISSUE_9 · TF-CNS-15 · automobilista inesistente → []", async () => {
     expect(await facade().sosteDellAutomobilista(INESISTENTE)).toEqual([]);
+  });
+
+  // --- sosteInCorsoDellaTarga (OMP-46) ---
+
+  it("RF_SOSTA_7 · TF-CNS-16 · sosta attiva con scadenza raggiunta non allineata → [S] Scaduta, stallo Occupato", async () => {
+    const c16 = await automobilista("16", ["CN016AA"]);
+    const s = await sosta(c16, "CN016AA", 21, "08:00", "09:30", "nonDisponibile");
+
+    const risultato = await facade().sosteInCorsoDellaTarga("CN016AA");
+
+    expect(risultato.map((x) => x.id)).toEqual([s]);
+    expect(risultato[0].stato).toBe("SCADUTA");
+    await verificaStallo(21, "OCCUPATO");
+  });
+
+  it("ISSUE_10 · TF-CNS-17 · sosta attiva, targa in minuscolo e con uno spazio → [S] Attiva con targa CN017AA", async () => {
+    const c17 = await automobilista("17", ["CN017AA"]);
+    const s = await sosta(c17, "CN017AA", 4, "09:00", "12:00", "nonDisponibile");
+
+    const risultato = await facade().sosteInCorsoDellaTarga("cn017 aa");
+
+    expect(risultato.map((x) => x.id)).toEqual([s]);
+    expect(risultato[0].stato).toBe("ATTIVA");
+    expect(risultato[0].targa).toBe("CN017AA");
+  });
+
+  it("ISSUE_10 · TF-CNS-18 · targa con sole soste terminate → []", async () => {
+    const c18 = await automobilista("18", ["CN018AA"]);
+    await sosta(c18, "CN018AA", 15, "07:00", "07:30", "terminata");
+
+    expect(await facade().sosteInCorsoDellaTarga("CN018AA")).toEqual([]);
   });
 });

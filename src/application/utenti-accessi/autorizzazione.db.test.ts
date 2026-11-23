@@ -181,4 +181,32 @@ describe("OMP-42 · cp_verificaAutorizzazione", () => {
 
     await expect(facade.ausiliariDellEntePreposto(ENTE_3)).resolves.toEqual([]);
   });
+
+  // Test frame TF-10…12 di docs/test/cp_verificaAutorizzazione.md (OMP-46): Ausiliari 2 e 4 del dataset.
+
+  it("NRF_SIC_1 · TF-10 · Ausiliario attivo (id 2) → Ausiliario con ente e stato ATTIVO", async () => {
+    await expect(facade.trovaAusiliario(2)).resolves.toEqual({
+      id: 2,
+      email: "paolo.ferri@omnipark.example",
+      nome: "Paolo",
+      cognome: "Ferri",
+      enteId: 1,
+      statoDellAccount: "ATTIVO",
+    });
+  });
+
+  it("NRF_SIC_1 · TF-11 · Ausiliario disattivato (id 4) → Ausiliario con ente e stato DISATTIVATO", async () => {
+    await expect(facade.trovaAusiliario(4)).resolves.toEqual({
+      id: 4,
+      email: "luca.russo@omnipark.example",
+      nome: "Luca",
+      cognome: "Russo",
+      enteId: 1,
+      statoDellAccount: "DISATTIVATO",
+    });
+  });
+
+  it("NRF_SIC_1 · TF-12 · Ausiliario inesistente (999999) → null", async () => {
+    await expect(facade.trovaAusiliario(999999)).resolves.toBeNull();
+  });
 });
