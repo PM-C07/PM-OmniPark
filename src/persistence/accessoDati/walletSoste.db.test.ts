@@ -16,9 +16,11 @@ import {
   registraRicarica,
   sostaAttivaPerVeicolo,
   sostaAttivaSuStallo,
+  sostaInCorsoSuStallo,
   sostaPerTargaSuStallo,
   sosteAttiveDiAutomobilista,
   sosteDaScadere,
+  sosteInCorsoDiAutomobilista,
   terminaSosteScaduteDelloStallo,
   trovaSosta,
   trovaWalletDiAutomobilista,
@@ -593,5 +595,96 @@ describe("OMP-34 · TCS persistenza · wallet, movimenti e soste", () => {
     expect(await terminaSosteScaduteDelloStallo(client, 16)).toBe(0);
     expect(await terminaSosteScaduteDelloStallo(client, 17)).toBe(0);
     expect((await trovaSosta(client, id))?.stato).toBe("ATTIVA");
+  });
+
+  // Test frame TF-WS-44…49 (OMP-45).
+
+  // sostaInCorsoSuStallo
+
+  it("RF_ANPR_1 · TF-WS-44 · sosta scaduta e sosta attiva sullo stallo 16 → la sosta ATTIVA con targa MN234PQ", async () => {
+    await inserisciSosta({
+      automobilistaId: 7,
+      veicoloId: 1,
+      stalloId: 16,
+      stato: "SCADUTA",
+      orarioDiAvvio: new Date("2026-11-20T07:00:00+01:00"),
+      orarioDiScadenza: new Date("2026-11-20T08:00:00+01:00"),
+    });
+    const attiva = await sostaAttiva8Su16();
+    expect(await sostaInCorsoSuStallo(client, 16)).toMatchObject({
+      id: attiva,
+      stalloId: 16,
+      stato: "ATTIVA",
+      targa: "MN234PQ",
+    });
+  });
+
+  it("ISSUE_9 · TF-WS-45 · due soste scadute sullo stallo 15 → quella con scadenza I+2h (MN234PQ)", async () => {
+    await inserisciSosta({
+      automobilistaId: 7,
+      veicoloId: 1,
+      stalloId: 15,
+      stato: "SCADUTA",
+      orarioDiAvvio: I,
+      orarioDiScadenza: I_PIU_1H,
+    });
+    const piuRecente = await inserisciSosta({
+      automobilistaId: 8,
+      veicoloId: 3,
+      stalloId: 15,
+      stato: "SCADUTA",
+      orarioDiAvvio: I,
+      orarioDiScadenza: new Date("2026-11-20T11:00:00+01:00"),
+    });
+    const sosta = await sostaInCorsoSuStallo(client, 15);
+    expect(sosta).toMatchObject({
+      id: piuRecente,
+      stalloId: 15,
+      stato: "SCADUTA",
+      targa: "MN234PQ",
+    });
+    expect(sosta?.orarioDiScadenza.getTime()).toBe(new Date("2026-11-20T11:00:00+01:00").getTime());
+  });
+
+  it("RF_ANPR_1 · TF-WS-46 · stallo 11 con sole soste terminate → null", async () => {
+    expect(await sostaInCorsoSuStallo(client, 11)).toBeNull();
+  });
+
+  // sosteInCorsoDiAutomobilista
+
+  it("ISSUE_9 · TF-WS-47 · soste attive, scadute e terminate dell'automobilista 11 → ATTIVA sul 17 poi SCADUTA sul 16", async () => {
+    const scaduta = await inserisciSosta({
+      automobilistaId: 11,
+      veicoloId: 6,
+      stalloId: 16,
+      stato: "SCADUTA",
+      orarioDiAvvio: I,
+      orarioDiScadenza: I_PIU_1H,
+    });
+    const attiva = await inserisciSosta({
+      automobilistaId: 11,
+      veicoloId: 7,
+      stalloId: 17,
+      stato: "ATTIVA",
+      orarioDiAvvio: new Date("2026-11-20T09:30:00+01:00"),
+      orarioDiScadenza: new Date("2026-11-20T10:30:00+01:00"),
+    });
+    const elenco = await sosteInCorsoDiAutomobilista(client, 11);
+    expect(elenco.map((s) => [s.id, s.stalloId, s.stato])).toEqual([
+      [attiva, 17, "ATTIVA"],
+      [scaduta, 16, "SCADUTA"],
+    ]);
+    const ids = elenco.map((s) => s.id);
+    for (const terminata of [5, 6, 8]) {
+      expect(ids).not.toContain(terminata);
+    }
+  });
+
+  it("ISSUE_9 · TF-WS-48 · automobilista 8 con sole soste terminate → elenco vuoto", async () => {
+    expect(await sosteInCorsoDiAutomobilista(client, 8)).toEqual([]);
+  });
+
+  it("ISSUE_9 · TF-WS-49 · automobilista inesistente → elenco vuoto", async () => {
+    expect(await sosteInCorsoDiAutomobilista(client, ID_INESISTENTE)).toEqual([]);
   });
 });

@@ -13,6 +13,15 @@ import type { ContestoUtentiAccessi } from "./autenticazione.ts";
 import { ErroreUtentiAccessi } from "./errori.ts";
 import { normalizzaTarga, verificaFormato } from "./targa.ts";
 
+/** SD_AUTH_5 2.1: targhe del profilo, ordinate per targa e poi per id del veicolo. */
+export async function targhe(
+  contesto: ContestoUtentiAccessi,
+  automobilista: number,
+): Promise<{ veicolo: number; targa: string }[]> {
+  const profilo = await targheDelProfilo(contesto.pool, automobilista);
+  return profilo.map((voce) => ({ veicolo: voce.veicoloId, targa: voce.targa }));
+}
+
 export async function aggiungiTarga(
   contesto: ContestoUtentiAccessi,
   automobilista: number,
