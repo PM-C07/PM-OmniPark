@@ -20,6 +20,12 @@ export type StalloMappa = {
   ultimaModifica: Date;
 };
 
+/** Stallo della mappa con area di sosta e tariffa sintetica (OMP-43). */
+export type StalloZona = StalloMappa & {
+  areaDiSosta: { id: number; nome: string };
+  tariffa: { id: number; costoOrario: number };
+};
+
 export type DettaglioStallo = StalloMappa & {
   occupazioneRilevata: OccupazioneRilevata | null;
   dataEOraUltimaRilevazione: Date | null;
@@ -59,22 +65,44 @@ function stalloMappaDa(riga: RigaMappa): StalloMappa {
   };
 }
 
+const COLONNE_ZONA = `${COLONNE_MAPPA}, a.id AS area_id, a.nome AS area_nome,
+  t.id AS tariffa_id, t.costo_orario`;
+
+const DA_STALLO_AREA_TARIFFA = `stallo AS s
+  JOIN area_di_sosta AS a ON a.id = s.area_di_sosta_id
+  JOIN tariffa AS t ON t.id = s.tariffa_id`;
+
+type RigaZona = RigaMappa & {
+  area_id: string;
+  area_nome: string;
+  tariffa_id: string;
+  costo_orario: number;
+};
+
+function stalloZonaDa(riga: RigaZona): StalloZona {
+  return {
+    ...stalloMappaDa(riga),
+    areaDiSosta: { id: Number(riga.area_id), nome: riga.area_nome },
+    tariffa: { id: Number(riga.tariffa_id), costoOrario: riga.costo_orario },
+  };
+}
+
 const NELLA_ZONA = "s.latitudine BETWEEN $1 AND $2 AND s.longitudine BETWEEN $3 AND $4";
 
 function parametriZona(zona: Zona): number[] {
   return [zona.latMin, zona.latMax, zona.lonMin, zona.lonMax];
 }
 
-// --- Mappa degli stalli (SD_STALLI_1, NRF_PER_3)
+// --- Mappa degli stalli (SD_STALLI_1, NRF_PER_3); area e tariffa sintetica da OMP-43
 
-/** Stalli della zona, ordinati per id. */
-export async function stalliNellaZona(es: Esecutore, zona: Zona): Promise<StalloMappa[]> {
-  const r = await interroga<RigaMappa>(
+/** Stalli della zona con area e tariffa sintetica, ordinati per id. */
+export async function stalliNellaZona(es: Esecutore, zona: Zona): Promise<StalloZona[]> {
+  const r = await interroga<RigaZona>(
     es,
-    `SELECT ${COLONNE_MAPPA} FROM stallo AS s WHERE ${NELLA_ZONA} ORDER BY s.id`,
+    `SELECT ${COLONNE_ZONA} FROM ${DA_STALLO_AREA_TARIFFA} WHERE ${NELLA_ZONA} ORDER BY s.id`,
     parametriZona(zona),
   );
-  return r.rows.map(stalloMappaDa);
+  return r.rows.map(stalloZonaDa);
 }
 
 /**
@@ -85,15 +113,15 @@ export async function stalliModificatiDopo(
   es: Esecutore,
   zona: Zona,
   istante: Date,
-): Promise<{ stalli: StalloMappa[]; cursore: Date | null }> {
-  const r = await interroga<RigaMappa>(
+): Promise<{ stalli: StalloZona[]; cursore: Date | null }> {
+  const r = await interroga<RigaZona>(
     es,
-    `SELECT ${COLONNE_MAPPA} FROM stallo AS s
+    `SELECT ${COLONNE_ZONA} FROM ${DA_STALLO_AREA_TARIFFA}
      WHERE ${NELLA_ZONA} AND s.ultima_modifica > $5
      ORDER BY s.id`,
     [...parametriZona(zona), istante],
   );
-  const stalli = r.rows.map(stalloMappaDa);
+  const stalli = r.rows.map(stalloZonaDa);
   return { stalli, cursore: massimo(stalli.map((s) => s.ultimaModifica)) };
 }
 
@@ -171,6 +199,59 @@ export async function impostaStatoStallo(
   stato: StatoStallo,
 ): Promise<boolean> {
   const r = await interroga(es, "UPDATE stallo SET stato = $2 WHERE id = $1", [stalloId, stato]);
+  return (r.rowCount ?? 0) > 0;
+}
+
+/**
+ * Blocca la riga dello stallo (SELECT … FOR UPDATE) fino alla fine della transazione del chiamante
+ * e ne restituisce stato e ultima rilevazione; null se lo stallo non esiste. Va usata dentro una
+ * transazione (eseguiInTransazione).
+ */
+export async function bloccaStallo(
+  es: Esecutore,
+  stalloId: number,
+): Promise<{
+  stato: StatoStallo;
+  occupazioneRilevata: OccupazioneRilevata | null;
+  dataEOraUltimaRilevazione: Date | null;
+} | null> {
+  const r = await interroga<{
+    stato: StatoStallo;
+    occupazione_rilevata: OccupazioneRilevata | null;
+    data_e_ora_dell_ultima_rilevazione: Date | null;
+  }>(
+    es,
+    `SELECT stato, occupazione_rilevata, data_e_ora_dell_ultima_rilevazione
+     FROM stallo WHERE id = $1 FOR UPDATE`,
+    [stalloId],
+  );
+  const riga = r.rows[0];
+  if (!riga) {
+    return null;
+  }
+  return {
+    stato: riga.stato,
+    occupazioneRilevata: riga.occupazione_rilevata,
+    dataEOraUltimaRilevazione: riga.data_e_ora_dell_ultima_rilevazione,
+  };
+}
+
+/**
+ * Cambia lo stato solo se è quello atteso, in un'unica istruzione: una transazione concorrente che
+ * ha bloccato la riga viene attesa e la condizione è rivalutata sulla riga confermata.
+ * false se lo stallo non esiste o non è nello stato atteso.
+ */
+export async function impostaStatoStalloSe(
+  es: Esecutore,
+  stalloId: number,
+  statoAtteso: StatoStallo,
+  nuovoStato: StatoStallo,
+): Promise<boolean> {
+  const r = await interroga(es, "UPDATE stallo SET stato = $3 WHERE id = $1 AND stato = $2", [
+    stalloId,
+    statoAtteso,
+    nuovoStato,
+  ]);
   return (r.rowCount ?? 0) > 0;
 }
 
