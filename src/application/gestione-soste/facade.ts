@@ -9,7 +9,12 @@ import { creaFacadeUtentiAccessi, type FacadeUtentiAccessi } from "../utenti-acc
 import type { FacadeWallet } from "../wallet/facade.ts";
 import { avviaSosta, type RichiestaDiAvvio, type SostaAvviata } from "./avvio.ts";
 import { calcolaImporto, type ImportoDellaSosta } from "./calcoloImporto.ts";
-import { contaSosteAttive, sostaInCorso, sosteDellAutomobilista } from "./consultazione.ts";
+import {
+  contaSosteAttive,
+  sostaInCorso,
+  sosteDellAutomobilista,
+  sosteInCorsoDellaTarga,
+} from "./consultazione.ts";
 import type { ContestoGestioneSoste } from "./contesto.ts";
 import { osservatoreGestioneSoste } from "./fineSosta.ts";
 
@@ -26,6 +31,8 @@ export type FacadeGestioneSoste = {
   sostaInCorso(stallo: number): Promise<Sosta | null>;
   contaSosteAttive(ente: number): Promise<number>;
   sosteDellAutomobilista(automobilista: number): Promise<Sosta[]>;
+  // Soste in corso della targa, su qualsiasi stallo (riscontro ANPR, OMP-46)
+  sosteInCorsoDellaTarga(targa: string): Promise<Sosta[]>;
 };
 
 /**
@@ -59,5 +66,6 @@ export function creaFacadeGestioneSoste(dipendenze: {
     sostaInCorso: (stallo) => sostaInCorso(contesto, stallo),
     contaSosteAttive: (ente) => contaSosteAttive(contesto, ente),
     sosteDellAutomobilista: (automobilista) => sosteDellAutomobilista(contesto, automobilista),
+    sosteInCorsoDellaTarga: (targa) => sosteInCorsoDellaTarga(contesto, targa),
   };
 }

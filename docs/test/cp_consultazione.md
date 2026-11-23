@@ -1,14 +1,14 @@
 # cp_consultazione
 
 Specifica dei casi di test (category partition) del servizio Consultazione del sottosistema Gestione soste, operazioni `sostaInCorso(stallo)`, `contaSosteAttive(ente)` e `sosteDellAutomobilista(automobilista)` della Facade.
-Requisiti: RF_ANPR_1 (sosta attiva o scaduta sullo stallo per la segnalazione), RF_ADM_1 (numero di soste attive dell'ente), RF_SOSTA_7 (la sosta scaduta risulta `Scaduta` alla prima lettura). Task OMP-45 (issue #9).
+Requisiti: RF_ANPR_1 (sosta attiva o scaduta sullo stallo per la segnalazione), RF_ADM_1 (numero di soste attive dell'ente), RF_SOSTA_7 (la sosta scaduta risulta `Scaduta` alla prima lettura). Task OMP-45 (issue #9); `sosteInCorsoDellaTarga(targa)` e TF-CNS-16…18 aggiunti con OMP-46 (issue #10).
 
 - **Fonti dell'esito atteso:** `UC_ANPR_1` (passi 2–3), `SD_ANPR_1` 2.1 e `SD_IOT_1` 3.2 (`sostaInCorso()`), `UC_OP_3`, `UC_ADM_1` passo 4 e `SD_ADM_1` 4.2, `docs/rad/vincoli_dominio.md` §1 (riepilogo dell'ente: soste in stato `Attiva`), navigation path `np_01_automobilista` («le mie soste → Sosta in corso: stato e orario di scadenza»), `UC_SOSTA_2` (entry condition), `docs/test/cp_inserimento_sosta.md` §6 (più soste non terminate sullo stesso stallo), issue #9, piano approvato di OMP-45 (decisione 8, risposta D2).
 - **File di test:** `src/application/gestione-soste/consultazione.db.test.ts` (eseguito con `npx vitest run --config vitest.db.config.ts <file>`).
 
 ## 1. Tracciabilità
 
-Ogni frame riporta un solo riferimento, scelto in quest'ordine: un requisito dell'Elenco (`RF_…`, `NRF_…`) se il suo testo copre davvero il comportamento; altrimenti il vincolo di dominio `VD_<n>`; altrimenti `ISSUE_9` per le scelte dell'issue #9 e del piano approvato.
+Ogni frame riporta un solo riferimento, scelto in quest'ordine: un requisito dell'Elenco (`RF_…`, `NRF_…`) se il suo testo copre davvero il comportamento; altrimenti il vincolo di dominio `VD_<n>`; altrimenti `ISSUE_9` o `ISSUE_10` per le scelte delle issue #9 e #10 e dei piani approvati di OMP-45 e OMP-46.
 
 Nome del test: `<riferimento> · <frame> · <descrizione> → <esito>`, per esempio `RF_ANPR_1 · TF-CNS-05 · sosta attiva e scaduta sullo stallo → la attiva`.
 
@@ -25,12 +25,14 @@ type Sosta = {
 facade.sostaInCorso(stallo: number): Promise<Sosta | null>;
 facade.contaSosteAttive(ente: number): Promise<number>;
 facade.sosteDellAutomobilista(automobilista: number): Promise<Sosta[]>;
+facade.sosteInCorsoDellaTarga(targa: string): Promise<Sosta[]>; // OMP-46
 // errori: ErroreGestioneSoste con `codice` (esportato dalla Facade)
 ```
 
 - Tutte e tre le operazioni eseguono prima l'allineamento temporale: una sosta `ATTIVA` con scadenza raggiunta è restituita, o contata, già `SCADUTA`.
 - **`sostaInCorso`:** la sosta non terminata dello stallo; se ce ne sono più di una, la `ATTIVA`, altrimenti la `SCADUTA` con la scadenza più recente. `null` se lo stallo ha solo soste `TERMINATA`, nessuna sosta o non esiste.
 - **`contaSosteAttive`:** soste `ATTIVA` negli stalli delle aree di sosta dell'ente; ente inesistente → `ENTE_INESISTENTE`.
+- **`sosteInCorsoDellaTarga`** (OMP-46): soste `ATTIVA` e `SCADUTA` del veicolo con la targa, normalizzata con `normalizzaTarga` di Utenti e accessi, su qualsiasi stallo, dalla più recente; `[]` se la targa non ha soste in corso o non esiste. Serve al riscontro ANPR (`cp_riscontroAnpr.md`).
 - **`sosteDellAutomobilista`:** soste in corso dell'Automobilista (`ATTIVA` e `SCADUTA`), dalla più recente per orario di avvio, poi per id; nessuno storico delle `TERMINATA`. Automobilista inesistente → `[]`.
 
 Funzioni usate dai test solo per preparare e verificare i dati (mai stub): persistenza `creaAutomobilista`, `trovaOCreaVeicolo`, `associaVeicolo`, `creaSosta`, `impostaSostaScaduta`, `terminaSosteScaduteDelloStallo`, `trovaSosta`, `trovaStallo`; `creaEnteDiProva` (`src/persistence/test/datiDiProva.ts`); Facade di Gestione stalli (creata con `osservatoreGestioneSoste`) `registraRilevazione` e `impostaNonDisponibile`.
@@ -45,15 +47,16 @@ Funzioni usate dai test solo per preparare e verificare i dati (mai stub): persi
 
 ### Righe del dataset usate (migrazione `0002_dati_esempio.sql`)
 
-| Tabella                   | id                          | Contenuto                                                                 |
-| :------------------------ | :-------------------------- | :------------------------------------------------------------------------ |
-| `stallo`                  | 3, 7, 8, 12, 17, 18, 19, 20 | ente 1, `ORDINARIO_A_PAGAMENTO`, `OCCUPATO`, `VEICOLO_PRESENTE`           |
-| `stallo`                  | 16                          | ente 1, `LIBERO`, nessuna sosta                                           |
-| `stallo`                  | 11                          | ente 1, `OCCUPATO`; soste 2 e 9 del dataset, entrambe `TERMINATA`         |
-| `stallo`                  | 23, 26                      | ente 2 (aree 6 e 7, stalli 22…27), `OCCUPATO`                             |
-| `stallo`                  | 28, 29                      | ente 3 (area 8, stalli 28…30): 28 `LIBERO`, 29 `OCCUPATO`                 |
-| `automobilista` / `sosta` | 8 / 1, 2, 9                 | Marco Rossi: solo soste `TERMINATA`                                       |
-| `ente_preposto`           | 2, 3                        | Comune di Fisciano, Comune di Baronissi: nessuna sosta attiva nel dataset |
+| Tabella                   | id                          | Contenuto                                                                          |
+| :------------------------ | :-------------------------- | :--------------------------------------------------------------------------------- |
+| `stallo`                  | 3, 7, 8, 12, 17, 18, 19, 20 | ente 1, `ORDINARIO_A_PAGAMENTO`, `OCCUPATO`, `VEICOLO_PRESENTE`                    |
+| `stallo`                  | 4, 15, 21                   | 21 ente 1, `ORDINARIO_A_PAGAMENTO`; 4 e 15 `ROSA`; tutti `OCCUPATO` (TF-CNS-16…18) |
+| `stallo`                  | 16                          | ente 1, `LIBERO`, nessuna sosta                                                    |
+| `stallo`                  | 11                          | ente 1, `OCCUPATO`; soste 2 e 9 del dataset, entrambe `TERMINATA`                  |
+| `stallo`                  | 23, 26                      | ente 2 (aree 6 e 7, stalli 22…27), `OCCUPATO`                                      |
+| `stallo`                  | 28, 29                      | ente 3 (area 8, stalli 28…30): 28 `LIBERO`, 29 `OCCUPATO`                          |
+| `automobilista` / `sosta` | 8 / 1, 2, 9                 | Marco Rossi: solo soste `TERMINATA`                                                |
+| `ente_preposto`           | 2, 3                        | Comune di Fisciano, Comune di Baronissi: nessuna sosta attiva nel dataset          |
 
 Colonne usate dai test:
 
@@ -92,27 +95,36 @@ Id inesistente: `999999`.
 3. Attiva con scadenza raggiunta, non ancora allineata
 4. automobilista inesistente
 
-## 5. Test frame (15)
+**sosteInCorsoDellaTarga — Soste della targa** (OMP-46)
 
-| Frame     | Preparazione                                                                                                                                                                                                                                                            | Operazione                       | Esito atteso                                                               | Riferimento |
-| :-------- | :---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | :------------------------------- | :------------------------------------------------------------------------- | :---------- |
-| TF-CNS-01 | nessuna                                                                                                                                                                                                                                                                 | `sostaInCorso(16)`               | `null`                                                                     | ISSUE_9     |
-| TF-CNS-02 | `C2`: sosta S sullo stallo 3, `09:00` → `12:00`, con lo stallo Non disponibile                                                                                                                                                                                          | `sostaInCorso(3)`                | S, `ATTIVA`, targa `CN002AA`, orari di avvio e scadenza come inseriti      | RF_ANPR_1   |
-| TF-CNS-03 | `C3`: sosta S sullo stallo 7, `08:00` → `09:00`, scaduta                                                                                                                                                                                                                | `sostaInCorso(7)`                | S, `SCADUTA`, targa `CN003AA`                                              | RF_ANPR_1   |
-| TF-CNS-04 | nessuna (soste 2 e 9 del dataset)                                                                                                                                                                                                                                       | `sostaInCorso(11)`               | `null`                                                                     | RF_ANPR_1   |
-| TF-CNS-05 | `C5`: sosta S1 sullo stallo 8, `08:00` → `08:30`, scaduta; poi `C5b`: sosta S2 sullo stallo 8, `09:00` → `12:00`, con lo stallo Non disponibile                                                                                                                         | `sostaInCorso(8)`                | S2, `ATTIVA`, targa `CN005BB`                                              | RF_ANPR_1   |
-| TF-CNS-06 | `C6`: sosta S sullo stallo 17, `08:00` → `09:30`, con lo stallo Non disponibile                                                                                                                                                                                         | `sostaInCorso(17)`               | S, `SCADUTA`; dopo la chiamata lo stallo 17 è `OCCUPATO`                   | RF_SOSTA_7  |
-| TF-CNS-07 | nessuna                                                                                                                                                                                                                                                                 | `sostaInCorso(999999)`           | `null`                                                                     | ISSUE_9     |
-| TF-CNS-08 | `C8`: sosta sullo stallo 23 e `C8b`: sosta sullo stallo 26, entrambe `09:00` → `12:00`, con lo stallo Non disponibile                                                                                                                                                   | `contaSosteAttive(2)`            | 2                                                                          | RF_ADM_1    |
-| TF-CNS-09 | stallo 28 portato a `OCCUPATO` con una rilevazione presenza vera alle `09:00`; `C9`: sosta sullo stallo 28, `09:00` → `12:00`, con lo stallo Non disponibile; `C9b`: sosta S sullo stallo 29, `08:00` → `09:30`, con lo stallo Non disponibile                          | `contaSosteAttive(3)`            | 1; S è `SCADUTA` e lo stallo 29 è `OCCUPATO`                               | RF_ADM_1    |
-| TF-CNS-10 | ente creato con `creaEnteDiProva(pool, "Ente di prova consultazione")`                                                                                                                                                                                                  | `contaSosteAttive(<id>)`         | 0                                                                          | RF_ADM_1    |
-| TF-CNS-11 | nessuna                                                                                                                                                                                                                                                                 | `contaSosteAttive(999999)`       | errore `ENTE_INESISTENTE`                                                  | RF_ADM_1    |
-| TF-CNS-12 | `C12` con i veicoli `CN012AA` e `CN012BB`: sosta S0 (`CN012AA`) sullo stallo 12, `07:00` → `07:30`, terminata; sosta S1 (`CN012AA`) sullo stallo 18, `08:00` → `08:30`, scaduta; sosta S2 (`CN012BB`) sullo stallo 19, `09:00` → `12:00`, con lo stallo Non disponibile | `sosteDellAutomobilista(<C12>)`  | `[S2, S1]` in quest'ordine, con stati `ATTIVA` e `SCADUTA`; S0 non compare | ISSUE_9     |
-| TF-CNS-13 | nessuna (automobilista 8 del dataset)                                                                                                                                                                                                                                   | `sosteDellAutomobilista(8)`      | `[]`                                                                       | ISSUE_9     |
-| TF-CNS-14 | `C14`: sosta S sullo stallo 20, `08:00` → `09:30`, con lo stallo Non disponibile                                                                                                                                                                                        | `sosteDellAutomobilista(<C14>)`  | `[S]` con stato `SCADUTA`; dopo la chiamata lo stallo 20 è `OCCUPATO`      | RF_SOSTA_7  |
-| TF-CNS-15 | nessuna                                                                                                                                                                                                                                                                 | `sosteDellAutomobilista(999999)` | `[]`                                                                       | ISSUE_9     |
+1. Attiva con scadenza raggiunta, non ancora allineata
+2. Attiva, targa scritta in minuscolo e con uno spazio [single]
+3. solo Terminate
 
-Totale 15: 7 su `sostaInCorso`, 4 su `contaSosteAttive`, 4 su `sosteDellAutomobilista`.
+## 5. Test frame (18)
+
+| Frame     | Preparazione                                                                                                                                                                                                                                                            | Operazione                           | Esito atteso                                                               | Riferimento |
+| :-------- | :---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | :----------------------------------- | :------------------------------------------------------------------------- | :---------- |
+| TF-CNS-01 | nessuna                                                                                                                                                                                                                                                                 | `sostaInCorso(16)`                   | `null`                                                                     | ISSUE_9     |
+| TF-CNS-02 | `C2`: sosta S sullo stallo 3, `09:00` → `12:00`, con lo stallo Non disponibile                                                                                                                                                                                          | `sostaInCorso(3)`                    | S, `ATTIVA`, targa `CN002AA`, orari di avvio e scadenza come inseriti      | RF_ANPR_1   |
+| TF-CNS-03 | `C3`: sosta S sullo stallo 7, `08:00` → `09:00`, scaduta                                                                                                                                                                                                                | `sostaInCorso(7)`                    | S, `SCADUTA`, targa `CN003AA`                                              | RF_ANPR_1   |
+| TF-CNS-04 | nessuna (soste 2 e 9 del dataset)                                                                                                                                                                                                                                       | `sostaInCorso(11)`                   | `null`                                                                     | RF_ANPR_1   |
+| TF-CNS-05 | `C5`: sosta S1 sullo stallo 8, `08:00` → `08:30`, scaduta; poi `C5b`: sosta S2 sullo stallo 8, `09:00` → `12:00`, con lo stallo Non disponibile                                                                                                                         | `sostaInCorso(8)`                    | S2, `ATTIVA`, targa `CN005BB`                                              | RF_ANPR_1   |
+| TF-CNS-06 | `C6`: sosta S sullo stallo 17, `08:00` → `09:30`, con lo stallo Non disponibile                                                                                                                                                                                         | `sostaInCorso(17)`                   | S, `SCADUTA`; dopo la chiamata lo stallo 17 è `OCCUPATO`                   | RF_SOSTA_7  |
+| TF-CNS-07 | nessuna                                                                                                                                                                                                                                                                 | `sostaInCorso(999999)`               | `null`                                                                     | ISSUE_9     |
+| TF-CNS-08 | `C8`: sosta sullo stallo 23 e `C8b`: sosta sullo stallo 26, entrambe `09:00` → `12:00`, con lo stallo Non disponibile                                                                                                                                                   | `contaSosteAttive(2)`                | 2                                                                          | RF_ADM_1    |
+| TF-CNS-09 | stallo 28 portato a `OCCUPATO` con una rilevazione presenza vera alle `09:00`; `C9`: sosta sullo stallo 28, `09:00` → `12:00`, con lo stallo Non disponibile; `C9b`: sosta S sullo stallo 29, `08:00` → `09:30`, con lo stallo Non disponibile                          | `contaSosteAttive(3)`                | 1; S è `SCADUTA` e lo stallo 29 è `OCCUPATO`                               | RF_ADM_1    |
+| TF-CNS-10 | ente creato con `creaEnteDiProva(pool, "Ente di prova consultazione")`                                                                                                                                                                                                  | `contaSosteAttive(<id>)`             | 0                                                                          | RF_ADM_1    |
+| TF-CNS-11 | nessuna                                                                                                                                                                                                                                                                 | `contaSosteAttive(999999)`           | errore `ENTE_INESISTENTE`                                                  | RF_ADM_1    |
+| TF-CNS-12 | `C12` con i veicoli `CN012AA` e `CN012BB`: sosta S0 (`CN012AA`) sullo stallo 12, `07:00` → `07:30`, terminata; sosta S1 (`CN012AA`) sullo stallo 18, `08:00` → `08:30`, scaduta; sosta S2 (`CN012BB`) sullo stallo 19, `09:00` → `12:00`, con lo stallo Non disponibile | `sosteDellAutomobilista(<C12>)`      | `[S2, S1]` in quest'ordine, con stati `ATTIVA` e `SCADUTA`; S0 non compare | ISSUE_9     |
+| TF-CNS-13 | nessuna (automobilista 8 del dataset)                                                                                                                                                                                                                                   | `sosteDellAutomobilista(8)`          | `[]`                                                                       | ISSUE_9     |
+| TF-CNS-14 | `C14`: sosta S sullo stallo 20, `08:00` → `09:30`, con lo stallo Non disponibile                                                                                                                                                                                        | `sosteDellAutomobilista(<C14>)`      | `[S]` con stato `SCADUTA`; dopo la chiamata lo stallo 20 è `OCCUPATO`      | RF_SOSTA_7  |
+| TF-CNS-15 | nessuna                                                                                                                                                                                                                                                                 | `sosteDellAutomobilista(999999)`     | `[]`                                                                       | ISSUE_9     |
+| TF-CNS-16 | `C16`: sosta S sullo stallo 21, `08:00` → `09:30`, con lo stallo Non disponibile                                                                                                                                                                                        | `sosteInCorsoDellaTarga("CN016AA")`  | `[S]` con stato `SCADUTA`; dopo la chiamata lo stallo 21 è `OCCUPATO`      | RF_SOSTA_7  |
+| TF-CNS-17 | `C17`: sosta S sullo stallo 4, `09:00` → `12:00`, con lo stallo Non disponibile                                                                                                                                                                                         | `sosteInCorsoDellaTarga("cn017 aa")` | `[S]` con stato `ATTIVA` e targa `CN017AA`                                 | ISSUE_10    |
+| TF-CNS-18 | `C18`: sosta S sullo stallo 15, `07:00` → `07:30`, terminata                                                                                                                                                                                                            | `sosteInCorsoDellaTarga("CN018AA")`  | `[]`                                                                       | ISSUE_10    |
+
+Totale 18: 7 su `sostaInCorso`, 4 su `contaSosteAttive`, 4 su `sosteDellAutomobilista`, 3 su `sosteInCorsoDellaTarga`.
 
 Note sui riferimenti:
 
@@ -122,6 +134,7 @@ Note sui riferimenti:
 - TF-CNS-01, 07: issue #9 («restituire la sosta non terminata presente su uno stallo»); per uno stallo inesistente la consultazione non dà errore (piano approvato).
 - TF-CNS-08…11: RF_ADM_1 e `vincoli_dominio.md` §1 (soste in stato `Attiva` negli stalli dell'ente). Per l'ente inesistente il codice è lo stesso di `cp_conteggio.md` TF-CON-04.
 - TF-CNS-12…15: risposta D2 del piano. Nessun caso d'uso elenca le soste dell'Automobilista: `np_01` mostra la «Sosta in corso» con stato e orario di scadenza, quindi le soste `Attive` e `Scadute`, senza storico.
+- TF-CNS-16…18: piano approvato di OMP-46. TF-CNS-16: RF_SOSTA_7, la lettura parte dall'allineamento temporale come le altre consultazioni; TF-CNS-17: la targa è normalizzata; TF-CNS-18: le soste terminate non sono in corso.
 
 ## 6. Note
 

@@ -1,12 +1,15 @@
 // Servizio Consultazione: sosta in corso sullo stallo (SD_ANPR_1 2.1), soste attive dell'ente
-// (SD_ADM_1 4.2) e soste in corso dell'Automobilista (np_01 «le mie soste»). Ogni lettura parte
+// (SD_ADM_1 4.2), soste in corso dell'Automobilista (np_01 «le mie soste») e della targa (riscontro
+// ANPR, OMP-46). Ogni lettura parte
 // dall'allineamento temporale, così una sosta scaduta risulta Scaduta alla prima lettura.
 import { riepilogoEnte } from "../../persistence/accessoDati/utentiEntiVeicoli.ts";
 import {
   sostaInCorsoSuStallo,
   sosteInCorsoDiAutomobilista,
+  sosteInCorsoDiTarga,
   type Sosta,
 } from "../../persistence/accessoDati/walletSoste.ts";
+import { normalizzaTarga } from "../utenti-accessi/facade.ts";
 import type { ContestoGestioneSoste } from "./contesto.ts";
 import { ErroreGestioneSoste } from "./errori.ts";
 
@@ -43,4 +46,14 @@ export async function sosteDellAutomobilista(
 ): Promise<Sosta[]> {
   await contesto.allineamento.allinea();
   return idValido(automobilista) ? sosteInCorsoDiAutomobilista(contesto.pool, automobilista) : [];
+}
+
+/** Soste ATTIVA e SCADUTA del veicolo con la targa, su qualsiasi stallo, dalla più recente. */
+export async function sosteInCorsoDellaTarga(
+  contesto: ContestoGestioneSoste,
+  targa: string,
+): Promise<Sosta[]> {
+  await contesto.allineamento.allinea();
+  const targaNormalizzata = typeof targa === "string" ? normalizzaTarga(targa) : "";
+  return targaNormalizzata === "" ? [] : sosteInCorsoDiTarga(contesto.pool, targaNormalizzata);
 }

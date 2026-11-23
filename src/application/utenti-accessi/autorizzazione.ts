@@ -82,6 +82,16 @@ export async function verificaAutorizzazione(
   return { utenteId: trovata.utenteId, ruolo: trovata.ruolo, enteId };
 }
 
+/** L'Ausiliario del Traffico con il suo ente e lo stato dell'account; null se l'id non è di un Ausiliario. */
+export async function trovaAusiliarioDelTraffico(
+  contesto: ContestoUtentiAccessi,
+  ausiliario: number,
+): Promise<Ausiliario | null> {
+  return Number.isSafeInteger(ausiliario) && ausiliario > 0
+    ? trovaAusiliario(contesto.pool, ausiliario)
+    : null;
+}
+
 /** Ausiliari attivi dell'ente; elenco vuoto se non ne ha. */
 export async function ausiliariDellEntePreposto(
   contesto: ContestoUtentiAccessi,

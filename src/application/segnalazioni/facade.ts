@@ -1,0 +1,63 @@
+// Facade del sottosistema Segnalazioni: l'unico punto usato dagli altri sottosistemi.
+import type { Pool } from "pg";
+import { ottieniPool } from "../../persistence/db.ts";
+import type {
+  Esito,
+  Motivo,
+  SegnalazioneMappa,
+  StatoSegnalazione,
+} from "../../persistence/accessoDati/segnalazioniVerifiche.ts";
+import { osservatoreGestioneSoste, type FacadeGestioneSoste } from "../gestione-soste/facade.ts";
+import { creaFacadeGestioneStalli } from "../gestione-stalli/facade.ts";
+import { orologioDiSistema, type Orologio } from "../orologio.ts";
+import { creaFacadeUtentiAccessi, type FacadeUtentiAccessi } from "../utenti-accessi/facade.ts";
+import { chiudi } from "./chiusura.ts";
+import type { ContestoSegnalazioni } from "./contesto.ts";
+import { elaboraLettura, type EsitoRiscontro, type Lettura } from "./riscontro.ts";
+import { segnalazioniModificateDopo, segnalazioniNonChiuse } from "./segnalazioniEnte.ts";
+
+export { ErroreSegnalazioni, type CodiceErroreSegnalazioni } from "./errori.ts";
+export type { Esito, EsitoRiscontro, Lettura, Motivo, SegnalazioneMappa, StatoSegnalazione };
+
+export type FacadeSegnalazioni = {
+  // Riscontro ANPR (UC_ANPR_1, SD_ANPR_1)
+  elaboraLettura(lettura: Lettura): Promise<EsitoRiscontro>;
+  // Segnalazioni dell'ente (UC_OP_1, SD_OP_1)
+  segnalazioniNonChiuse(ausiliario: number, ente: number): Promise<SegnalazioneMappa[]>;
+  segnalazioniModificateDopo(
+    ausiliario: number,
+    ente: number,
+    istante: Date,
+  ): Promise<{ segnalazioni: SegnalazioneMappa[]; cursore: Date | null }>;
+  // Chiusura con esito (UC_OP_4, SD_OP_4)
+  chiudi(ausiliario: number, segnalazione: number, esito: Esito): Promise<void>;
+};
+
+/**
+ * Gestione soste arriva già composta (richiede il Wallet). Gestione stalli, usata solo per
+ * l'esistenza dello stallo, si crea con l'osservatore di Gestione soste come nelle altre
+ * composizioni. Segnalazioni e Gestione soste vanno creati con lo stesso orologio.
+ */
+export function creaFacadeSegnalazioni(dipendenze: {
+  gestioneSoste: FacadeGestioneSoste;
+  pool?: Pool;
+  orologio?: Orologio;
+  utentiAccessi?: FacadeUtentiAccessi;
+}): FacadeSegnalazioni {
+  const pool = dipendenze.pool ?? ottieniPool();
+  const orologio = dipendenze.orologio ?? orologioDiSistema;
+  const contesto: ContestoSegnalazioni = {
+    pool,
+    orologio,
+    gestioneSoste: dipendenze.gestioneSoste,
+    gestioneStalli: creaFacadeGestioneStalli({ pool, osservatori: [osservatoreGestioneSoste] }),
+    utentiAccessi: dipendenze.utentiAccessi ?? creaFacadeUtentiAccessi({ pool, orologio }),
+  };
+  return {
+    elaboraLettura: (lettura) => elaboraLettura(contesto, lettura),
+    segnalazioniNonChiuse: (ausiliario, ente) => segnalazioniNonChiuse(contesto, ausiliario, ente),
+    segnalazioniModificateDopo: (ausiliario, ente, istante) =>
+      segnalazioniModificateDopo(contesto, ausiliario, ente, istante),
+    chiudi: (ausiliario, segnalazione, esito) => chiudi(contesto, ausiliario, segnalazione, esito),
+  };
+}

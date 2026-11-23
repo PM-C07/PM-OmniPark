@@ -12,6 +12,7 @@ import {
 } from "./autenticazione.ts";
 import {
   ausiliariDellEntePreposto,
+  trovaAusiliarioDelTraffico,
   verificaAutorizzazione,
   type Operazione,
   type UtenteAutorizzato,
@@ -38,6 +39,8 @@ export type FacadeUtentiAccessi = {
     ente: number | null,
   ): Promise<UtenteAutorizzato>;
   ausiliariDellEntePreposto(ente: number): Promise<Ausiliario[]>;
+  /** Ausiliario con ente e stato dell'account; null se l'id non è di un Ausiliario (OMP-46). */
+  trovaAusiliario(ausiliario: number): Promise<Ausiliario | null>;
 };
 
 export function creaFacadeUtentiAccessi(
@@ -58,5 +61,6 @@ export function creaFacadeUtentiAccessi(
     verificaAutorizzazione: (sessione, operazione, ente) =>
       verificaAutorizzazione(contesto, sessione, operazione, ente),
     ausiliariDellEntePreposto: (ente) => ausiliariDellEntePreposto(contesto, ente),
+    trovaAusiliario: (ausiliario) => trovaAusiliarioDelTraffico(contesto, ausiliario),
   };
 }
