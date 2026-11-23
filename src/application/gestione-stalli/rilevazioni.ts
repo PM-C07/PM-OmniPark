@@ -45,6 +45,10 @@ export async function registraRilevazione(
   ) {
     throw new ErroreGestioneStalli("RILEVAZIONE_INCOMPLETA");
   }
+  // Una data futura diventerebbe l'ultima rilevazione e farebbe rifiutare quelle reali successive.
+  if (dataOra.getTime() > contesto.orologio.adesso().getTime()) {
+    throw new ErroreGestioneStalli("RILEVAZIONE_NON_VALIDA");
+  }
   if (!Number.isSafeInteger(stallo) || stallo <= 0) {
     throw new ErroreGestioneStalli("STALLO_INESISTENTE");
   }

@@ -14,7 +14,10 @@
     "test:coverage": "vitest run --coverage",
     "test:db": "vitest run --config vitest.db.config.ts",
     "db:migrate": "node --env-file-if-exists=.env --disable-warning=MODULE_TYPELESS_PACKAGE_JSON src/persistence/cli/migra.ts",
-    "db:reset": "node --env-file-if-exists=.env --disable-warning=MODULE_TYPELESS_PACKAGE_JSON src/persistence/cli/reset.ts"
+    "db:reset": "node --env-file-if-exists=.env --disable-warning=MODULE_TYPELESS_PACKAGE_JSON src/persistence/cli/reset.ts",
+    "sim:sensori": "node --env-file=.env --disable-warning=MODULE_TYPELESS_PACKAGE_JSON src/simulators/sensori.ts",
+    "sim:anpr": "node --env-file=.env --disable-warning=MODULE_TYPELESS_PACKAGE_JSON src/simulators/anpr.ts",
+    "misura:anpr": "node --env-file=.env --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/misuraAnpr.ts"
   },
   "dependencies": {
     "next": "16.4.6",

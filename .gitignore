@@ -20,6 +20,9 @@
 # production
 /build
 
+# registri JSONL dei simulatori
+/.simulatori/
+
 # misc
 .DS_Store
 *.pem
