@@ -280,6 +280,34 @@ export async function sosteAttiveDiAutomobilista(
   return r.rows.map(sostaDa);
 }
 
+/**
+ * Sosta in corso sullo stallo (OMP-45): la ATTIVA, se c'è; altrimenti la SCADUTA con la scadenza
+ * più recente (poi id maggiore). null se lo stallo ha solo soste TERMINATA o nessuna sosta.
+ */
+export async function sostaInCorsoSuStallo(es: Esecutore, stalloId: number): Promise<Sosta | null> {
+  const r = await interroga<RigaSosta>(
+    es,
+    `${SELEZIONE_SOSTA} WHERE so.stallo_id = $1 AND so.stato IN ('ATTIVA', 'SCADUTA')
+     ORDER BY (so.stato = 'ATTIVA') DESC, so.orario_di_scadenza DESC, so.id DESC LIMIT 1`,
+    [stalloId],
+  );
+  return r.rows[0] ? sostaDa(r.rows[0]) : null;
+}
+
+/** Soste ATTIVA e SCADUTA dell'automobilista (OMP-45), per orario di avvio e id decrescenti. */
+export async function sosteInCorsoDiAutomobilista(
+  es: Esecutore,
+  automobilistaId: number,
+): Promise<Sosta[]> {
+  const r = await interroga<RigaSosta>(
+    es,
+    `${SELEZIONE_SOSTA} WHERE so.automobilista_id = $1 AND so.stato IN ('ATTIVA', 'SCADUTA')
+     ORDER BY so.orario_di_avvio DESC, so.id DESC`,
+    [automobilistaId],
+  );
+  return r.rows.map(sostaDa);
+}
+
 /** Posticipa la scadenza di una sosta ATTIVA; false se la sosta non esiste o non è attiva. */
 export async function aggiornaScadenza(
   es: Esecutore,

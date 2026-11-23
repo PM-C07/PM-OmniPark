@@ -41,3 +41,19 @@ Requisito: RF_AUTH_5 (targhe dell'Automobilista).
 | TF-07 | rimuoviTarga  | unica targa                                                         | errore `ULTIMA_TARGA`, profilo invariato                              |
 | TF-08 | rimuoviTarga  | non presente                                                        | errore `TARGA_NON_PRESENTE`, profilo invariato                        |
 | TF-09 | rimuoviTarga  | veicolo in sosta Attiva, anche se avviata da un altro Automobilista | errore `TARGA_CON_SOSTA_ATTIVA`, profilo invariato                    |
+
+## Categorie e scelte: targhe (OMP-45)
+
+Operazione `targhe(automobilista)`: targhe del profilo, lette da Gestione soste per controllare che la targa dell'avvio sia dell'Automobilista (`SD_AUTH_5` 2.1 `targhe()`, VD_3). Restituisce `{ veicolo, targa }[]`, ordinate per targa e poi per id del veicolo.
+
+**Profilo**
+
+1. con più targhe
+2. automobilista inesistente
+
+## Frame ed esiti attesi: targhe (OMP-45)
+
+| Frame | Operazione | Profilo                                                             | Esito atteso                                                                                             |
+| ----- | ---------- | ------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------- |
+| TF-10 | targhe     | profilo creato con le targhe `ZT200BB` e `ZT100AA`, in quest'ordine | `[{ veicolo, targa: "ZT100AA" }, { veicolo, targa: "ZT200BB" }]`, con gli id dei due veicoli del profilo |
+| TF-11 | targhe     | automobilista inesistente (`999999`)                                | `[]`                                                                                                     |

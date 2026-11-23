@@ -157,4 +157,21 @@ describe("OMP-42 · cp_targhe", () => {
 
     expect(await targhe(id)).toEqual(["ZT109AA", "ZT109AB"]);
   });
+
+  // Test frame TF-10…11 di docs/test/cp_targhe.md (OMP-45).
+
+  it("RF_AUTH_5 · TF-10 · targhe di un profilo con più targhe → ordinate per targa, con gli id dei veicoli", async () => {
+    const id = await creaProfilo("targhe.tf10@test.example", ["ZT200BB", "ZT100AA"]);
+    const veicoloZT100AA = await trovaOCreaVeicolo(poolDiTest(), "ZT100AA");
+    const veicoloZT200BB = await trovaOCreaVeicolo(poolDiTest(), "ZT200BB");
+
+    expect(await facade.targhe(id)).toEqual([
+      { veicolo: veicoloZT100AA, targa: "ZT100AA" },
+      { veicolo: veicoloZT200BB, targa: "ZT200BB" },
+    ]);
+  });
+
+  it("RF_AUTH_5 · TF-11 · targhe di un automobilista inesistente → []", async () => {
+    expect(await facade.targhe(999999)).toEqual([]);
+  });
 });
