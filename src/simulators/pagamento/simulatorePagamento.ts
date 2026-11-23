@@ -1,4 +1,8 @@
-import { ErrorePagamento, type EsitoPagamento, type PagamentoSimulato } from "./pagamentoSimulato";
+import {
+  ErrorePagamento,
+  type EsitoPagamento,
+  type PagamentoSimulato,
+} from "./pagamentoSimulato.ts";
 
 // Simulatore del circuito di pagamento (RF_WALLET_1, RD_04): nessuna transazione
 // reale e nessun dato di carta. Esiti deterministici, valutati in quest'ordine:

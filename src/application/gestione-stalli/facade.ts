@@ -7,6 +7,7 @@ import type {
   TipoDiStallo,
   Zona,
 } from "../../persistence/accessoDati/stalliTariffe.ts";
+import { orologioDiSistema, type Orologio } from "../orologio.ts";
 import type { ContestoGestioneStalli, OsservatoreStalli, StalloLiberato } from "./contesto.ts";
 import { contaStalliGestiti } from "./conteggio.ts";
 import { stalliModificatiDopo, stalliNellaZona } from "./mappa.ts";
@@ -49,11 +50,16 @@ export type FacadeGestioneStalli = {
 
 /** Gli osservatori si passano qui: nessun registro globale, ogni richiesta ricrea la Facade. */
 export function creaFacadeGestioneStalli(
-  dipendenze: { pool?: Pool; osservatori?: readonly OsservatoreStalli[] } = {},
+  dipendenze: {
+    pool?: Pool;
+    osservatori?: readonly OsservatoreStalli[];
+    orologio?: Orologio;
+  } = {},
 ): FacadeGestioneStalli {
   const contesto: ContestoGestioneStalli = {
     pool: dipendenze.pool ?? ottieniPool(),
     osservatori: [...(dipendenze.osservatori ?? [])],
+    orologio: dipendenze.orologio ?? orologioDiSistema,
   };
   return {
     registraRilevazione: (rilevazione) => registraRilevazione(contesto, rilevazione),

@@ -1,0 +1,12 @@
+{
+  "descrizione": "Demo, fase 2 di 2: i veicoli lasciano gli stalli 6 e 5, che tornano liberi. La segnalazione creata nella fase 1 resta aperta.",
+  "istruzioni": [
+    "1. Esegui prima demo-fase-1.json.",
+    "2. npm run sim:sensori -- --url http://localhost:3000 --scenario src/simulators/scenari/demo-fase-2.json",
+    "3. Atteso: gli stalli 6 e 5 risultano LIBERO."
+  ],
+  "sensori": [
+    { "stallo": 6, "presenza": false },
+    { "stallo": 5, "presenza": false, "attesaMs": 3000 }
+  ]
+}

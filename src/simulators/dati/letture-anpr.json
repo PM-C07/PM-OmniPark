@@ -1,0 +1,3650 @@
+{
+  "descrizione": "Letture costruite dalle scelte di docs/test/cp_riscontroAnpr.md, da inviare in ordine su un database appena popolato. Le scelte su concorrenza e sosta non ancora allineata sono coperte da TF-RIS-15 e TF-RIS-18.",
+  "preparazione": {
+    "presenze": [22, 27, 28],
+    "scadute": [
+      {
+        "targa": "ZS001AA",
+        "stallo": 29
+      },
+      {
+        "targa": "ZS002AA",
+        "stallo": 22
+      },
+      {
+        "targa": "ZS003AA",
+        "stallo": 27
+      },
+      {
+        "targa": "ZS004AA",
+        "stallo": 28
+      },
+      {
+        "targa": "ZS005AA",
+        "stallo": 29
+      },
+      {
+        "targa": "ZS006AA",
+        "stallo": 22
+      },
+      {
+        "targa": "ZS007AA",
+        "stallo": 27
+      },
+      {
+        "targa": "ZS008AA",
+        "stallo": 28
+      },
+      {
+        "targa": "ZS009AA",
+        "stallo": 29
+      },
+      {
+        "targa": "ZS010AA",
+        "stallo": 22
+      },
+      {
+        "targa": "ZS011AA",
+        "stallo": 27
+      },
+      {
+        "targa": "ZS012AA",
+        "stallo": 28
+      },
+      {
+        "targa": "ZS013AA",
+        "stallo": 29
+      },
+      {
+        "targa": "ZS014AA",
+        "stallo": 22
+      },
+      {
+        "targa": "ZS015AA",
+        "stallo": 27
+      },
+      {
+        "targa": "ZS016AA",
+        "stallo": 28
+      },
+      {
+        "targa": "ZS017AA",
+        "stallo": 29
+      },
+      {
+        "targa": "ZS018AA",
+        "stallo": 22
+      },
+      {
+        "targa": "ZS019AA",
+        "stallo": 27
+      },
+      {
+        "targa": "ZS020AA",
+        "stallo": 28
+      },
+      {
+        "targa": "ZS021AA",
+        "stallo": 29
+      },
+      {
+        "targa": "ZS022AA",
+        "stallo": 22
+      },
+      {
+        "targa": "ZS023AA",
+        "stallo": 27
+      },
+      {
+        "targa": "ZS024AA",
+        "stallo": 28
+      },
+      {
+        "targa": "ZS025AA",
+        "stallo": 29
+      },
+      {
+        "targa": "ZS026AA",
+        "stallo": 22
+      },
+      {
+        "targa": "ZS027AA",
+        "stallo": 27
+      },
+      {
+        "targa": "ZS028AA",
+        "stallo": 28
+      },
+      {
+        "targa": "ZS029AA",
+        "stallo": 29
+      },
+      {
+        "targa": "ZS030AA",
+        "stallo": 22
+      },
+      {
+        "targa": "ZS031AA",
+        "stallo": 27
+      },
+      {
+        "targa": "ZS032AA",
+        "stallo": 28
+      },
+      {
+        "targa": "ZS033AA",
+        "stallo": 29
+      },
+      {
+        "targa": "ZS034AA",
+        "stallo": 22
+      },
+      {
+        "targa": "ZS035AA",
+        "stallo": 27
+      },
+      {
+        "targa": "ZS036AA",
+        "stallo": 28
+      },
+      {
+        "targa": "ZS037AA",
+        "stallo": 29
+      },
+      {
+        "targa": "ZS038AA",
+        "stallo": 22
+      },
+      {
+        "targa": "ZS039AA",
+        "stallo": 27
+      },
+      {
+        "targa": "ZS040AA",
+        "stallo": 28
+      },
+      {
+        "targa": "ZD001AA",
+        "stallo": 3
+      },
+      {
+        "targa": "ZD002AA",
+        "stallo": 7
+      },
+      {
+        "targa": "ZD003AA",
+        "stallo": 8
+      },
+      {
+        "targa": "ZD004AA",
+        "stallo": 11
+      },
+      {
+        "targa": "ZD005AA",
+        "stallo": 12
+      },
+      {
+        "targa": "ZD006AA",
+        "stallo": 17
+      },
+      {
+        "targa": "ZD007AA",
+        "stallo": 18
+      },
+      {
+        "targa": "ZD008AA",
+        "stallo": 19
+      },
+      {
+        "targa": "ZD009AA",
+        "stallo": 20
+      },
+      {
+        "targa": "ZD010AA",
+        "stallo": 21
+      },
+      {
+        "targa": "ZD011AA",
+        "stallo": 23
+      },
+      {
+        "targa": "ZD012AA",
+        "stallo": 26
+      },
+      {
+        "targa": "ZA001AA",
+        "stallo": 3
+      },
+      {
+        "targa": "ZA002AA",
+        "stallo": 7
+      },
+      {
+        "targa": "ZA003AA",
+        "stallo": 8
+      },
+      {
+        "targa": "ZA004AA",
+        "stallo": 11
+      }
+    ],
+    "attive": [
+      {
+        "targa": "ZA001AA",
+        "stallo": 3
+      },
+      {
+        "targa": "ZA002AA",
+        "stallo": 7
+      },
+      {
+        "targa": "ZA003AA",
+        "stallo": 8
+      },
+      {
+        "targa": "ZA004AA",
+        "stallo": 11
+      },
+      {
+        "targa": "ZA005AA",
+        "stallo": 12
+      },
+      {
+        "targa": "ZA006AA",
+        "stallo": 17
+      },
+      {
+        "targa": "ZA007AA",
+        "stallo": 18
+      },
+      {
+        "targa": "ZA008AA",
+        "stallo": 19
+      },
+      {
+        "targa": "ZA009AA",
+        "stallo": 20
+      },
+      {
+        "targa": "ZA010AA",
+        "stallo": 21
+      },
+      {
+        "targa": "ZA011AA",
+        "stallo": 23
+      },
+      {
+        "targa": "ZA012AA",
+        "stallo": 26
+      }
+    ]
+  },
+  "letture": [
+    {
+      "id": "L001",
+      "scelta": "attiva e scaduta della stessa targa",
+      "targa": "ZA001AA",
+      "stallo": 3,
+      "atteso": {
+        "categoria": "nessuna segnalazione",
+        "http": 200,
+        "esito": "NESSUNA_SEGNALAZIONE"
+      }
+    },
+    {
+      "id": "L002",
+      "scelta": "attiva e scaduta della stessa targa",
+      "targa": "ZA002AA",
+      "stallo": 7,
+      "atteso": {
+        "categoria": "nessuna segnalazione",
+        "http": 200,
+        "esito": "NESSUNA_SEGNALAZIONE"
+      }
+    },
+    {
+      "id": "L003",
+      "scelta": "attiva e scaduta della stessa targa",
+      "targa": "ZA003AA",
+      "stallo": 8,
+      "atteso": {
+        "categoria": "nessuna segnalazione",
+        "http": 200,
+        "esito": "NESSUNA_SEGNALAZIONE"
+      }
+    },
+    {
+      "id": "L004",
+      "scelta": "attiva e scaduta della stessa targa",
+      "targa": "ZA004AA",
+      "stallo": 11,
+      "atteso": {
+        "categoria": "nessuna segnalazione",
+        "http": 200,
+        "esito": "NESSUNA_SEGNALAZIONE"
+      }
+    },
+    {
+      "id": "L005",
+      "scelta": "attiva della stessa targa",
+      "targa": "ZA005AA",
+      "stallo": 12,
+      "atteso": {
+        "categoria": "nessuna segnalazione",
+        "http": 200,
+        "esito": "NESSUNA_SEGNALAZIONE"
+      }
+    },
+    {
+      "id": "L006",
+      "scelta": "attiva della stessa targa",
+      "targa": "ZA006AA",
+      "stallo": 17,
+      "atteso": {
+        "categoria": "nessuna segnalazione",
+        "http": 200,
+        "esito": "NESSUNA_SEGNALAZIONE"
+      }
+    },
+    {
+      "id": "L007",
+      "scelta": "attiva della stessa targa",
+      "targa": "ZA007AA",
+      "stallo": 18,
+      "atteso": {
+        "categoria": "nessuna segnalazione",
+        "http": 200,
+        "esito": "NESSUNA_SEGNALAZIONE"
+      }
+    },
+    {
+      "id": "L008",
+      "scelta": "attiva della stessa targa",
+      "targa": "ZA008AA",
+      "stallo": 19,
+      "atteso": {
+        "categoria": "nessuna segnalazione",
+        "http": 200,
+        "esito": "NESSUNA_SEGNALAZIONE"
+      }
+    },
+    {
+      "id": "L009",
+      "scelta": "attiva della stessa targa",
+      "targa": "ZA009AA",
+      "stallo": 20,
+      "atteso": {
+        "categoria": "nessuna segnalazione",
+        "http": 200,
+        "esito": "NESSUNA_SEGNALAZIONE"
+      }
+    },
+    {
+      "id": "L010",
+      "scelta": "attiva della stessa targa",
+      "targa": "ZA010AA",
+      "stallo": 21,
+      "atteso": {
+        "categoria": "nessuna segnalazione",
+        "http": 200,
+        "esito": "NESSUNA_SEGNALAZIONE"
+      }
+    },
+    {
+      "id": "L011",
+      "scelta": "attiva della stessa targa",
+      "targa": "ZA011AA",
+      "stallo": 23,
+      "atteso": {
+        "categoria": "nessuna segnalazione",
+        "http": 200,
+        "esito": "NESSUNA_SEGNALAZIONE"
+      }
+    },
+    {
+      "id": "L012",
+      "scelta": "attiva della stessa targa",
+      "targa": "ZA012AA",
+      "stallo": 26,
+      "atteso": {
+        "categoria": "nessuna segnalazione",
+        "http": 200,
+        "esito": "NESSUNA_SEGNALAZIONE"
+      }
+    },
+    {
+      "id": "L013",
+      "scelta": "attiva e scaduta della stessa targa",
+      "targa": "ZA001AA",
+      "stallo": 3,
+      "atteso": {
+        "categoria": "nessuna segnalazione",
+        "http": 200,
+        "esito": "NESSUNA_SEGNALAZIONE"
+      }
+    },
+    {
+      "id": "L014",
+      "scelta": "attiva e scaduta della stessa targa",
+      "targa": "ZA002AA",
+      "stallo": 7,
+      "atteso": {
+        "categoria": "nessuna segnalazione",
+        "http": 200,
+        "esito": "NESSUNA_SEGNALAZIONE"
+      }
+    },
+    {
+      "id": "L015",
+      "scelta": "attiva e scaduta della stessa targa",
+      "targa": "ZA003AA",
+      "stallo": 8,
+      "atteso": {
+        "categoria": "nessuna segnalazione",
+        "http": 200,
+        "esito": "NESSUNA_SEGNALAZIONE"
+      }
+    },
+    {
+      "id": "L016",
+      "scelta": "attiva e scaduta della stessa targa",
+      "targa": "ZA004AA",
+      "stallo": 11,
+      "atteso": {
+        "categoria": "nessuna segnalazione",
+        "http": 200,
+        "esito": "NESSUNA_SEGNALAZIONE"
+      }
+    },
+    {
+      "id": "L017",
+      "scelta": "attiva della stessa targa",
+      "targa": "ZA005AA",
+      "stallo": 12,
+      "atteso": {
+        "categoria": "nessuna segnalazione",
+        "http": 200,
+        "esito": "NESSUNA_SEGNALAZIONE"
+      }
+    },
+    {
+      "id": "L018",
+      "scelta": "attiva della stessa targa",
+      "targa": "ZA006AA",
+      "stallo": 17,
+      "atteso": {
+        "categoria": "nessuna segnalazione",
+        "http": 200,
+        "esito": "NESSUNA_SEGNALAZIONE"
+      }
+    },
+    {
+      "id": "L019",
+      "scelta": "attiva della stessa targa",
+      "targa": "ZA007AA",
+      "stallo": 18,
+      "atteso": {
+        "categoria": "nessuna segnalazione",
+        "http": 200,
+        "esito": "NESSUNA_SEGNALAZIONE"
+      }
+    },
+    {
+      "id": "L020",
+      "scelta": "attiva della stessa targa",
+      "targa": "ZA008AA",
+      "stallo": 19,
+      "atteso": {
+        "categoria": "nessuna segnalazione",
+        "http": 200,
+        "esito": "NESSUNA_SEGNALAZIONE"
+      }
+    },
+    {
+      "id": "L021",
+      "scelta": "attiva della stessa targa",
+      "targa": "ZA009AA",
+      "stallo": 20,
+      "atteso": {
+        "categoria": "nessuna segnalazione",
+        "http": 200,
+        "esito": "NESSUNA_SEGNALAZIONE"
+      }
+    },
+    {
+      "id": "L022",
+      "scelta": "attiva della stessa targa",
+      "targa": "ZA010AA",
+      "stallo": 21,
+      "atteso": {
+        "categoria": "nessuna segnalazione",
+        "http": 200,
+        "esito": "NESSUNA_SEGNALAZIONE"
+      }
+    },
+    {
+      "id": "L023",
+      "scelta": "attiva della stessa targa",
+      "targa": "ZA011AA",
+      "stallo": 23,
+      "atteso": {
+        "categoria": "nessuna segnalazione",
+        "http": 200,
+        "esito": "NESSUNA_SEGNALAZIONE"
+      }
+    },
+    {
+      "id": "L024",
+      "scelta": "attiva della stessa targa",
+      "targa": "ZA012AA",
+      "stallo": 26,
+      "atteso": {
+        "categoria": "nessuna segnalazione",
+        "http": 200,
+        "esito": "NESSUNA_SEGNALAZIONE"
+      }
+    },
+    {
+      "id": "L025",
+      "scelta": "attiva e scaduta della stessa targa",
+      "targa": "ZA001AA",
+      "stallo": 3,
+      "atteso": {
+        "categoria": "nessuna segnalazione",
+        "http": 200,
+        "esito": "NESSUNA_SEGNALAZIONE"
+      }
+    },
+    {
+      "id": "L026",
+      "scelta": "attiva e scaduta della stessa targa",
+      "targa": "ZA002AA",
+      "stallo": 7,
+      "atteso": {
+        "categoria": "nessuna segnalazione",
+        "http": 200,
+        "esito": "NESSUNA_SEGNALAZIONE"
+      }
+    },
+    {
+      "id": "L027",
+      "scelta": "attiva e scaduta della stessa targa",
+      "targa": "ZA003AA",
+      "stallo": 8,
+      "atteso": {
+        "categoria": "nessuna segnalazione",
+        "http": 200,
+        "esito": "NESSUNA_SEGNALAZIONE"
+      }
+    },
+    {
+      "id": "L028",
+      "scelta": "attiva e scaduta della stessa targa",
+      "targa": "ZA004AA",
+      "stallo": 11,
+      "atteso": {
+        "categoria": "nessuna segnalazione",
+        "http": 200,
+        "esito": "NESSUNA_SEGNALAZIONE"
+      }
+    },
+    {
+      "id": "L029",
+      "scelta": "attiva della stessa targa",
+      "targa": "ZA005AA",
+      "stallo": 12,
+      "atteso": {
+        "categoria": "nessuna segnalazione",
+        "http": 200,
+        "esito": "NESSUNA_SEGNALAZIONE"
+      }
+    },
+    {
+      "id": "L030",
+      "scelta": "attiva della stessa targa",
+      "targa": "ZA006AA",
+      "stallo": 17,
+      "atteso": {
+        "categoria": "nessuna segnalazione",
+        "http": 200,
+        "esito": "NESSUNA_SEGNALAZIONE"
+      }
+    },
+    {
+      "id": "L031",
+      "scelta": "attiva della stessa targa",
+      "targa": "ZA007AA",
+      "stallo": 18,
+      "atteso": {
+        "categoria": "nessuna segnalazione",
+        "http": 200,
+        "esito": "NESSUNA_SEGNALAZIONE"
+      }
+    },
+    {
+      "id": "L032",
+      "scelta": "attiva della stessa targa",
+      "targa": "ZA008AA",
+      "stallo": 19,
+      "atteso": {
+        "categoria": "nessuna segnalazione",
+        "http": 200,
+        "esito": "NESSUNA_SEGNALAZIONE"
+      }
+    },
+    {
+      "id": "L033",
+      "scelta": "attiva della stessa targa",
+      "targa": "ZA009AA",
+      "stallo": 20,
+      "atteso": {
+        "categoria": "nessuna segnalazione",
+        "http": 200,
+        "esito": "NESSUNA_SEGNALAZIONE"
+      }
+    },
+    {
+      "id": "L034",
+      "scelta": "attiva della stessa targa",
+      "targa": "ZA010AA",
+      "stallo": 21,
+      "atteso": {
+        "categoria": "nessuna segnalazione",
+        "http": 200,
+        "esito": "NESSUNA_SEGNALAZIONE"
+      }
+    },
+    {
+      "id": "L035",
+      "scelta": "attiva della stessa targa",
+      "targa": "ZA011AA",
+      "stallo": 23,
+      "atteso": {
+        "categoria": "nessuna segnalazione",
+        "http": 200,
+        "esito": "NESSUNA_SEGNALAZIONE"
+      }
+    },
+    {
+      "id": "L036",
+      "scelta": "attiva della stessa targa",
+      "targa": "ZA012AA",
+      "stallo": 26,
+      "atteso": {
+        "categoria": "nessuna segnalazione",
+        "http": 200,
+        "esito": "NESSUNA_SEGNALAZIONE"
+      }
+    },
+    {
+      "id": "L037",
+      "scelta": "targa in minuscolo e con spazi",
+      "targa": "za 001AA",
+      "stallo": 3,
+      "atteso": {
+        "categoria": "nessuna segnalazione",
+        "http": 200,
+        "esito": "NESSUNA_SEGNALAZIONE"
+      }
+    },
+    {
+      "id": "L038",
+      "scelta": "targa in minuscolo e con spazi",
+      "targa": "za 002AA",
+      "stallo": 7,
+      "atteso": {
+        "categoria": "nessuna segnalazione",
+        "http": 200,
+        "esito": "NESSUNA_SEGNALAZIONE"
+      }
+    },
+    {
+      "id": "L039",
+      "scelta": "targa in minuscolo e con spazi",
+      "targa": "za 003AA",
+      "stallo": 8,
+      "atteso": {
+        "categoria": "nessuna segnalazione",
+        "http": 200,
+        "esito": "NESSUNA_SEGNALAZIONE"
+      }
+    },
+    {
+      "id": "L040",
+      "scelta": "targa in minuscolo e con spazi",
+      "targa": "za 004AA",
+      "stallo": 11,
+      "atteso": {
+        "categoria": "nessuna segnalazione",
+        "http": 200,
+        "esito": "NESSUNA_SEGNALAZIONE"
+      }
+    },
+    {
+      "id": "L041",
+      "scelta": "targa in minuscolo e con spazi",
+      "targa": "za 005AA",
+      "stallo": 12,
+      "atteso": {
+        "categoria": "nessuna segnalazione",
+        "http": 200,
+        "esito": "NESSUNA_SEGNALAZIONE"
+      }
+    },
+    {
+      "id": "L042",
+      "scelta": "targa in minuscolo e con spazi",
+      "targa": "za 006AA",
+      "stallo": 17,
+      "atteso": {
+        "categoria": "nessuna segnalazione",
+        "http": 200,
+        "esito": "NESSUNA_SEGNALAZIONE"
+      }
+    },
+    {
+      "id": "L043",
+      "scelta": "targa in minuscolo e con spazi",
+      "targa": "za 007AA",
+      "stallo": 18,
+      "atteso": {
+        "categoria": "nessuna segnalazione",
+        "http": 200,
+        "esito": "NESSUNA_SEGNALAZIONE"
+      }
+    },
+    {
+      "id": "L044",
+      "scelta": "targa in minuscolo e con spazi",
+      "targa": "za 008AA",
+      "stallo": 19,
+      "atteso": {
+        "categoria": "nessuna segnalazione",
+        "http": 200,
+        "esito": "NESSUNA_SEGNALAZIONE"
+      }
+    },
+    {
+      "id": "L045",
+      "scelta": "targa in minuscolo e con spazi",
+      "targa": "za 009AA",
+      "stallo": 20,
+      "atteso": {
+        "categoria": "nessuna segnalazione",
+        "http": 200,
+        "esito": "NESSUNA_SEGNALAZIONE"
+      }
+    },
+    {
+      "id": "L046",
+      "scelta": "targa in minuscolo e con spazi",
+      "targa": "za 010AA",
+      "stallo": 21,
+      "atteso": {
+        "categoria": "nessuna segnalazione",
+        "http": 200,
+        "esito": "NESSUNA_SEGNALAZIONE"
+      }
+    },
+    {
+      "id": "L047",
+      "scelta": "targa in minuscolo e con spazi",
+      "targa": "za 011AA",
+      "stallo": 23,
+      "atteso": {
+        "categoria": "nessuna segnalazione",
+        "http": 200,
+        "esito": "NESSUNA_SEGNALAZIONE"
+      }
+    },
+    {
+      "id": "L048",
+      "scelta": "targa in minuscolo e con spazi",
+      "targa": "za 012AA",
+      "stallo": 26,
+      "atteso": {
+        "categoria": "nessuna segnalazione",
+        "http": 200,
+        "esito": "NESSUNA_SEGNALAZIONE"
+      }
+    },
+    {
+      "id": "L049",
+      "scelta": "attiva di un'altra targa",
+      "targa": "ZN001AA",
+      "stallo": 3,
+      "atteso": {
+        "categoria": "targa non corrispondente",
+        "http": 200,
+        "esito": "SEGNALAZIONE_CREATA",
+        "motivo": "TARGA_NON_CORRISPONDENTE"
+      }
+    },
+    {
+      "id": "L050",
+      "scelta": "attiva di un'altra targa",
+      "targa": "ZN002AA",
+      "stallo": 7,
+      "atteso": {
+        "categoria": "targa non corrispondente",
+        "http": 200,
+        "esito": "SEGNALAZIONE_CREATA",
+        "motivo": "TARGA_NON_CORRISPONDENTE"
+      }
+    },
+    {
+      "id": "L051",
+      "scelta": "attiva di un'altra targa",
+      "targa": "ZN003AA",
+      "stallo": 8,
+      "atteso": {
+        "categoria": "targa non corrispondente",
+        "http": 200,
+        "esito": "SEGNALAZIONE_CREATA",
+        "motivo": "TARGA_NON_CORRISPONDENTE"
+      }
+    },
+    {
+      "id": "L052",
+      "scelta": "attiva di un'altra targa",
+      "targa": "ZN004AA",
+      "stallo": 11,
+      "atteso": {
+        "categoria": "targa non corrispondente",
+        "http": 200,
+        "esito": "SEGNALAZIONE_CREATA",
+        "motivo": "TARGA_NON_CORRISPONDENTE"
+      }
+    },
+    {
+      "id": "L053",
+      "scelta": "attiva di un'altra targa",
+      "targa": "ZN005AA",
+      "stallo": 12,
+      "atteso": {
+        "categoria": "targa non corrispondente",
+        "http": 200,
+        "esito": "SEGNALAZIONE_CREATA",
+        "motivo": "TARGA_NON_CORRISPONDENTE"
+      }
+    },
+    {
+      "id": "L054",
+      "scelta": "attiva di un'altra targa",
+      "targa": "ZN006AA",
+      "stallo": 17,
+      "atteso": {
+        "categoria": "targa non corrispondente",
+        "http": 200,
+        "esito": "SEGNALAZIONE_CREATA",
+        "motivo": "TARGA_NON_CORRISPONDENTE"
+      }
+    },
+    {
+      "id": "L055",
+      "scelta": "attiva di un'altra targa",
+      "targa": "ZN007AA",
+      "stallo": 18,
+      "atteso": {
+        "categoria": "targa non corrispondente",
+        "http": 200,
+        "esito": "SEGNALAZIONE_CREATA",
+        "motivo": "TARGA_NON_CORRISPONDENTE"
+      }
+    },
+    {
+      "id": "L056",
+      "scelta": "attiva di un'altra targa",
+      "targa": "ZN008AA",
+      "stallo": 19,
+      "atteso": {
+        "categoria": "targa non corrispondente",
+        "http": 200,
+        "esito": "SEGNALAZIONE_CREATA",
+        "motivo": "TARGA_NON_CORRISPONDENTE"
+      }
+    },
+    {
+      "id": "L057",
+      "scelta": "attiva di un'altra targa",
+      "targa": "ZN009AA",
+      "stallo": 20,
+      "atteso": {
+        "categoria": "targa non corrispondente",
+        "http": 200,
+        "esito": "SEGNALAZIONE_CREATA",
+        "motivo": "TARGA_NON_CORRISPONDENTE"
+      }
+    },
+    {
+      "id": "L058",
+      "scelta": "attiva di un'altra targa",
+      "targa": "ZN010AA",
+      "stallo": 21,
+      "atteso": {
+        "categoria": "targa non corrispondente",
+        "http": 200,
+        "esito": "SEGNALAZIONE_CREATA",
+        "motivo": "TARGA_NON_CORRISPONDENTE"
+      }
+    },
+    {
+      "id": "L059",
+      "scelta": "attiva di un'altra targa",
+      "targa": "ZN011AA",
+      "stallo": 23,
+      "atteso": {
+        "categoria": "targa non corrispondente",
+        "http": 200,
+        "esito": "SEGNALAZIONE_CREATA",
+        "motivo": "TARGA_NON_CORRISPONDENTE"
+      }
+    },
+    {
+      "id": "L060",
+      "scelta": "attiva di un'altra targa",
+      "targa": "ZN012AA",
+      "stallo": 26,
+      "atteso": {
+        "categoria": "targa non corrispondente",
+        "http": 200,
+        "esito": "SEGNALAZIONE_CREATA",
+        "motivo": "TARGA_NON_CORRISPONDENTE"
+      }
+    },
+    {
+      "id": "L061",
+      "scelta": "attiva di un'altra targa",
+      "targa": "ZN013AA",
+      "stallo": 3,
+      "atteso": {
+        "categoria": "targa non corrispondente",
+        "http": 200,
+        "esito": "SEGNALAZIONE_CREATA",
+        "motivo": "TARGA_NON_CORRISPONDENTE"
+      }
+    },
+    {
+      "id": "L062",
+      "scelta": "attiva di un'altra targa",
+      "targa": "ZN014AA",
+      "stallo": 7,
+      "atteso": {
+        "categoria": "targa non corrispondente",
+        "http": 200,
+        "esito": "SEGNALAZIONE_CREATA",
+        "motivo": "TARGA_NON_CORRISPONDENTE"
+      }
+    },
+    {
+      "id": "L063",
+      "scelta": "attiva di un'altra targa",
+      "targa": "ZN015AA",
+      "stallo": 8,
+      "atteso": {
+        "categoria": "targa non corrispondente",
+        "http": 200,
+        "esito": "SEGNALAZIONE_CREATA",
+        "motivo": "TARGA_NON_CORRISPONDENTE"
+      }
+    },
+    {
+      "id": "L064",
+      "scelta": "attiva di un'altra targa",
+      "targa": "ZN016AA",
+      "stallo": 11,
+      "atteso": {
+        "categoria": "targa non corrispondente",
+        "http": 200,
+        "esito": "SEGNALAZIONE_CREATA",
+        "motivo": "TARGA_NON_CORRISPONDENTE"
+      }
+    },
+    {
+      "id": "L065",
+      "scelta": "attiva di un'altra targa",
+      "targa": "ZN017AA",
+      "stallo": 12,
+      "atteso": {
+        "categoria": "targa non corrispondente",
+        "http": 200,
+        "esito": "SEGNALAZIONE_CREATA",
+        "motivo": "TARGA_NON_CORRISPONDENTE"
+      }
+    },
+    {
+      "id": "L066",
+      "scelta": "attiva di un'altra targa",
+      "targa": "ZN018AA",
+      "stallo": 17,
+      "atteso": {
+        "categoria": "targa non corrispondente",
+        "http": 200,
+        "esito": "SEGNALAZIONE_CREATA",
+        "motivo": "TARGA_NON_CORRISPONDENTE"
+      }
+    },
+    {
+      "id": "L067",
+      "scelta": "attiva di un'altra targa",
+      "targa": "ZN019AA",
+      "stallo": 18,
+      "atteso": {
+        "categoria": "targa non corrispondente",
+        "http": 200,
+        "esito": "SEGNALAZIONE_CREATA",
+        "motivo": "TARGA_NON_CORRISPONDENTE"
+      }
+    },
+    {
+      "id": "L068",
+      "scelta": "attiva di un'altra targa",
+      "targa": "ZN020AA",
+      "stallo": 19,
+      "atteso": {
+        "categoria": "targa non corrispondente",
+        "http": 200,
+        "esito": "SEGNALAZIONE_CREATA",
+        "motivo": "TARGA_NON_CORRISPONDENTE"
+      }
+    },
+    {
+      "id": "L069",
+      "scelta": "attiva di un'altra targa",
+      "targa": "ZN021AA",
+      "stallo": 20,
+      "atteso": {
+        "categoria": "targa non corrispondente",
+        "http": 200,
+        "esito": "SEGNALAZIONE_CREATA",
+        "motivo": "TARGA_NON_CORRISPONDENTE"
+      }
+    },
+    {
+      "id": "L070",
+      "scelta": "attiva di un'altra targa",
+      "targa": "ZN022AA",
+      "stallo": 21,
+      "atteso": {
+        "categoria": "targa non corrispondente",
+        "http": 200,
+        "esito": "SEGNALAZIONE_CREATA",
+        "motivo": "TARGA_NON_CORRISPONDENTE"
+      }
+    },
+    {
+      "id": "L071",
+      "scelta": "attiva di un'altra targa",
+      "targa": "ZN023AA",
+      "stallo": 23,
+      "atteso": {
+        "categoria": "targa non corrispondente",
+        "http": 200,
+        "esito": "SEGNALAZIONE_CREATA",
+        "motivo": "TARGA_NON_CORRISPONDENTE"
+      }
+    },
+    {
+      "id": "L072",
+      "scelta": "attiva di un'altra targa",
+      "targa": "ZN024AA",
+      "stallo": 26,
+      "atteso": {
+        "categoria": "targa non corrispondente",
+        "http": 200,
+        "esito": "SEGNALAZIONE_CREATA",
+        "motivo": "TARGA_NON_CORRISPONDENTE"
+      }
+    },
+    {
+      "id": "L073",
+      "scelta": "attiva di un'altra targa",
+      "targa": "ZN025AA",
+      "stallo": 3,
+      "atteso": {
+        "categoria": "targa non corrispondente",
+        "http": 200,
+        "esito": "SEGNALAZIONE_CREATA",
+        "motivo": "TARGA_NON_CORRISPONDENTE"
+      }
+    },
+    {
+      "id": "L074",
+      "scelta": "attiva di un'altra targa",
+      "targa": "ZN026AA",
+      "stallo": 7,
+      "atteso": {
+        "categoria": "targa non corrispondente",
+        "http": 200,
+        "esito": "SEGNALAZIONE_CREATA",
+        "motivo": "TARGA_NON_CORRISPONDENTE"
+      }
+    },
+    {
+      "id": "L075",
+      "scelta": "attiva di un'altra targa",
+      "targa": "ZN027AA",
+      "stallo": 8,
+      "atteso": {
+        "categoria": "targa non corrispondente",
+        "http": 200,
+        "esito": "SEGNALAZIONE_CREATA",
+        "motivo": "TARGA_NON_CORRISPONDENTE"
+      }
+    },
+    {
+      "id": "L076",
+      "scelta": "attiva di un'altra targa",
+      "targa": "ZN028AA",
+      "stallo": 11,
+      "atteso": {
+        "categoria": "targa non corrispondente",
+        "http": 200,
+        "esito": "SEGNALAZIONE_CREATA",
+        "motivo": "TARGA_NON_CORRISPONDENTE"
+      }
+    },
+    {
+      "id": "L077",
+      "scelta": "attiva di un'altra targa",
+      "targa": "ZN029AA",
+      "stallo": 12,
+      "atteso": {
+        "categoria": "targa non corrispondente",
+        "http": 200,
+        "esito": "SEGNALAZIONE_CREATA",
+        "motivo": "TARGA_NON_CORRISPONDENTE"
+      }
+    },
+    {
+      "id": "L078",
+      "scelta": "attiva di un'altra targa",
+      "targa": "ZN030AA",
+      "stallo": 17,
+      "atteso": {
+        "categoria": "targa non corrispondente",
+        "http": 200,
+        "esito": "SEGNALAZIONE_CREATA",
+        "motivo": "TARGA_NON_CORRISPONDENTE"
+      }
+    },
+    {
+      "id": "L079",
+      "scelta": "attiva di un'altra targa",
+      "targa": "ZN031AA",
+      "stallo": 18,
+      "atteso": {
+        "categoria": "targa non corrispondente",
+        "http": 200,
+        "esito": "SEGNALAZIONE_CREATA",
+        "motivo": "TARGA_NON_CORRISPONDENTE"
+      }
+    },
+    {
+      "id": "L080",
+      "scelta": "attiva di un'altra targa",
+      "targa": "ZN032AA",
+      "stallo": 19,
+      "atteso": {
+        "categoria": "targa non corrispondente",
+        "http": 200,
+        "esito": "SEGNALAZIONE_CREATA",
+        "motivo": "TARGA_NON_CORRISPONDENTE"
+      }
+    },
+    {
+      "id": "L081",
+      "scelta": "attiva di un'altra targa",
+      "targa": "ZN033AA",
+      "stallo": 20,
+      "atteso": {
+        "categoria": "targa non corrispondente",
+        "http": 200,
+        "esito": "SEGNALAZIONE_CREATA",
+        "motivo": "TARGA_NON_CORRISPONDENTE"
+      }
+    },
+    {
+      "id": "L082",
+      "scelta": "attiva di un'altra targa",
+      "targa": "ZN034AA",
+      "stallo": 21,
+      "atteso": {
+        "categoria": "targa non corrispondente",
+        "http": 200,
+        "esito": "SEGNALAZIONE_CREATA",
+        "motivo": "TARGA_NON_CORRISPONDENTE"
+      }
+    },
+    {
+      "id": "L083",
+      "scelta": "attiva di un'altra targa",
+      "targa": "ZN035AA",
+      "stallo": 23,
+      "atteso": {
+        "categoria": "targa non corrispondente",
+        "http": 200,
+        "esito": "SEGNALAZIONE_CREATA",
+        "motivo": "TARGA_NON_CORRISPONDENTE"
+      }
+    },
+    {
+      "id": "L084",
+      "scelta": "attiva di un'altra targa",
+      "targa": "ZN036AA",
+      "stallo": 26,
+      "atteso": {
+        "categoria": "targa non corrispondente",
+        "http": 200,
+        "esito": "SEGNALAZIONE_CREATA",
+        "motivo": "TARGA_NON_CORRISPONDENTE"
+      }
+    },
+    {
+      "id": "L085",
+      "scelta": "attiva di un'altra targa",
+      "targa": "ZN037AA",
+      "stallo": 3,
+      "atteso": {
+        "categoria": "targa non corrispondente",
+        "http": 200,
+        "esito": "SEGNALAZIONE_CREATA",
+        "motivo": "TARGA_NON_CORRISPONDENTE"
+      }
+    },
+    {
+      "id": "L086",
+      "scelta": "attiva di un'altra targa",
+      "targa": "ZN038AA",
+      "stallo": 7,
+      "atteso": {
+        "categoria": "targa non corrispondente",
+        "http": 200,
+        "esito": "SEGNALAZIONE_CREATA",
+        "motivo": "TARGA_NON_CORRISPONDENTE"
+      }
+    },
+    {
+      "id": "L087",
+      "scelta": "attiva di un'altra targa",
+      "targa": "ZN039AA",
+      "stallo": 8,
+      "atteso": {
+        "categoria": "targa non corrispondente",
+        "http": 200,
+        "esito": "SEGNALAZIONE_CREATA",
+        "motivo": "TARGA_NON_CORRISPONDENTE"
+      }
+    },
+    {
+      "id": "L088",
+      "scelta": "attiva di un'altra targa",
+      "targa": "ZN040AA",
+      "stallo": 11,
+      "atteso": {
+        "categoria": "targa non corrispondente",
+        "http": 200,
+        "esito": "SEGNALAZIONE_CREATA",
+        "motivo": "TARGA_NON_CORRISPONDENTE"
+      }
+    },
+    {
+      "id": "L089",
+      "scelta": "scaduta della stessa targa",
+      "targa": "ZS001AA",
+      "stallo": 29,
+      "atteso": {
+        "categoria": "sosta scaduta",
+        "http": 200,
+        "esito": "SEGNALAZIONE_CREATA",
+        "motivo": "SOSTA_SCADUTA"
+      }
+    },
+    {
+      "id": "L090",
+      "scelta": "scaduta della stessa targa",
+      "targa": "ZS002AA",
+      "stallo": 22,
+      "atteso": {
+        "categoria": "sosta scaduta",
+        "http": 200,
+        "esito": "SEGNALAZIONE_CREATA",
+        "motivo": "SOSTA_SCADUTA"
+      }
+    },
+    {
+      "id": "L091",
+      "scelta": "scaduta della stessa targa",
+      "targa": "ZS003AA",
+      "stallo": 27,
+      "atteso": {
+        "categoria": "sosta scaduta",
+        "http": 200,
+        "esito": "SEGNALAZIONE_CREATA",
+        "motivo": "SOSTA_SCADUTA"
+      }
+    },
+    {
+      "id": "L092",
+      "scelta": "scaduta della stessa targa",
+      "targa": "ZS004AA",
+      "stallo": 28,
+      "atteso": {
+        "categoria": "sosta scaduta",
+        "http": 200,
+        "esito": "SEGNALAZIONE_CREATA",
+        "motivo": "SOSTA_SCADUTA"
+      }
+    },
+    {
+      "id": "L093",
+      "scelta": "scaduta della stessa targa",
+      "targa": "ZS005AA",
+      "stallo": 29,
+      "atteso": {
+        "categoria": "sosta scaduta",
+        "http": 200,
+        "esito": "SEGNALAZIONE_CREATA",
+        "motivo": "SOSTA_SCADUTA"
+      }
+    },
+    {
+      "id": "L094",
+      "scelta": "scaduta della stessa targa",
+      "targa": "ZS006AA",
+      "stallo": 22,
+      "atteso": {
+        "categoria": "sosta scaduta",
+        "http": 200,
+        "esito": "SEGNALAZIONE_CREATA",
+        "motivo": "SOSTA_SCADUTA"
+      }
+    },
+    {
+      "id": "L095",
+      "scelta": "scaduta della stessa targa",
+      "targa": "ZS007AA",
+      "stallo": 27,
+      "atteso": {
+        "categoria": "sosta scaduta",
+        "http": 200,
+        "esito": "SEGNALAZIONE_CREATA",
+        "motivo": "SOSTA_SCADUTA"
+      }
+    },
+    {
+      "id": "L096",
+      "scelta": "scaduta della stessa targa",
+      "targa": "ZS008AA",
+      "stallo": 28,
+      "atteso": {
+        "categoria": "sosta scaduta",
+        "http": 200,
+        "esito": "SEGNALAZIONE_CREATA",
+        "motivo": "SOSTA_SCADUTA"
+      }
+    },
+    {
+      "id": "L097",
+      "scelta": "scaduta della stessa targa",
+      "targa": "ZS009AA",
+      "stallo": 29,
+      "atteso": {
+        "categoria": "sosta scaduta",
+        "http": 200,
+        "esito": "SEGNALAZIONE_CREATA",
+        "motivo": "SOSTA_SCADUTA"
+      }
+    },
+    {
+      "id": "L098",
+      "scelta": "scaduta della stessa targa",
+      "targa": "ZS010AA",
+      "stallo": 22,
+      "atteso": {
+        "categoria": "sosta scaduta",
+        "http": 200,
+        "esito": "SEGNALAZIONE_CREATA",
+        "motivo": "SOSTA_SCADUTA"
+      }
+    },
+    {
+      "id": "L099",
+      "scelta": "scaduta della stessa targa",
+      "targa": "ZS011AA",
+      "stallo": 27,
+      "atteso": {
+        "categoria": "sosta scaduta",
+        "http": 200,
+        "esito": "SEGNALAZIONE_CREATA",
+        "motivo": "SOSTA_SCADUTA"
+      }
+    },
+    {
+      "id": "L100",
+      "scelta": "scaduta della stessa targa",
+      "targa": "ZS012AA",
+      "stallo": 28,
+      "atteso": {
+        "categoria": "sosta scaduta",
+        "http": 200,
+        "esito": "SEGNALAZIONE_CREATA",
+        "motivo": "SOSTA_SCADUTA"
+      }
+    },
+    {
+      "id": "L101",
+      "scelta": "scaduta della stessa targa",
+      "targa": "ZS013AA",
+      "stallo": 29,
+      "atteso": {
+        "categoria": "sosta scaduta",
+        "http": 200,
+        "esito": "SEGNALAZIONE_CREATA",
+        "motivo": "SOSTA_SCADUTA"
+      }
+    },
+    {
+      "id": "L102",
+      "scelta": "scaduta della stessa targa",
+      "targa": "ZS014AA",
+      "stallo": 22,
+      "atteso": {
+        "categoria": "sosta scaduta",
+        "http": 200,
+        "esito": "SEGNALAZIONE_CREATA",
+        "motivo": "SOSTA_SCADUTA"
+      }
+    },
+    {
+      "id": "L103",
+      "scelta": "scaduta della stessa targa",
+      "targa": "ZS015AA",
+      "stallo": 27,
+      "atteso": {
+        "categoria": "sosta scaduta",
+        "http": 200,
+        "esito": "SEGNALAZIONE_CREATA",
+        "motivo": "SOSTA_SCADUTA"
+      }
+    },
+    {
+      "id": "L104",
+      "scelta": "scaduta della stessa targa",
+      "targa": "ZS016AA",
+      "stallo": 28,
+      "atteso": {
+        "categoria": "sosta scaduta",
+        "http": 200,
+        "esito": "SEGNALAZIONE_CREATA",
+        "motivo": "SOSTA_SCADUTA"
+      }
+    },
+    {
+      "id": "L105",
+      "scelta": "scaduta della stessa targa",
+      "targa": "ZS017AA",
+      "stallo": 29,
+      "atteso": {
+        "categoria": "sosta scaduta",
+        "http": 200,
+        "esito": "SEGNALAZIONE_CREATA",
+        "motivo": "SOSTA_SCADUTA"
+      }
+    },
+    {
+      "id": "L106",
+      "scelta": "scaduta della stessa targa",
+      "targa": "ZS018AA",
+      "stallo": 22,
+      "atteso": {
+        "categoria": "sosta scaduta",
+        "http": 200,
+        "esito": "SEGNALAZIONE_CREATA",
+        "motivo": "SOSTA_SCADUTA"
+      }
+    },
+    {
+      "id": "L107",
+      "scelta": "scaduta della stessa targa",
+      "targa": "ZS019AA",
+      "stallo": 27,
+      "atteso": {
+        "categoria": "sosta scaduta",
+        "http": 200,
+        "esito": "SEGNALAZIONE_CREATA",
+        "motivo": "SOSTA_SCADUTA"
+      }
+    },
+    {
+      "id": "L108",
+      "scelta": "scaduta della stessa targa",
+      "targa": "ZS020AA",
+      "stallo": 28,
+      "atteso": {
+        "categoria": "sosta scaduta",
+        "http": 200,
+        "esito": "SEGNALAZIONE_CREATA",
+        "motivo": "SOSTA_SCADUTA"
+      }
+    },
+    {
+      "id": "L109",
+      "scelta": "scaduta della stessa targa",
+      "targa": "ZS021AA",
+      "stallo": 29,
+      "atteso": {
+        "categoria": "sosta scaduta",
+        "http": 200,
+        "esito": "SEGNALAZIONE_CREATA",
+        "motivo": "SOSTA_SCADUTA"
+      }
+    },
+    {
+      "id": "L110",
+      "scelta": "scaduta della stessa targa",
+      "targa": "ZS022AA",
+      "stallo": 22,
+      "atteso": {
+        "categoria": "sosta scaduta",
+        "http": 200,
+        "esito": "SEGNALAZIONE_CREATA",
+        "motivo": "SOSTA_SCADUTA"
+      }
+    },
+    {
+      "id": "L111",
+      "scelta": "scaduta della stessa targa",
+      "targa": "ZS023AA",
+      "stallo": 27,
+      "atteso": {
+        "categoria": "sosta scaduta",
+        "http": 200,
+        "esito": "SEGNALAZIONE_CREATA",
+        "motivo": "SOSTA_SCADUTA"
+      }
+    },
+    {
+      "id": "L112",
+      "scelta": "scaduta della stessa targa",
+      "targa": "ZS024AA",
+      "stallo": 28,
+      "atteso": {
+        "categoria": "sosta scaduta",
+        "http": 200,
+        "esito": "SEGNALAZIONE_CREATA",
+        "motivo": "SOSTA_SCADUTA"
+      }
+    },
+    {
+      "id": "L113",
+      "scelta": "scaduta della stessa targa",
+      "targa": "ZS025AA",
+      "stallo": 29,
+      "atteso": {
+        "categoria": "sosta scaduta",
+        "http": 200,
+        "esito": "SEGNALAZIONE_CREATA",
+        "motivo": "SOSTA_SCADUTA"
+      }
+    },
+    {
+      "id": "L114",
+      "scelta": "scaduta della stessa targa",
+      "targa": "ZS026AA",
+      "stallo": 22,
+      "atteso": {
+        "categoria": "sosta scaduta",
+        "http": 200,
+        "esito": "SEGNALAZIONE_CREATA",
+        "motivo": "SOSTA_SCADUTA"
+      }
+    },
+    {
+      "id": "L115",
+      "scelta": "scaduta della stessa targa",
+      "targa": "ZS027AA",
+      "stallo": 27,
+      "atteso": {
+        "categoria": "sosta scaduta",
+        "http": 200,
+        "esito": "SEGNALAZIONE_CREATA",
+        "motivo": "SOSTA_SCADUTA"
+      }
+    },
+    {
+      "id": "L116",
+      "scelta": "scaduta della stessa targa",
+      "targa": "ZS028AA",
+      "stallo": 28,
+      "atteso": {
+        "categoria": "sosta scaduta",
+        "http": 200,
+        "esito": "SEGNALAZIONE_CREATA",
+        "motivo": "SOSTA_SCADUTA"
+      }
+    },
+    {
+      "id": "L117",
+      "scelta": "scaduta della stessa targa",
+      "targa": "ZS029AA",
+      "stallo": 29,
+      "atteso": {
+        "categoria": "sosta scaduta",
+        "http": 200,
+        "esito": "SEGNALAZIONE_CREATA",
+        "motivo": "SOSTA_SCADUTA"
+      }
+    },
+    {
+      "id": "L118",
+      "scelta": "scaduta della stessa targa",
+      "targa": "ZS030AA",
+      "stallo": 22,
+      "atteso": {
+        "categoria": "sosta scaduta",
+        "http": 200,
+        "esito": "SEGNALAZIONE_CREATA",
+        "motivo": "SOSTA_SCADUTA"
+      }
+    },
+    {
+      "id": "L119",
+      "scelta": "scaduta della stessa targa",
+      "targa": "ZS031AA",
+      "stallo": 27,
+      "atteso": {
+        "categoria": "sosta scaduta",
+        "http": 200,
+        "esito": "SEGNALAZIONE_CREATA",
+        "motivo": "SOSTA_SCADUTA"
+      }
+    },
+    {
+      "id": "L120",
+      "scelta": "scaduta della stessa targa",
+      "targa": "ZS032AA",
+      "stallo": 28,
+      "atteso": {
+        "categoria": "sosta scaduta",
+        "http": 200,
+        "esito": "SEGNALAZIONE_CREATA",
+        "motivo": "SOSTA_SCADUTA"
+      }
+    },
+    {
+      "id": "L121",
+      "scelta": "scaduta della stessa targa",
+      "targa": "ZS033AA",
+      "stallo": 29,
+      "atteso": {
+        "categoria": "sosta scaduta",
+        "http": 200,
+        "esito": "SEGNALAZIONE_CREATA",
+        "motivo": "SOSTA_SCADUTA"
+      }
+    },
+    {
+      "id": "L122",
+      "scelta": "scaduta della stessa targa",
+      "targa": "ZS034AA",
+      "stallo": 22,
+      "atteso": {
+        "categoria": "sosta scaduta",
+        "http": 200,
+        "esito": "SEGNALAZIONE_CREATA",
+        "motivo": "SOSTA_SCADUTA"
+      }
+    },
+    {
+      "id": "L123",
+      "scelta": "scaduta della stessa targa",
+      "targa": "ZS035AA",
+      "stallo": 27,
+      "atteso": {
+        "categoria": "sosta scaduta",
+        "http": 200,
+        "esito": "SEGNALAZIONE_CREATA",
+        "motivo": "SOSTA_SCADUTA"
+      }
+    },
+    {
+      "id": "L124",
+      "scelta": "scaduta della stessa targa",
+      "targa": "ZS036AA",
+      "stallo": 28,
+      "atteso": {
+        "categoria": "sosta scaduta",
+        "http": 200,
+        "esito": "SEGNALAZIONE_CREATA",
+        "motivo": "SOSTA_SCADUTA"
+      }
+    },
+    {
+      "id": "L125",
+      "scelta": "scaduta della stessa targa",
+      "targa": "ZS037AA",
+      "stallo": 29,
+      "atteso": {
+        "categoria": "sosta scaduta",
+        "http": 200,
+        "esito": "SEGNALAZIONE_CREATA",
+        "motivo": "SOSTA_SCADUTA"
+      }
+    },
+    {
+      "id": "L126",
+      "scelta": "scaduta della stessa targa",
+      "targa": "ZS038AA",
+      "stallo": 22,
+      "atteso": {
+        "categoria": "sosta scaduta",
+        "http": 200,
+        "esito": "SEGNALAZIONE_CREATA",
+        "motivo": "SOSTA_SCADUTA"
+      }
+    },
+    {
+      "id": "L127",
+      "scelta": "scaduta della stessa targa",
+      "targa": "ZS039AA",
+      "stallo": 27,
+      "atteso": {
+        "categoria": "sosta scaduta",
+        "http": 200,
+        "esito": "SEGNALAZIONE_CREATA",
+        "motivo": "SOSTA_SCADUTA"
+      }
+    },
+    {
+      "id": "L128",
+      "scelta": "scaduta della stessa targa",
+      "targa": "ZS040AA",
+      "stallo": 28,
+      "atteso": {
+        "categoria": "sosta scaduta",
+        "http": 200,
+        "esito": "SEGNALAZIONE_CREATA",
+        "motivo": "SOSTA_SCADUTA"
+      }
+    },
+    {
+      "id": "L129",
+      "scelta": "segnalazione già presente (scaduta)",
+      "targa": "ZS001AA",
+      "stallo": 29,
+      "atteso": {
+        "categoria": "lettura scartata",
+        "http": 200,
+        "esito": "LETTURA_SCARTATA",
+        "motivo": "SOSTA_SCADUTA"
+      }
+    },
+    {
+      "id": "L130",
+      "scelta": "segnalazione già presente (scaduta)",
+      "targa": "ZS002AA",
+      "stallo": 22,
+      "atteso": {
+        "categoria": "lettura scartata",
+        "http": 200,
+        "esito": "LETTURA_SCARTATA",
+        "motivo": "SOSTA_SCADUTA"
+      }
+    },
+    {
+      "id": "L131",
+      "scelta": "segnalazione già presente (scaduta)",
+      "targa": "ZS003AA",
+      "stallo": 27,
+      "atteso": {
+        "categoria": "lettura scartata",
+        "http": 200,
+        "esito": "LETTURA_SCARTATA",
+        "motivo": "SOSTA_SCADUTA"
+      }
+    },
+    {
+      "id": "L132",
+      "scelta": "segnalazione già presente (scaduta)",
+      "targa": "ZS004AA",
+      "stallo": 28,
+      "atteso": {
+        "categoria": "lettura scartata",
+        "http": 200,
+        "esito": "LETTURA_SCARTATA",
+        "motivo": "SOSTA_SCADUTA"
+      }
+    },
+    {
+      "id": "L133",
+      "scelta": "segnalazione già presente (scaduta)",
+      "targa": "ZS005AA",
+      "stallo": 29,
+      "atteso": {
+        "categoria": "lettura scartata",
+        "http": 200,
+        "esito": "LETTURA_SCARTATA",
+        "motivo": "SOSTA_SCADUTA"
+      }
+    },
+    {
+      "id": "L134",
+      "scelta": "segnalazione già presente (scaduta)",
+      "targa": "ZS006AA",
+      "stallo": 22,
+      "atteso": {
+        "categoria": "lettura scartata",
+        "http": 200,
+        "esito": "LETTURA_SCARTATA",
+        "motivo": "SOSTA_SCADUTA"
+      }
+    },
+    {
+      "id": "L135",
+      "scelta": "segnalazione già presente (scaduta)",
+      "targa": "ZS007AA",
+      "stallo": 27,
+      "atteso": {
+        "categoria": "lettura scartata",
+        "http": 200,
+        "esito": "LETTURA_SCARTATA",
+        "motivo": "SOSTA_SCADUTA"
+      }
+    },
+    {
+      "id": "L136",
+      "scelta": "segnalazione già presente (scaduta)",
+      "targa": "ZS008AA",
+      "stallo": 28,
+      "atteso": {
+        "categoria": "lettura scartata",
+        "http": 200,
+        "esito": "LETTURA_SCARTATA",
+        "motivo": "SOSTA_SCADUTA"
+      }
+    },
+    {
+      "id": "L137",
+      "scelta": "segnalazione già presente (scaduta)",
+      "targa": "ZS009AA",
+      "stallo": 29,
+      "atteso": {
+        "categoria": "lettura scartata",
+        "http": 200,
+        "esito": "LETTURA_SCARTATA",
+        "motivo": "SOSTA_SCADUTA"
+      }
+    },
+    {
+      "id": "L138",
+      "scelta": "segnalazione già presente (scaduta)",
+      "targa": "ZS010AA",
+      "stallo": 22,
+      "atteso": {
+        "categoria": "lettura scartata",
+        "http": 200,
+        "esito": "LETTURA_SCARTATA",
+        "motivo": "SOSTA_SCADUTA"
+      }
+    },
+    {
+      "id": "L139",
+      "scelta": "attiva di un'altra targa e scaduta della stessa targa",
+      "targa": "ZD001AA",
+      "stallo": 3,
+      "atteso": {
+        "categoria": "sosta scaduta",
+        "http": 200,
+        "esito": "SEGNALAZIONE_CREATA",
+        "motivo": "SOSTA_SCADUTA"
+      }
+    },
+    {
+      "id": "L140",
+      "scelta": "attiva di un'altra targa e scaduta della stessa targa",
+      "targa": "ZD002AA",
+      "stallo": 7,
+      "atteso": {
+        "categoria": "sosta scaduta",
+        "http": 200,
+        "esito": "SEGNALAZIONE_CREATA",
+        "motivo": "SOSTA_SCADUTA"
+      }
+    },
+    {
+      "id": "L141",
+      "scelta": "attiva di un'altra targa e scaduta della stessa targa",
+      "targa": "ZD003AA",
+      "stallo": 8,
+      "atteso": {
+        "categoria": "sosta scaduta",
+        "http": 200,
+        "esito": "SEGNALAZIONE_CREATA",
+        "motivo": "SOSTA_SCADUTA"
+      }
+    },
+    {
+      "id": "L142",
+      "scelta": "attiva di un'altra targa e scaduta della stessa targa",
+      "targa": "ZD004AA",
+      "stallo": 11,
+      "atteso": {
+        "categoria": "sosta scaduta",
+        "http": 200,
+        "esito": "SEGNALAZIONE_CREATA",
+        "motivo": "SOSTA_SCADUTA"
+      }
+    },
+    {
+      "id": "L143",
+      "scelta": "attiva di un'altra targa e scaduta della stessa targa",
+      "targa": "ZD005AA",
+      "stallo": 12,
+      "atteso": {
+        "categoria": "sosta scaduta",
+        "http": 200,
+        "esito": "SEGNALAZIONE_CREATA",
+        "motivo": "SOSTA_SCADUTA"
+      }
+    },
+    {
+      "id": "L144",
+      "scelta": "attiva di un'altra targa e scaduta della stessa targa",
+      "targa": "ZD006AA",
+      "stallo": 17,
+      "atteso": {
+        "categoria": "sosta scaduta",
+        "http": 200,
+        "esito": "SEGNALAZIONE_CREATA",
+        "motivo": "SOSTA_SCADUTA"
+      }
+    },
+    {
+      "id": "L145",
+      "scelta": "attiva di un'altra targa e scaduta della stessa targa",
+      "targa": "ZD007AA",
+      "stallo": 18,
+      "atteso": {
+        "categoria": "sosta scaduta",
+        "http": 200,
+        "esito": "SEGNALAZIONE_CREATA",
+        "motivo": "SOSTA_SCADUTA"
+      }
+    },
+    {
+      "id": "L146",
+      "scelta": "attiva di un'altra targa e scaduta della stessa targa",
+      "targa": "ZD008AA",
+      "stallo": 19,
+      "atteso": {
+        "categoria": "sosta scaduta",
+        "http": 200,
+        "esito": "SEGNALAZIONE_CREATA",
+        "motivo": "SOSTA_SCADUTA"
+      }
+    },
+    {
+      "id": "L147",
+      "scelta": "attiva di un'altra targa e scaduta della stessa targa",
+      "targa": "ZD009AA",
+      "stallo": 20,
+      "atteso": {
+        "categoria": "sosta scaduta",
+        "http": 200,
+        "esito": "SEGNALAZIONE_CREATA",
+        "motivo": "SOSTA_SCADUTA"
+      }
+    },
+    {
+      "id": "L148",
+      "scelta": "attiva di un'altra targa e scaduta della stessa targa",
+      "targa": "ZD010AA",
+      "stallo": 21,
+      "atteso": {
+        "categoria": "sosta scaduta",
+        "http": 200,
+        "esito": "SEGNALAZIONE_CREATA",
+        "motivo": "SOSTA_SCADUTA"
+      }
+    },
+    {
+      "id": "L149",
+      "scelta": "attiva di un'altra targa e scaduta della stessa targa",
+      "targa": "ZD011AA",
+      "stallo": 23,
+      "atteso": {
+        "categoria": "sosta scaduta",
+        "http": 200,
+        "esito": "SEGNALAZIONE_CREATA",
+        "motivo": "SOSTA_SCADUTA"
+      }
+    },
+    {
+      "id": "L150",
+      "scelta": "attiva di un'altra targa e scaduta della stessa targa",
+      "targa": "ZD012AA",
+      "stallo": 26,
+      "atteso": {
+        "categoria": "sosta scaduta",
+        "http": 200,
+        "esito": "SEGNALAZIONE_CREATA",
+        "motivo": "SOSTA_SCADUTA"
+      }
+    },
+    {
+      "id": "L151",
+      "scelta": "scaduta di un'altra targa",
+      "targa": "ZO001AA",
+      "stallo": 29,
+      "atteso": {
+        "categoria": "sosta assente",
+        "http": 200,
+        "esito": "SEGNALAZIONE_CREATA",
+        "motivo": "SOSTA_ASSENTE"
+      }
+    },
+    {
+      "id": "L152",
+      "scelta": "scaduta di un'altra targa",
+      "targa": "ZO002AA",
+      "stallo": 22,
+      "atteso": {
+        "categoria": "sosta assente",
+        "http": 200,
+        "esito": "SEGNALAZIONE_CREATA",
+        "motivo": "SOSTA_ASSENTE"
+      }
+    },
+    {
+      "id": "L153",
+      "scelta": "scaduta di un'altra targa",
+      "targa": "ZO003AA",
+      "stallo": 27,
+      "atteso": {
+        "categoria": "sosta assente",
+        "http": 200,
+        "esito": "SEGNALAZIONE_CREATA",
+        "motivo": "SOSTA_ASSENTE"
+      }
+    },
+    {
+      "id": "L154",
+      "scelta": "scaduta di un'altra targa",
+      "targa": "ZO004AA",
+      "stallo": 28,
+      "atteso": {
+        "categoria": "sosta assente",
+        "http": 200,
+        "esito": "SEGNALAZIONE_CREATA",
+        "motivo": "SOSTA_ASSENTE"
+      }
+    },
+    {
+      "id": "L155",
+      "scelta": "scaduta di un'altra targa",
+      "targa": "ZO005AA",
+      "stallo": 29,
+      "atteso": {
+        "categoria": "sosta assente",
+        "http": 200,
+        "esito": "SEGNALAZIONE_CREATA",
+        "motivo": "SOSTA_ASSENTE"
+      }
+    },
+    {
+      "id": "L156",
+      "scelta": "scaduta di un'altra targa",
+      "targa": "ZO006AA",
+      "stallo": 22,
+      "atteso": {
+        "categoria": "sosta assente",
+        "http": 200,
+        "esito": "SEGNALAZIONE_CREATA",
+        "motivo": "SOSTA_ASSENTE"
+      }
+    },
+    {
+      "id": "L157",
+      "scelta": "scaduta di un'altra targa",
+      "targa": "ZO007AA",
+      "stallo": 27,
+      "atteso": {
+        "categoria": "sosta assente",
+        "http": 200,
+        "esito": "SEGNALAZIONE_CREATA",
+        "motivo": "SOSTA_ASSENTE"
+      }
+    },
+    {
+      "id": "L158",
+      "scelta": "scaduta di un'altra targa",
+      "targa": "ZO008AA",
+      "stallo": 28,
+      "atteso": {
+        "categoria": "sosta assente",
+        "http": 200,
+        "esito": "SEGNALAZIONE_CREATA",
+        "motivo": "SOSTA_ASSENTE"
+      }
+    },
+    {
+      "id": "L159",
+      "scelta": "scaduta di un'altra targa",
+      "targa": "ZO009AA",
+      "stallo": 29,
+      "atteso": {
+        "categoria": "sosta assente",
+        "http": 200,
+        "esito": "SEGNALAZIONE_CREATA",
+        "motivo": "SOSTA_ASSENTE"
+      }
+    },
+    {
+      "id": "L160",
+      "scelta": "scaduta di un'altra targa",
+      "targa": "ZO010AA",
+      "stallo": 22,
+      "atteso": {
+        "categoria": "sosta assente",
+        "http": 200,
+        "esito": "SEGNALAZIONE_CREATA",
+        "motivo": "SOSTA_ASSENTE"
+      }
+    },
+    {
+      "id": "L161",
+      "scelta": "scaduta di un'altra targa",
+      "targa": "ZO011AA",
+      "stallo": 27,
+      "atteso": {
+        "categoria": "sosta assente",
+        "http": 200,
+        "esito": "SEGNALAZIONE_CREATA",
+        "motivo": "SOSTA_ASSENTE"
+      }
+    },
+    {
+      "id": "L162",
+      "scelta": "scaduta di un'altra targa",
+      "targa": "ZO012AA",
+      "stallo": 28,
+      "atteso": {
+        "categoria": "sosta assente",
+        "http": 200,
+        "esito": "SEGNALAZIONE_CREATA",
+        "motivo": "SOSTA_ASSENTE"
+      }
+    },
+    {
+      "id": "L163",
+      "scelta": "scaduta di un'altra targa",
+      "targa": "ZO013AA",
+      "stallo": 29,
+      "atteso": {
+        "categoria": "sosta assente",
+        "http": 200,
+        "esito": "SEGNALAZIONE_CREATA",
+        "motivo": "SOSTA_ASSENTE"
+      }
+    },
+    {
+      "id": "L164",
+      "scelta": "scaduta di un'altra targa",
+      "targa": "ZO014AA",
+      "stallo": 22,
+      "atteso": {
+        "categoria": "sosta assente",
+        "http": 200,
+        "esito": "SEGNALAZIONE_CREATA",
+        "motivo": "SOSTA_ASSENTE"
+      }
+    },
+    {
+      "id": "L165",
+      "scelta": "scaduta di un'altra targa",
+      "targa": "ZO015AA",
+      "stallo": 27,
+      "atteso": {
+        "categoria": "sosta assente",
+        "http": 200,
+        "esito": "SEGNALAZIONE_CREATA",
+        "motivo": "SOSTA_ASSENTE"
+      }
+    },
+    {
+      "id": "L166",
+      "scelta": "scaduta di un'altra targa",
+      "targa": "ZO016AA",
+      "stallo": 28,
+      "atteso": {
+        "categoria": "sosta assente",
+        "http": 200,
+        "esito": "SEGNALAZIONE_CREATA",
+        "motivo": "SOSTA_ASSENTE"
+      }
+    },
+    {
+      "id": "L167",
+      "scelta": "scaduta di un'altra targa",
+      "targa": "ZO017AA",
+      "stallo": 29,
+      "atteso": {
+        "categoria": "sosta assente",
+        "http": 200,
+        "esito": "SEGNALAZIONE_CREATA",
+        "motivo": "SOSTA_ASSENTE"
+      }
+    },
+    {
+      "id": "L168",
+      "scelta": "scaduta di un'altra targa",
+      "targa": "ZO018AA",
+      "stallo": 22,
+      "atteso": {
+        "categoria": "sosta assente",
+        "http": 200,
+        "esito": "SEGNALAZIONE_CREATA",
+        "motivo": "SOSTA_ASSENTE"
+      }
+    },
+    {
+      "id": "L169",
+      "scelta": "scaduta di un'altra targa",
+      "targa": "ZO019AA",
+      "stallo": 27,
+      "atteso": {
+        "categoria": "sosta assente",
+        "http": 200,
+        "esito": "SEGNALAZIONE_CREATA",
+        "motivo": "SOSTA_ASSENTE"
+      }
+    },
+    {
+      "id": "L170",
+      "scelta": "scaduta di un'altra targa",
+      "targa": "ZO020AA",
+      "stallo": 28,
+      "atteso": {
+        "categoria": "sosta assente",
+        "http": 200,
+        "esito": "SEGNALAZIONE_CREATA",
+        "motivo": "SOSTA_ASSENTE"
+      }
+    },
+    {
+      "id": "L171",
+      "scelta": "attiva e scaduta di altre targhe",
+      "targa": "ZP001AA",
+      "stallo": 3,
+      "atteso": {
+        "categoria": "targa non corrispondente",
+        "http": 200,
+        "esito": "SEGNALAZIONE_CREATA",
+        "motivo": "TARGA_NON_CORRISPONDENTE"
+      }
+    },
+    {
+      "id": "L172",
+      "scelta": "attiva e scaduta di altre targhe",
+      "targa": "ZP002AA",
+      "stallo": 7,
+      "atteso": {
+        "categoria": "targa non corrispondente",
+        "http": 200,
+        "esito": "SEGNALAZIONE_CREATA",
+        "motivo": "TARGA_NON_CORRISPONDENTE"
+      }
+    },
+    {
+      "id": "L173",
+      "scelta": "attiva e scaduta di altre targhe",
+      "targa": "ZP003AA",
+      "stallo": 8,
+      "atteso": {
+        "categoria": "targa non corrispondente",
+        "http": 200,
+        "esito": "SEGNALAZIONE_CREATA",
+        "motivo": "TARGA_NON_CORRISPONDENTE"
+      }
+    },
+    {
+      "id": "L174",
+      "scelta": "attiva e scaduta di altre targhe",
+      "targa": "ZP004AA",
+      "stallo": 11,
+      "atteso": {
+        "categoria": "targa non corrispondente",
+        "http": 200,
+        "esito": "SEGNALAZIONE_CREATA",
+        "motivo": "TARGA_NON_CORRISPONDENTE"
+      }
+    },
+    {
+      "id": "L175",
+      "scelta": "attiva e scaduta di altre targhe",
+      "targa": "ZP005AA",
+      "stallo": 12,
+      "atteso": {
+        "categoria": "targa non corrispondente",
+        "http": 200,
+        "esito": "SEGNALAZIONE_CREATA",
+        "motivo": "TARGA_NON_CORRISPONDENTE"
+      }
+    },
+    {
+      "id": "L176",
+      "scelta": "attiva e scaduta di altre targhe",
+      "targa": "ZP006AA",
+      "stallo": 17,
+      "atteso": {
+        "categoria": "targa non corrispondente",
+        "http": 200,
+        "esito": "SEGNALAZIONE_CREATA",
+        "motivo": "TARGA_NON_CORRISPONDENTE"
+      }
+    },
+    {
+      "id": "L177",
+      "scelta": "attiva e scaduta di altre targhe",
+      "targa": "ZP007AA",
+      "stallo": 18,
+      "atteso": {
+        "categoria": "targa non corrispondente",
+        "http": 200,
+        "esito": "SEGNALAZIONE_CREATA",
+        "motivo": "TARGA_NON_CORRISPONDENTE"
+      }
+    },
+    {
+      "id": "L178",
+      "scelta": "attiva e scaduta di altre targhe",
+      "targa": "ZP008AA",
+      "stallo": 19,
+      "atteso": {
+        "categoria": "targa non corrispondente",
+        "http": 200,
+        "esito": "SEGNALAZIONE_CREATA",
+        "motivo": "TARGA_NON_CORRISPONDENTE"
+      }
+    },
+    {
+      "id": "L179",
+      "scelta": "attiva e scaduta di altre targhe",
+      "targa": "ZP009AA",
+      "stallo": 20,
+      "atteso": {
+        "categoria": "targa non corrispondente",
+        "http": 200,
+        "esito": "SEGNALAZIONE_CREATA",
+        "motivo": "TARGA_NON_CORRISPONDENTE"
+      }
+    },
+    {
+      "id": "L180",
+      "scelta": "attiva e scaduta di altre targhe",
+      "targa": "ZP010AA",
+      "stallo": 21,
+      "atteso": {
+        "categoria": "targa non corrispondente",
+        "http": 200,
+        "esito": "SEGNALAZIONE_CREATA",
+        "motivo": "TARGA_NON_CORRISPONDENTE"
+      }
+    },
+    {
+      "id": "L181",
+      "scelta": "attiva e scaduta di altre targhe",
+      "targa": "ZP011AA",
+      "stallo": 23,
+      "atteso": {
+        "categoria": "targa non corrispondente",
+        "http": 200,
+        "esito": "SEGNALAZIONE_CREATA",
+        "motivo": "TARGA_NON_CORRISPONDENTE"
+      }
+    },
+    {
+      "id": "L182",
+      "scelta": "attiva e scaduta di altre targhe",
+      "targa": "ZP012AA",
+      "stallo": 26,
+      "atteso": {
+        "categoria": "targa non corrispondente",
+        "http": 200,
+        "esito": "SEGNALAZIONE_CREATA",
+        "motivo": "TARGA_NON_CORRISPONDENTE"
+      }
+    },
+    {
+      "id": "L183",
+      "scelta": "targa con sosta attiva su un altro stallo",
+      "targa": "ZA001AA",
+      "stallo": 5,
+      "atteso": {
+        "categoria": "targa non corrispondente",
+        "http": 200,
+        "esito": "SEGNALAZIONE_CREATA",
+        "motivo": "TARGA_NON_CORRISPONDENTE"
+      }
+    },
+    {
+      "id": "L184",
+      "scelta": "targa con sosta attiva su un altro stallo",
+      "targa": "ZA002AA",
+      "stallo": 6,
+      "atteso": {
+        "categoria": "targa non corrispondente",
+        "http": 200,
+        "esito": "SEGNALAZIONE_CREATA",
+        "motivo": "TARGA_NON_CORRISPONDENTE"
+      }
+    },
+    {
+      "id": "L185",
+      "scelta": "targa con sosta attiva su un altro stallo",
+      "targa": "ZA003AA",
+      "stallo": 9,
+      "atteso": {
+        "categoria": "targa non corrispondente",
+        "http": 200,
+        "esito": "SEGNALAZIONE_CREATA",
+        "motivo": "TARGA_NON_CORRISPONDENTE"
+      }
+    },
+    {
+      "id": "L186",
+      "scelta": "targa con sosta attiva su un altro stallo",
+      "targa": "ZA004AA",
+      "stallo": 10,
+      "atteso": {
+        "categoria": "targa non corrispondente",
+        "http": 200,
+        "esito": "SEGNALAZIONE_CREATA",
+        "motivo": "TARGA_NON_CORRISPONDENTE"
+      }
+    },
+    {
+      "id": "L187",
+      "scelta": "targa con sosta attiva su un altro stallo",
+      "targa": "ZA005AA",
+      "stallo": 16,
+      "atteso": {
+        "categoria": "targa non corrispondente",
+        "http": 200,
+        "esito": "SEGNALAZIONE_CREATA",
+        "motivo": "TARGA_NON_CORRISPONDENTE"
+      }
+    },
+    {
+      "id": "L188",
+      "scelta": "targa con sosta attiva su un altro stallo",
+      "targa": "ZA006AA",
+      "stallo": 5,
+      "atteso": {
+        "categoria": "targa non corrispondente",
+        "http": 200,
+        "esito": "SEGNALAZIONE_CREATA",
+        "motivo": "TARGA_NON_CORRISPONDENTE"
+      }
+    },
+    {
+      "id": "L189",
+      "scelta": "targa con sosta attiva su un altro stallo",
+      "targa": "ZA007AA",
+      "stallo": 27,
+      "atteso": {
+        "categoria": "targa non corrispondente",
+        "http": 200,
+        "esito": "SEGNALAZIONE_CREATA",
+        "motivo": "TARGA_NON_CORRISPONDENTE"
+      }
+    },
+    {
+      "id": "L190",
+      "scelta": "targa con sosta attiva su un altro stallo",
+      "targa": "ZA008AA",
+      "stallo": 28,
+      "atteso": {
+        "categoria": "targa non corrispondente",
+        "http": 200,
+        "esito": "SEGNALAZIONE_CREATA",
+        "motivo": "TARGA_NON_CORRISPONDENTE"
+      }
+    },
+    {
+      "id": "L191",
+      "scelta": "targa con sosta attiva su un altro stallo",
+      "targa": "ZA009AA",
+      "stallo": 29,
+      "atteso": {
+        "categoria": "targa non corrispondente",
+        "http": 200,
+        "esito": "SEGNALAZIONE_CREATA",
+        "motivo": "TARGA_NON_CORRISPONDENTE"
+      }
+    },
+    {
+      "id": "L192",
+      "scelta": "targa con sosta attiva su un altro stallo",
+      "targa": "ZA010AA",
+      "stallo": 22,
+      "atteso": {
+        "categoria": "targa non corrispondente",
+        "http": 200,
+        "esito": "SEGNALAZIONE_CREATA",
+        "motivo": "TARGA_NON_CORRISPONDENTE"
+      }
+    },
+    {
+      "id": "L193",
+      "scelta": "targa con sosta attiva su un altro stallo",
+      "targa": "ZA011AA",
+      "stallo": 27,
+      "atteso": {
+        "categoria": "targa non corrispondente",
+        "http": 200,
+        "esito": "SEGNALAZIONE_CREATA",
+        "motivo": "TARGA_NON_CORRISPONDENTE"
+      }
+    },
+    {
+      "id": "L194",
+      "scelta": "targa con sosta attiva su un altro stallo",
+      "targa": "ZA012AA",
+      "stallo": 28,
+      "atteso": {
+        "categoria": "targa non corrispondente",
+        "http": 200,
+        "esito": "SEGNALAZIONE_CREATA",
+        "motivo": "TARGA_NON_CORRISPONDENTE"
+      }
+    },
+    {
+      "id": "L195",
+      "scelta": "segnalazione già presente (attiva altrove)",
+      "targa": "ZA001AA",
+      "stallo": 5,
+      "atteso": {
+        "categoria": "lettura scartata",
+        "http": 200,
+        "esito": "LETTURA_SCARTATA",
+        "motivo": "TARGA_NON_CORRISPONDENTE"
+      }
+    },
+    {
+      "id": "L196",
+      "scelta": "segnalazione già presente (attiva altrove)",
+      "targa": "ZA002AA",
+      "stallo": 6,
+      "atteso": {
+        "categoria": "lettura scartata",
+        "http": 200,
+        "esito": "LETTURA_SCARTATA",
+        "motivo": "TARGA_NON_CORRISPONDENTE"
+      }
+    },
+    {
+      "id": "L197",
+      "scelta": "segnalazione già presente (attiva altrove)",
+      "targa": "ZA003AA",
+      "stallo": 9,
+      "atteso": {
+        "categoria": "lettura scartata",
+        "http": 200,
+        "esito": "LETTURA_SCARTATA",
+        "motivo": "TARGA_NON_CORRISPONDENTE"
+      }
+    },
+    {
+      "id": "L198",
+      "scelta": "segnalazione già presente (attiva altrove)",
+      "targa": "ZA004AA",
+      "stallo": 10,
+      "atteso": {
+        "categoria": "lettura scartata",
+        "http": 200,
+        "esito": "LETTURA_SCARTATA",
+        "motivo": "TARGA_NON_CORRISPONDENTE"
+      }
+    },
+    {
+      "id": "L199",
+      "scelta": "segnalazione già presente (attiva altrove)",
+      "targa": "ZA005AA",
+      "stallo": 16,
+      "atteso": {
+        "categoria": "lettura scartata",
+        "http": 200,
+        "esito": "LETTURA_SCARTATA",
+        "motivo": "TARGA_NON_CORRISPONDENTE"
+      }
+    },
+    {
+      "id": "L200",
+      "scelta": "segnalazione già presente (attiva altrove)",
+      "targa": "ZA006AA",
+      "stallo": 5,
+      "atteso": {
+        "categoria": "lettura scartata",
+        "http": 200,
+        "esito": "LETTURA_SCARTATA",
+        "motivo": "TARGA_NON_CORRISPONDENTE"
+      }
+    },
+    {
+      "id": "L201",
+      "scelta": "segnalazione già presente (attiva altrove)",
+      "targa": "ZA007AA",
+      "stallo": 27,
+      "atteso": {
+        "categoria": "lettura scartata",
+        "http": 200,
+        "esito": "LETTURA_SCARTATA",
+        "motivo": "TARGA_NON_CORRISPONDENTE"
+      }
+    },
+    {
+      "id": "L202",
+      "scelta": "segnalazione già presente (attiva altrove)",
+      "targa": "ZA008AA",
+      "stallo": 28,
+      "atteso": {
+        "categoria": "lettura scartata",
+        "http": 200,
+        "esito": "LETTURA_SCARTATA",
+        "motivo": "TARGA_NON_CORRISPONDENTE"
+      }
+    },
+    {
+      "id": "L203",
+      "scelta": "segnalazione già presente (attiva altrove)",
+      "targa": "ZA009AA",
+      "stallo": 29,
+      "atteso": {
+        "categoria": "lettura scartata",
+        "http": 200,
+        "esito": "LETTURA_SCARTATA",
+        "motivo": "TARGA_NON_CORRISPONDENTE"
+      }
+    },
+    {
+      "id": "L204",
+      "scelta": "segnalazione già presente (attiva altrove)",
+      "targa": "ZA010AA",
+      "stallo": 22,
+      "atteso": {
+        "categoria": "lettura scartata",
+        "http": 200,
+        "esito": "LETTURA_SCARTATA",
+        "motivo": "TARGA_NON_CORRISPONDENTE"
+      }
+    },
+    {
+      "id": "L205",
+      "scelta": "segnalazione già presente (attiva altrove)",
+      "targa": "ZA011AA",
+      "stallo": 27,
+      "atteso": {
+        "categoria": "lettura scartata",
+        "http": 200,
+        "esito": "LETTURA_SCARTATA",
+        "motivo": "TARGA_NON_CORRISPONDENTE"
+      }
+    },
+    {
+      "id": "L206",
+      "scelta": "segnalazione già presente (attiva altrove)",
+      "targa": "ZA012AA",
+      "stallo": 28,
+      "atteso": {
+        "categoria": "lettura scartata",
+        "http": 200,
+        "esito": "LETTURA_SCARTATA",
+        "motivo": "TARGA_NON_CORRISPONDENTE"
+      }
+    },
+    {
+      "id": "L207",
+      "scelta": "segnalazione già presente, sosta attiva sullo stallo",
+      "targa": "ZA001AA",
+      "stallo": 3,
+      "atteso": {
+        "categoria": "nessuna segnalazione",
+        "http": 200,
+        "esito": "NESSUNA_SEGNALAZIONE"
+      }
+    },
+    {
+      "id": "L208",
+      "scelta": "segnalazione già presente, sosta attiva sullo stallo",
+      "targa": "ZA002AA",
+      "stallo": 7,
+      "atteso": {
+        "categoria": "nessuna segnalazione",
+        "http": 200,
+        "esito": "NESSUNA_SEGNALAZIONE"
+      }
+    },
+    {
+      "id": "L209",
+      "scelta": "segnalazione già presente, sosta attiva sullo stallo",
+      "targa": "ZA003AA",
+      "stallo": 8,
+      "atteso": {
+        "categoria": "nessuna segnalazione",
+        "http": 200,
+        "esito": "NESSUNA_SEGNALAZIONE"
+      }
+    },
+    {
+      "id": "L210",
+      "scelta": "segnalazione già presente, sosta attiva sullo stallo",
+      "targa": "ZA004AA",
+      "stallo": 11,
+      "atteso": {
+        "categoria": "nessuna segnalazione",
+        "http": 200,
+        "esito": "NESSUNA_SEGNALAZIONE"
+      }
+    },
+    {
+      "id": "L211",
+      "scelta": "segnalazione già presente, sosta attiva sullo stallo",
+      "targa": "ZA005AA",
+      "stallo": 12,
+      "atteso": {
+        "categoria": "nessuna segnalazione",
+        "http": 200,
+        "esito": "NESSUNA_SEGNALAZIONE"
+      }
+    },
+    {
+      "id": "L212",
+      "scelta": "segnalazione già presente, sosta attiva sullo stallo",
+      "targa": "ZA006AA",
+      "stallo": 17,
+      "atteso": {
+        "categoria": "nessuna segnalazione",
+        "http": 200,
+        "esito": "NESSUNA_SEGNALAZIONE"
+      }
+    },
+    {
+      "id": "L213",
+      "scelta": "segnalazione già presente, sosta attiva sullo stallo",
+      "targa": "ZA007AA",
+      "stallo": 18,
+      "atteso": {
+        "categoria": "nessuna segnalazione",
+        "http": 200,
+        "esito": "NESSUNA_SEGNALAZIONE"
+      }
+    },
+    {
+      "id": "L214",
+      "scelta": "segnalazione già presente, sosta attiva sullo stallo",
+      "targa": "ZA008AA",
+      "stallo": 19,
+      "atteso": {
+        "categoria": "nessuna segnalazione",
+        "http": 200,
+        "esito": "NESSUNA_SEGNALAZIONE"
+      }
+    },
+    {
+      "id": "L215",
+      "scelta": "segnalazione già presente, sosta attiva sullo stallo",
+      "targa": "ZA009AA",
+      "stallo": 20,
+      "atteso": {
+        "categoria": "nessuna segnalazione",
+        "http": 200,
+        "esito": "NESSUNA_SEGNALAZIONE"
+      }
+    },
+    {
+      "id": "L216",
+      "scelta": "segnalazione già presente, sosta attiva sullo stallo",
+      "targa": "ZA010AA",
+      "stallo": 21,
+      "atteso": {
+        "categoria": "nessuna segnalazione",
+        "http": 200,
+        "esito": "NESSUNA_SEGNALAZIONE"
+      }
+    },
+    {
+      "id": "L217",
+      "scelta": "segnalazione già presente, sosta attiva sullo stallo",
+      "targa": "ZA011AA",
+      "stallo": 23,
+      "atteso": {
+        "categoria": "nessuna segnalazione",
+        "http": 200,
+        "esito": "NESSUNA_SEGNALAZIONE"
+      }
+    },
+    {
+      "id": "L218",
+      "scelta": "segnalazione già presente, sosta attiva sullo stallo",
+      "targa": "ZA012AA",
+      "stallo": 26,
+      "atteso": {
+        "categoria": "nessuna segnalazione",
+        "http": 200,
+        "esito": "NESSUNA_SEGNALAZIONE"
+      }
+    },
+    {
+      "id": "L219",
+      "scelta": "nessuna sosta",
+      "targa": "ZL001AA",
+      "stallo": 5,
+      "atteso": {
+        "categoria": "sosta assente",
+        "http": 200,
+        "esito": "SEGNALAZIONE_CREATA",
+        "motivo": "SOSTA_ASSENTE"
+      }
+    },
+    {
+      "id": "L220",
+      "scelta": "nessuna sosta",
+      "targa": "ZL002AA",
+      "stallo": 6,
+      "atteso": {
+        "categoria": "sosta assente",
+        "http": 200,
+        "esito": "SEGNALAZIONE_CREATA",
+        "motivo": "SOSTA_ASSENTE"
+      }
+    },
+    {
+      "id": "L221",
+      "scelta": "nessuna sosta",
+      "targa": "ZL003AA",
+      "stallo": 9,
+      "atteso": {
+        "categoria": "sosta assente",
+        "http": 200,
+        "esito": "SEGNALAZIONE_CREATA",
+        "motivo": "SOSTA_ASSENTE"
+      }
+    },
+    {
+      "id": "L222",
+      "scelta": "nessuna sosta",
+      "targa": "ZL004AA",
+      "stallo": 10,
+      "atteso": {
+        "categoria": "sosta assente",
+        "http": 200,
+        "esito": "SEGNALAZIONE_CREATA",
+        "motivo": "SOSTA_ASSENTE"
+      }
+    },
+    {
+      "id": "L223",
+      "scelta": "nessuna sosta",
+      "targa": "ZL005AA",
+      "stallo": 16,
+      "atteso": {
+        "categoria": "sosta assente",
+        "http": 200,
+        "esito": "SEGNALAZIONE_CREATA",
+        "motivo": "SOSTA_ASSENTE"
+      }
+    },
+    {
+      "id": "L224",
+      "scelta": "nessuna sosta",
+      "targa": "ZL006AA",
+      "stallo": 5,
+      "atteso": {
+        "categoria": "sosta assente",
+        "http": 200,
+        "esito": "SEGNALAZIONE_CREATA",
+        "motivo": "SOSTA_ASSENTE"
+      }
+    },
+    {
+      "id": "L225",
+      "scelta": "nessuna sosta",
+      "targa": "ZL007AA",
+      "stallo": 6,
+      "atteso": {
+        "categoria": "sosta assente",
+        "http": 200,
+        "esito": "SEGNALAZIONE_CREATA",
+        "motivo": "SOSTA_ASSENTE"
+      }
+    },
+    {
+      "id": "L226",
+      "scelta": "nessuna sosta",
+      "targa": "ZL008AA",
+      "stallo": 9,
+      "atteso": {
+        "categoria": "sosta assente",
+        "http": 200,
+        "esito": "SEGNALAZIONE_CREATA",
+        "motivo": "SOSTA_ASSENTE"
+      }
+    },
+    {
+      "id": "L227",
+      "scelta": "nessuna sosta",
+      "targa": "ZL009AA",
+      "stallo": 10,
+      "atteso": {
+        "categoria": "sosta assente",
+        "http": 200,
+        "esito": "SEGNALAZIONE_CREATA",
+        "motivo": "SOSTA_ASSENTE"
+      }
+    },
+    {
+      "id": "L228",
+      "scelta": "nessuna sosta",
+      "targa": "ZL010AA",
+      "stallo": 16,
+      "atteso": {
+        "categoria": "sosta assente",
+        "http": 200,
+        "esito": "SEGNALAZIONE_CREATA",
+        "motivo": "SOSTA_ASSENTE"
+      }
+    },
+    {
+      "id": "L229",
+      "scelta": "nessuna sosta",
+      "targa": "ZL011AA",
+      "stallo": 5,
+      "atteso": {
+        "categoria": "sosta assente",
+        "http": 200,
+        "esito": "SEGNALAZIONE_CREATA",
+        "motivo": "SOSTA_ASSENTE"
+      }
+    },
+    {
+      "id": "L230",
+      "scelta": "nessuna sosta",
+      "targa": "ZL012AA",
+      "stallo": 6,
+      "atteso": {
+        "categoria": "sosta assente",
+        "http": 200,
+        "esito": "SEGNALAZIONE_CREATA",
+        "motivo": "SOSTA_ASSENTE"
+      }
+    },
+    {
+      "id": "L231",
+      "scelta": "nessuna sosta",
+      "targa": "ZL013AA",
+      "stallo": 9,
+      "atteso": {
+        "categoria": "sosta assente",
+        "http": 200,
+        "esito": "SEGNALAZIONE_CREATA",
+        "motivo": "SOSTA_ASSENTE"
+      }
+    },
+    {
+      "id": "L232",
+      "scelta": "nessuna sosta",
+      "targa": "ZL014AA",
+      "stallo": 10,
+      "atteso": {
+        "categoria": "sosta assente",
+        "http": 200,
+        "esito": "SEGNALAZIONE_CREATA",
+        "motivo": "SOSTA_ASSENTE"
+      }
+    },
+    {
+      "id": "L233",
+      "scelta": "nessuna sosta",
+      "targa": "ZL015AA",
+      "stallo": 16,
+      "atteso": {
+        "categoria": "sosta assente",
+        "http": 200,
+        "esito": "SEGNALAZIONE_CREATA",
+        "motivo": "SOSTA_ASSENTE"
+      }
+    },
+    {
+      "id": "L234",
+      "scelta": "nessuna sosta",
+      "targa": "ZL016AA",
+      "stallo": 5,
+      "atteso": {
+        "categoria": "sosta assente",
+        "http": 200,
+        "esito": "SEGNALAZIONE_CREATA",
+        "motivo": "SOSTA_ASSENTE"
+      }
+    },
+    {
+      "id": "L235",
+      "scelta": "nessuna sosta",
+      "targa": "ZL017AA",
+      "stallo": 6,
+      "atteso": {
+        "categoria": "sosta assente",
+        "http": 200,
+        "esito": "SEGNALAZIONE_CREATA",
+        "motivo": "SOSTA_ASSENTE"
+      }
+    },
+    {
+      "id": "L236",
+      "scelta": "nessuna sosta",
+      "targa": "ZL018AA",
+      "stallo": 9,
+      "atteso": {
+        "categoria": "sosta assente",
+        "http": 200,
+        "esito": "SEGNALAZIONE_CREATA",
+        "motivo": "SOSTA_ASSENTE"
+      }
+    },
+    {
+      "id": "L237",
+      "scelta": "nessuna sosta",
+      "targa": "ZL019AA",
+      "stallo": 10,
+      "atteso": {
+        "categoria": "sosta assente",
+        "http": 200,
+        "esito": "SEGNALAZIONE_CREATA",
+        "motivo": "SOSTA_ASSENTE"
+      }
+    },
+    {
+      "id": "L238",
+      "scelta": "nessuna sosta",
+      "targa": "ZL020AA",
+      "stallo": 16,
+      "atteso": {
+        "categoria": "sosta assente",
+        "http": 200,
+        "esito": "SEGNALAZIONE_CREATA",
+        "motivo": "SOSTA_ASSENTE"
+      }
+    },
+    {
+      "id": "L239",
+      "scelta": "nessuna sosta",
+      "targa": "ZL021AA",
+      "stallo": 5,
+      "atteso": {
+        "categoria": "sosta assente",
+        "http": 200,
+        "esito": "SEGNALAZIONE_CREATA",
+        "motivo": "SOSTA_ASSENTE"
+      }
+    },
+    {
+      "id": "L240",
+      "scelta": "nessuna sosta",
+      "targa": "ZL022AA",
+      "stallo": 6,
+      "atteso": {
+        "categoria": "sosta assente",
+        "http": 200,
+        "esito": "SEGNALAZIONE_CREATA",
+        "motivo": "SOSTA_ASSENTE"
+      }
+    },
+    {
+      "id": "L241",
+      "scelta": "nessuna sosta",
+      "targa": "ZL023AA",
+      "stallo": 9,
+      "atteso": {
+        "categoria": "sosta assente",
+        "http": 200,
+        "esito": "SEGNALAZIONE_CREATA",
+        "motivo": "SOSTA_ASSENTE"
+      }
+    },
+    {
+      "id": "L242",
+      "scelta": "nessuna sosta",
+      "targa": "ZL024AA",
+      "stallo": 10,
+      "atteso": {
+        "categoria": "sosta assente",
+        "http": 200,
+        "esito": "SEGNALAZIONE_CREATA",
+        "motivo": "SOSTA_ASSENTE"
+      }
+    },
+    {
+      "id": "L243",
+      "scelta": "nessuna sosta",
+      "targa": "ZL025AA",
+      "stallo": 16,
+      "atteso": {
+        "categoria": "sosta assente",
+        "http": 200,
+        "esito": "SEGNALAZIONE_CREATA",
+        "motivo": "SOSTA_ASSENTE"
+      }
+    },
+    {
+      "id": "L244",
+      "scelta": "nessuna sosta",
+      "targa": "ZL026AA",
+      "stallo": 5,
+      "atteso": {
+        "categoria": "sosta assente",
+        "http": 200,
+        "esito": "SEGNALAZIONE_CREATA",
+        "motivo": "SOSTA_ASSENTE"
+      }
+    },
+    {
+      "id": "L245",
+      "scelta": "nessuna sosta",
+      "targa": "ZL027AA",
+      "stallo": 6,
+      "atteso": {
+        "categoria": "sosta assente",
+        "http": 200,
+        "esito": "SEGNALAZIONE_CREATA",
+        "motivo": "SOSTA_ASSENTE"
+      }
+    },
+    {
+      "id": "L246",
+      "scelta": "nessuna sosta",
+      "targa": "ZL028AA",
+      "stallo": 9,
+      "atteso": {
+        "categoria": "sosta assente",
+        "http": 200,
+        "esito": "SEGNALAZIONE_CREATA",
+        "motivo": "SOSTA_ASSENTE"
+      }
+    },
+    {
+      "id": "L247",
+      "scelta": "nessuna sosta",
+      "targa": "ZL029AA",
+      "stallo": 10,
+      "atteso": {
+        "categoria": "sosta assente",
+        "http": 200,
+        "esito": "SEGNALAZIONE_CREATA",
+        "motivo": "SOSTA_ASSENTE"
+      }
+    },
+    {
+      "id": "L248",
+      "scelta": "nessuna sosta",
+      "targa": "ZL030AA",
+      "stallo": 16,
+      "atteso": {
+        "categoria": "sosta assente",
+        "http": 200,
+        "esito": "SEGNALAZIONE_CREATA",
+        "motivo": "SOSTA_ASSENTE"
+      }
+    },
+    {
+      "id": "L249",
+      "scelta": "segnalazione già presente (assente)",
+      "targa": "ZL001AA",
+      "stallo": 5,
+      "atteso": {
+        "categoria": "lettura scartata",
+        "http": 200,
+        "esito": "LETTURA_SCARTATA",
+        "motivo": "SOSTA_ASSENTE"
+      }
+    },
+    {
+      "id": "L250",
+      "scelta": "segnalazione già presente (assente)",
+      "targa": "ZL002AA",
+      "stallo": 6,
+      "atteso": {
+        "categoria": "lettura scartata",
+        "http": 200,
+        "esito": "LETTURA_SCARTATA",
+        "motivo": "SOSTA_ASSENTE"
+      }
+    },
+    {
+      "id": "L251",
+      "scelta": "segnalazione già presente (assente)",
+      "targa": "ZL003AA",
+      "stallo": 9,
+      "atteso": {
+        "categoria": "lettura scartata",
+        "http": 200,
+        "esito": "LETTURA_SCARTATA",
+        "motivo": "SOSTA_ASSENTE"
+      }
+    },
+    {
+      "id": "L252",
+      "scelta": "segnalazione già presente (assente)",
+      "targa": "ZL004AA",
+      "stallo": 10,
+      "atteso": {
+        "categoria": "lettura scartata",
+        "http": 200,
+        "esito": "LETTURA_SCARTATA",
+        "motivo": "SOSTA_ASSENTE"
+      }
+    },
+    {
+      "id": "L253",
+      "scelta": "segnalazione già presente (assente)",
+      "targa": "ZL005AA",
+      "stallo": 16,
+      "atteso": {
+        "categoria": "lettura scartata",
+        "http": 200,
+        "esito": "LETTURA_SCARTATA",
+        "motivo": "SOSTA_ASSENTE"
+      }
+    },
+    {
+      "id": "L254",
+      "scelta": "segnalazione già presente (assente)",
+      "targa": "ZL006AA",
+      "stallo": 5,
+      "atteso": {
+        "categoria": "lettura scartata",
+        "http": 200,
+        "esito": "LETTURA_SCARTATA",
+        "motivo": "SOSTA_ASSENTE"
+      }
+    },
+    {
+      "id": "L255",
+      "scelta": "segnalazione già presente (assente)",
+      "targa": "ZL007AA",
+      "stallo": 6,
+      "atteso": {
+        "categoria": "lettura scartata",
+        "http": 200,
+        "esito": "LETTURA_SCARTATA",
+        "motivo": "SOSTA_ASSENTE"
+      }
+    },
+    {
+      "id": "L256",
+      "scelta": "segnalazione già presente (assente)",
+      "targa": "ZL008AA",
+      "stallo": 9,
+      "atteso": {
+        "categoria": "lettura scartata",
+        "http": 200,
+        "esito": "LETTURA_SCARTATA",
+        "motivo": "SOSTA_ASSENTE"
+      }
+    },
+    {
+      "id": "L257",
+      "scelta": "segnalazione già presente (assente)",
+      "targa": "ZL009AA",
+      "stallo": 10,
+      "atteso": {
+        "categoria": "lettura scartata",
+        "http": 200,
+        "esito": "LETTURA_SCARTATA",
+        "motivo": "SOSTA_ASSENTE"
+      }
+    },
+    {
+      "id": "L258",
+      "scelta": "segnalazione già presente (assente)",
+      "targa": "ZL010AA",
+      "stallo": 16,
+      "atteso": {
+        "categoria": "lettura scartata",
+        "http": 200,
+        "esito": "LETTURA_SCARTATA",
+        "motivo": "SOSTA_ASSENTE"
+      }
+    },
+    {
+      "id": "L259",
+      "scelta": "segnalazione del dataset di esempio",
+      "targa": "HB204KM",
+      "stallo": 5,
+      "atteso": {
+        "categoria": "lettura scartata",
+        "http": 200,
+        "esito": "LETTURA_SCARTATA",
+        "motivo": "SOSTA_ASSENTE"
+      }
+    },
+    {
+      "id": "L260",
+      "scelta": "segnalazione del dataset di esempio",
+      "targa": "KC562DF",
+      "stallo": 6,
+      "atteso": {
+        "categoria": "lettura scartata",
+        "http": 200,
+        "esito": "LETTURA_SCARTATA",
+        "motivo": "SOSTA_ASSENTE"
+      }
+    },
+    {
+      "id": "L261",
+      "scelta": "targa con caratteri non ammessi",
+      "targa": "ZR-1",
+      "stallo": 9,
+      "atteso": {
+        "categoria": "lettura rifiutata",
+        "http": 422,
+        "codice": "TARGA_NON_VALIDA"
+      }
+    },
+    {
+      "id": "L262",
+      "scelta": "targa vuota dopo la normalizzazione",
+      "targa": "   ",
+      "stallo": 9,
+      "atteso": {
+        "categoria": "lettura rifiutata",
+        "http": 422,
+        "codice": "LETTURA_INCOMPLETA"
+      }
+    },
+    {
+      "id": "L263",
+      "scelta": "targa non stringa",
+      "targa": 1234,
+      "stallo": 9,
+      "atteso": {
+        "categoria": "lettura rifiutata",
+        "http": 422,
+        "codice": "LETTURA_INCOMPLETA"
+      }
+    },
+    {
+      "id": "L264",
+      "scelta": "stallo mancante",
+      "targa": "ZR001AA",
+      "atteso": {
+        "categoria": "lettura rifiutata",
+        "http": 422,
+        "codice": "LETTURA_INCOMPLETA"
+      }
+    },
+    {
+      "id": "L265",
+      "scelta": "stallo inesistente",
+      "targa": "ZR001AA",
+      "stallo": 999999,
+      "atteso": {
+        "categoria": "lettura rifiutata",
+        "http": 422,
+        "codice": "STALLO_INESISTENTE"
+      }
+    },
+    {
+      "id": "L266",
+      "scelta": "data e ora mancante",
+      "targa": "ZR001AA",
+      "stallo": 9,
+      "senzaDataOra": true,
+      "atteso": {
+        "categoria": "lettura rifiutata",
+        "http": 422,
+        "codice": "LETTURA_INCOMPLETA"
+      }
+    },
+    {
+      "id": "L267",
+      "scelta": "data e ora senza fuso",
+      "targa": "ZR001AA",
+      "stallo": 9,
+      "dataOraGrezza": "2026-11-20T09:00:00",
+      "atteso": {
+        "categoria": "lettura rifiutata",
+        "http": 422,
+        "codice": "LETTURA_INCOMPLETA"
+      }
+    },
+    {
+      "id": "L268",
+      "scelta": "data di calendario inesistente",
+      "targa": "ZR001AA",
+      "stallo": 9,
+      "dataOraGrezza": "2026-02-31T10:00:00+01:00",
+      "atteso": {
+        "categoria": "lettura rifiutata",
+        "http": 422,
+        "codice": "LETTURA_INCOMPLETA"
+      }
+    },
+    {
+      "id": "L269",
+      "scelta": "data e ora successiva all'istante corrente",
+      "targa": "ZR001AA",
+      "stallo": 9,
+      "scostamentoSecondi": 3600,
+      "atteso": {
+        "categoria": "lettura rifiutata",
+        "http": 422,
+        "codice": "LETTURA_NON_VALIDA"
+      }
+    },
+    {
+      "id": "L270",
+      "scelta": "targa con caratteri non ammessi",
+      "targa": "ZR-2",
+      "stallo": 9,
+      "atteso": {
+        "categoria": "lettura rifiutata",
+        "http": 422,
+        "codice": "TARGA_NON_VALIDA"
+      }
+    },
+    {
+      "id": "L271",
+      "scelta": "targa vuota dopo la normalizzazione",
+      "targa": "   ",
+      "stallo": 9,
+      "atteso": {
+        "categoria": "lettura rifiutata",
+        "http": 422,
+        "codice": "LETTURA_INCOMPLETA"
+      }
+    },
+    {
+      "id": "L272",
+      "scelta": "targa non stringa",
+      "targa": 1234,
+      "stallo": 9,
+      "atteso": {
+        "categoria": "lettura rifiutata",
+        "http": 422,
+        "codice": "LETTURA_INCOMPLETA"
+      }
+    },
+    {
+      "id": "L273",
+      "scelta": "stallo mancante",
+      "targa": "ZR002AA",
+      "atteso": {
+        "categoria": "lettura rifiutata",
+        "http": 422,
+        "codice": "LETTURA_INCOMPLETA"
+      }
+    },
+    {
+      "id": "L274",
+      "scelta": "stallo inesistente",
+      "targa": "ZR002AA",
+      "stallo": 999999,
+      "atteso": {
+        "categoria": "lettura rifiutata",
+        "http": 422,
+        "codice": "STALLO_INESISTENTE"
+      }
+    },
+    {
+      "id": "L275",
+      "scelta": "data e ora mancante",
+      "targa": "ZR002AA",
+      "stallo": 9,
+      "senzaDataOra": true,
+      "atteso": {
+        "categoria": "lettura rifiutata",
+        "http": 422,
+        "codice": "LETTURA_INCOMPLETA"
+      }
+    },
+    {
+      "id": "L276",
+      "scelta": "data e ora senza fuso",
+      "targa": "ZR002AA",
+      "stallo": 9,
+      "dataOraGrezza": "2026-11-20T09:00:00",
+      "atteso": {
+        "categoria": "lettura rifiutata",
+        "http": 422,
+        "codice": "LETTURA_INCOMPLETA"
+      }
+    },
+    {
+      "id": "L277",
+      "scelta": "data di calendario inesistente",
+      "targa": "ZR002AA",
+      "stallo": 9,
+      "dataOraGrezza": "2026-02-31T10:00:00+01:00",
+      "atteso": {
+        "categoria": "lettura rifiutata",
+        "http": 422,
+        "codice": "LETTURA_INCOMPLETA"
+      }
+    },
+    {
+      "id": "L278",
+      "scelta": "data e ora successiva all'istante corrente",
+      "targa": "ZR002AA",
+      "stallo": 9,
+      "scostamentoSecondi": 3600,
+      "atteso": {
+        "categoria": "lettura rifiutata",
+        "http": 422,
+        "codice": "LETTURA_NON_VALIDA"
+      }
+    },
+    {
+      "id": "L279",
+      "scelta": "targa con caratteri non ammessi",
+      "targa": "ZR-3",
+      "stallo": 9,
+      "atteso": {
+        "categoria": "lettura rifiutata",
+        "http": 422,
+        "codice": "TARGA_NON_VALIDA"
+      }
+    },
+    {
+      "id": "L280",
+      "scelta": "targa vuota dopo la normalizzazione",
+      "targa": "   ",
+      "stallo": 9,
+      "atteso": {
+        "categoria": "lettura rifiutata",
+        "http": 422,
+        "codice": "LETTURA_INCOMPLETA"
+      }
+    },
+    {
+      "id": "L281",
+      "scelta": "targa non stringa",
+      "targa": 1234,
+      "stallo": 9,
+      "atteso": {
+        "categoria": "lettura rifiutata",
+        "http": 422,
+        "codice": "LETTURA_INCOMPLETA"
+      }
+    },
+    {
+      "id": "L282",
+      "scelta": "stallo mancante",
+      "targa": "ZR003AA",
+      "atteso": {
+        "categoria": "lettura rifiutata",
+        "http": 422,
+        "codice": "LETTURA_INCOMPLETA"
+      }
+    },
+    {
+      "id": "L283",
+      "scelta": "stallo inesistente",
+      "targa": "ZR003AA",
+      "stallo": 999999,
+      "atteso": {
+        "categoria": "lettura rifiutata",
+        "http": 422,
+        "codice": "STALLO_INESISTENTE"
+      }
+    },
+    {
+      "id": "L284",
+      "scelta": "data e ora mancante",
+      "targa": "ZR003AA",
+      "stallo": 9,
+      "senzaDataOra": true,
+      "atteso": {
+        "categoria": "lettura rifiutata",
+        "http": 422,
+        "codice": "LETTURA_INCOMPLETA"
+      }
+    },
+    {
+      "id": "L285",
+      "scelta": "data e ora senza fuso",
+      "targa": "ZR003AA",
+      "stallo": 9,
+      "dataOraGrezza": "2026-11-20T09:00:00",
+      "atteso": {
+        "categoria": "lettura rifiutata",
+        "http": 422,
+        "codice": "LETTURA_INCOMPLETA"
+      }
+    },
+    {
+      "id": "L286",
+      "scelta": "data di calendario inesistente",
+      "targa": "ZR003AA",
+      "stallo": 9,
+      "dataOraGrezza": "2026-02-31T10:00:00+01:00",
+      "atteso": {
+        "categoria": "lettura rifiutata",
+        "http": 422,
+        "codice": "LETTURA_INCOMPLETA"
+      }
+    },
+    {
+      "id": "L287",
+      "scelta": "data e ora successiva all'istante corrente",
+      "targa": "ZR003AA",
+      "stallo": 9,
+      "scostamentoSecondi": 3600,
+      "atteso": {
+        "categoria": "lettura rifiutata",
+        "http": 422,
+        "codice": "LETTURA_NON_VALIDA"
+      }
+    }
+  ]
+}

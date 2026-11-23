@@ -1,0 +1,15 @@
+{
+  "descrizione": "Demo, fase 1 di 2: due veicoli occupano gli stalli 5 e 6; la telecamera legge sullo stallo 5 una targa senza sosta e nasce una segnalazione.",
+  "istruzioni": [
+    "1. npm run sim:sensori -- --url http://localhost:3000 --scenario src/simulators/scenari/demo-fase-1.json",
+    "2. Controlla sulla mappa che gli stalli 5 e 6 siano occupati.",
+    "3. npm run sim:anpr -- --url http://localhost:3000 --scenario src/simulators/scenari/demo-fase-1.json",
+    "4. Atteso: SEGNALAZIONE_CREATA con motivo SOSTA_ASSENTE. Se la segnalazione della targa è ancora aperta da una demo precedente, l'esito è LETTURA_SCARTATA.",
+    "5. Prosegui con demo-fase-2.json."
+  ],
+  "sensori": [
+    { "stallo": 5, "presenza": true },
+    { "stallo": 6, "presenza": true, "attesaMs": 2000 }
+  ],
+  "anpr": [{ "targa": "DM100OP", "stallo": 5 }]
+}

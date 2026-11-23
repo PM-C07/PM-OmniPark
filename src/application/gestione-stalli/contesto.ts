@@ -3,6 +3,7 @@
 // ricostruisce la Facade.
 import type { Pool, PoolClient } from "pg";
 import { eseguiInTransazione } from "../../persistence/accessoDati/transazione.ts";
+import type { Orologio } from "../orologio.ts";
 
 /** Evento terminaSosta di SCD_1: lo stallo è entrato nello stato Libero. */
 export type StalloLiberato = { stallo: number };
@@ -19,6 +20,7 @@ export type OsservatoreStalli = {
 export type ContestoGestioneStalli = {
   pool: Pool;
   osservatori: readonly OsservatoreStalli[];
+  orologio: Orologio;
 };
 
 /** Notifica gli osservatori in ordine; il primo errore interrompe e risale invariato. */
