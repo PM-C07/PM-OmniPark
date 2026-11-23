@@ -1,15 +1,15 @@
 # TCS — Persistenza: stalli, tariffe e rilevazioni
 
-- **Task:** OMP-34 (issue #5). Metodo: category partition.
+- **Task:** OMP-34 (issue #5); estesa in OMP-43 (issue #7) con area e tariffa sintetica nella mappa, `bloccaStallo` e `impostaStatoStalloSe` (TF-STA-33…40). Metodo: category partition.
 - **Oggetto:** le funzioni di accesso di `src/persistence/accessoDati/stalliTariffe.ts`.
 - **Fonti dell'esito atteso:** sequence diagram e casi d'uso indicati per ogni funzione (inventario del piano approvato); vincoli dello schema; `docs/rad/requisiti.md`; `docs/rad/vincoli_dominio.md` §2; statechart `SCD_1`; codici di errore di `docs/test/cp_persistenza_base.md`.
-- **File di test:** `src/persistence/accessoDati/stalliTariffe.db.test.ts` (eseguito da `npm run test:db`).
+- **File di test:** `src/persistence/accessoDati/stalliTariffe.db.test.ts` e, per TF-STA-40, `src/persistence/accessoDati/stalliTariffe.commit.db.test.ts` (eseguiti da `npm run test:db`).
 
 Le tariffe non hanno funzioni proprie: nessun SD o UC le modifica (D7 del piano) e si leggono con lo stallo (`trovaStallo`). Delle rilevazioni lo schema conserva solo l'ultima, nello stallo (D1 del piano).
 
 ## 1. Tracciabilità
 
-Ogni frame riporta un solo riferimento, scelto in quest'ordine: un requisito dell'Elenco (`RF_…`, `NRF_…`) se il suo testo copre davvero il comportamento; altrimenti il vincolo di dominio `VD_<n>` (`docs/rad/vincoli_dominio.md` §2); altrimenti `SCHEMA` se il frame verifica un vincolo specifico dello schema.
+Ogni frame riporta un solo riferimento, scelto in quest'ordine: un requisito dell'Elenco (`RF_…`, `NRF_…`) se il suo testo copre davvero il comportamento; altrimenti il vincolo di dominio `VD_<n>` (`docs/rad/vincoli_dominio.md` §2); altrimenti `SCHEMA` se il frame verifica un vincolo specifico dello schema; altrimenti `ISSUE_7` per le scelte dell'issue #7 (area e tariffa sintetica nella mappa).
 
 Nome del test: `<riferimento> · <frame> · <descrizione> → <esito>`, per esempio `VD_20 · TF-STA-11 · rilevazione incoerente con lo stato → STATO_STALLO_NON_VALIDO`.
 
@@ -23,9 +23,10 @@ type StatoStallo = "LIBERO" | "OCCUPATO" | "NON_DISPONIBILE" | "SCONOSCIUTO";
 type OccupazioneRilevata = "VEICOLO_PRESENTE" | "NESSUN_VEICOLO";
 type Zona = { latMin: number; latMax: number; lonMin: number; lonMax: number }; // estremi inclusi
 type StalloMappa = { id; numero; latitudine; longitudine; tipoDiStallo; stato; ultimaModifica: Date };
+type StalloZona = StalloMappa & { areaDiSosta: { id; nome }; tariffa: { id; costoOrario } }; // OMP-43
 
-stalliNellaZona(es, zona: Zona): Promise<StalloMappa[]>;                          // ordinati per id
-stalliModificatiDopo(es, zona: Zona, istante: Date): Promise<{ stalli: StalloMappa[]; cursore: Date | null }>;
+stalliNellaZona(es, zona: Zona): Promise<StalloZona[]>;                           // ordinati per id
+stalliModificatiDopo(es, zona: Zona, istante: Date): Promise<{ stalli: StalloZona[]; cursore: Date | null }>;
 // stalli della zona con ultima_modifica > istante, ordinati per id; cursore = max(ultimaModifica) delle righe restituite, null se nessuna
 trovaStallo(es, id: number): Promise<{
   id; numero; latitudine; longitudine; tipoDiStallo; stato; ultimaModifica;
@@ -36,6 +37,13 @@ trovaStallo(es, id: number): Promise<{
 registraRilevazione(es, stalloId: number, dati: { occupazioneRilevata; dataEOra: Date; stato: StatoStallo }): Promise<boolean>;
 // rilevazione e stato nello stesso UPDATE (D5); false se lo stallo non esiste
 impostaStatoStallo(es, stalloId: number, stato: StatoStallo): Promise<boolean>;  // false se lo stallo non esiste
+bloccaStallo(es, stalloId: number): Promise<{                                     // OMP-43
+  stato: StatoStallo; occupazioneRilevata: OccupazioneRilevata | null; dataEOraUltimaRilevazione: Date | null;
+} | null>;
+// SELECT … FOR UPDATE: blocca la riga fino alla fine della transazione del chiamante; null se lo stallo non esiste
+impostaStatoStalloSe(es, stalloId: number, statoAtteso: StatoStallo, nuovoStato: StatoStallo): Promise<boolean>; // OMP-43
+// UPDATE stallo SET stato = nuovoStato WHERE id = stalloId AND stato = statoAtteso, in un'unica istruzione;
+// false se lo stallo non esiste o non è nello stato atteso (in questo caso lo stato non cambia)
 stalliSenzaRilevazioniDa(es, istanteLimite: Date): Promise<number[]>;
 // id degli stalli LIBERO o OCCUPATO con ultima rilevazione < istanteLimite, ordinati
 salvaStalloPreferito(es, automobilistaId: number, stalloId: number): Promise<void>;
@@ -51,6 +59,7 @@ Ordinamento degli elenchi: `stalliNellaZona`, `stalliModificatiDopo`, `stalliSen
 ## 3. Ambiente
 
 - Database di test riportato allo stato noto da `preparaDatabaseDiTest()` nel `beforeAll`; ogni test in una transazione annullata (`iniziaTransazioneDiTest()` / `annullaTransazioneDiTest()`), con il client come esecutore.
+- Solo TF-STA-40 (file `stalliTariffe.commit.db.test.ts`): due client distinti presi da `poolDiTest()`, ciascuno con una propria transazione (`BEGIN` … `COMMIT`); il database è riportato allo stato noto nel `beforeAll` del file.
 - Istante del dataset: `2026-11-15 08:00:00+01` (ultima rilevazione di tutti gli stalli `LIBERO` e `OCCUPATO` e `ultima_modifica` di tutti gli stalli). Istante di prova per le rilevazioni: `2026-11-20 09:00:00+01`.
 
 ### Righe del dataset usate (migrazione `0002_dati_esempio.sql`)
@@ -83,6 +92,7 @@ Colonne usate dai test (per le preparazioni e le verifiche con SQL):
 | `stallo`                  | `id`, `area_di_sosta_id`, `tariffa_id`, `numero`, `latitudine`, `longitudine`, `tipo_di_stallo`, `stato`, `occupazione_rilevata`, `data_e_ora_dell_ultima_rilevazione`, `ultima_modifica` |
 | `area_di_sosta`           | `id`, `ente_preposto_id`, `nome`                                                                                                                                                          |
 | `tariffa`                 | `id`, `costo_orario`, `orario_inizio_vigenza`, `orario_fine_vigenza`, `durata_massima`                                                                                                    |
+| `area_di_sosta` (OMP-43)  | `id`, `nome` (lette da `stalliNellaZona` e `stalliModificatiDopo`)                                                                                                                        |
 | `stallo_preferito`        | `automobilista_id`, `stallo_id`                                                                                                                                                           |
 | `area_di_sosta_preferita` | `automobilista_id`, `area_di_sosta_id`                                                                                                                                                    |
 | `utente`                  | `id`, `ruolo` (l'utente 2 è `AUSILIARIO_DEL_TRAFFICO`, quindi non è in `automobilista`)                                                                                                   |
@@ -91,19 +101,22 @@ Id inesistente: `999999`.
 
 ## 4. Categorie per funzione
 
-| Funzione                   | Scelte                                                                                                                                       |
-| :------------------------- | :------------------------------------------------------------------------------------------------------------------------------------------- |
-| `stalliNellaZona`          | più risultati · un risultato sugli estremi [single] · nessun risultato                                                                       |
-| `stalliModificatiDopo`     | istante precedente alle modifiche · istante uguale all'ultima modifica · uno stallo modificato dopo l'istante                                |
-| `trovaStallo`              | esistente rilevato · esistente mai rilevato · inesistente                                                                                    |
-| `registraRilevazione`      | rilevazione coerente con lo stato · rilevazione incoerente [error] · stallo `NON_DISPONIBILE` con qualsiasi rilevazione · stallo inesistente |
-| `impostaStatoStallo`       | transizione valida · stato incoerente con la rilevazione [error] · stallo mai rilevato portato a `LIBERO` [error] · stallo inesistente       |
-| `stalliSenzaRilevazioniDa` | limite uguale all'ultima rilevazione · limite successivo · stallo `NON_DISPONIBILE` escluso                                                  |
-| `salvaStalloPreferito`     | nuovo · già presente [error] · stallo inesistente [error]                                                                                    |
-| `salvaAreaPreferita`       | nuova · già presente [error] · area inesistente [error]                                                                                      |
-| `preferiti`                | solo stalli · solo aree · nessun preferito · più stalli · area senza stalli                                                                  |
+| Funzione                                           | Scelte                                                                                                                                       |
+| :------------------------------------------------- | :------------------------------------------------------------------------------------------------------------------------------------------- |
+| `stalliNellaZona`                                  | più risultati · un risultato sugli estremi [single] · nessun risultato                                                                       |
+| `stalliModificatiDopo`                             | istante precedente alle modifiche · istante uguale all'ultima modifica · uno stallo modificato dopo l'istante                                |
+| `trovaStallo`                                      | esistente rilevato · esistente mai rilevato · inesistente                                                                                    |
+| `registraRilevazione`                              | rilevazione coerente con lo stato · rilevazione incoerente [error] · stallo `NON_DISPONIBILE` con qualsiasi rilevazione · stallo inesistente |
+| `impostaStatoStallo`                               | transizione valida · stato incoerente con la rilevazione [error] · stallo mai rilevato portato a `LIBERO` [error] · stallo inesistente       |
+| `stalliSenzaRilevazioniDa`                         | limite uguale all'ultima rilevazione · limite successivo · stallo `NON_DISPONIBILE` escluso                                                  |
+| `salvaStalloPreferito`                             | nuovo · già presente [error] · stallo inesistente [error]                                                                                    |
+| `salvaAreaPreferita`                               | nuova · già presente [error] · area inesistente [error]                                                                                      |
+| `preferiti`                                        | solo stalli · solo aree · nessun preferito · più stalli · area senza stalli                                                                  |
+| `stalliNellaZona`, `stalliModificatiDopo` (OMP-43) | area e tariffa sintetica di ogni stallo restituito                                                                                           |
+| `bloccaStallo` (OMP-43)                            | esistente rilevato · inesistente                                                                                                             |
+| `impostaStatoStalloSe` (OMP-43)                    | stato uguale all'atteso · stato diverso dall'atteso · stallo inesistente · rilevazione concorrente che cambia lo stato [single]              |
 
-## 5. Test frame (32)
+## 5. Test frame (40)
 
 | Frame     | Funzione e scelte                                                                                                                                                                                                                                                                 | Esito atteso                                                                                                                                                                         | Riferimento |
 | :-------- | :-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | :----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | :---------- |
@@ -139,6 +152,14 @@ Id inesistente: `999999`.
 | TF-STA-30 | `salvaStalloPreferito(8, 16)`, poi `preferiti(8)`                                                                                                                                                                                                                                 | `stalli`: 11 e 16, in quest'ordine                                                                                                                                                   | RF_STALLI_5 |
 | TF-STA-31 | `salvaStalloPreferito(2, 16)` (l'utente 2 è un ausiliario, non un automobilista)                                                                                                                                                                                                  | `RIFERIMENTO_INESISTENTE`                                                                                                                                                            | VD_1        |
 | TF-STA-32 | area senza stalli creata con SQL (`INSERT INTO area_di_sosta (ente_preposto_id, nome) VALUES (1, 'Area di prova senza stalli') RETURNING id`) e salvata tra i preferiti di 9 con SQL (`INSERT INTO area_di_sosta_preferita (automobilista_id, area_di_sosta_id)`); `preferiti(9)` | `stalli`: `[]`; `aree`: una, `{ id dell'area nuova, Area di prova senza stalli, stalli: [] }`                                                                                        | RF_STALLI_5 |
+| TF-STA-33 | `stalliNellaZona(Piazza Aubry)`                                                                                                                                                                                                                                                   | lo stallo 14 ha `areaDiSosta` `{ 5, Piazza Aubry }` e `tariffa` `{ 1, 150 }`; tutti gli 8 stalli hanno `areaDiSosta.id` 5 e `tariffa.id` 1                                           | ISSUE_7     |
+| TF-STA-34 | `impostaStatoStallo(16, "NON_DISPONIBILE")`, poi `stalliModificatiDopo(Piazza Aubry, 2026-11-15 08:00:00+01)`                                                                                                                                                                     | solo lo stallo 16, con `areaDiSosta` `{ 5, Piazza Aubry }` e `tariffa` `{ 1, 150 }`                                                                                                  | ISSUE_7     |
+| TF-STA-35 | `bloccaStallo(17)`                                                                                                                                                                                                                                                                | `{ stato: OCCUPATO, occupazioneRilevata: VEICOLO_PRESENTE, dataEOraUltimaRilevazione: 2026-11-15 08:00:00+01 }`                                                                      | RF_IOT_1    |
+| TF-STA-36 | `bloccaStallo(999999)`                                                                                                                                                                                                                                                            | `null`                                                                                                                                                                               | RF_IOT_1    |
+| TF-STA-37 | `impostaStatoStalloSe(17, "OCCUPATO", "NON_DISPONIBILE")`                                                                                                                                                                                                                         | `true`; `trovaStallo(17).stato` è `NON_DISPONIBILE`                                                                                                                                  | RF_SOSTA_6  |
+| TF-STA-38 | `impostaStatoStalloSe(16, "OCCUPATO", "NON_DISPONIBILE")` (lo stallo 16 è `LIBERO`)                                                                                                                                                                                               | `false`; `trovaStallo(16).stato` resta `LIBERO`                                                                                                                                      | RF_SOSTA_6  |
+| TF-STA-39 | `impostaStatoStalloSe(999999, "OCCUPATO", "NON_DISPONIBILE")`                                                                                                                                                                                                                     | `false`                                                                                                                                                                              | RF_SOSTA_6  |
+| TF-STA-40 | due transazioni con commit: A esegue `bloccaStallo(17)` e `registraRilevazione(17, { NESSUN_VEICOLO, istante di prova, LIBERO })` senza confermare; B avvia `impostaStatoStalloSe(17, "OCCUPATO", "NON_DISPONIBILE")`, che resta in attesa del blocco; A conferma, poi B conferma | B restituisce `false`; alla fine lo stallo 17 è `LIBERO` con `NESSUN_VEICOLO` (l'aggiornamento condizionato non sovrascrive la liberazione concorrente)                              | RF_SOSTA_6  |
 
 Note sui riferimenti:
 
@@ -146,6 +167,9 @@ Note sui riferimenti:
 - TF-STA-14, 20: RF_SOSTA_6 (stallo `Non disponibile` durante la sosta).
 - TF-STA-31: VD_1 (gerarchia `{complete, disjoint}`): un Ausiliario del Traffico non è un Automobilista, quindi non ha preferiti.
 - TF-STA-22, 25: `UC_STALLI_3` 2.a1 («già tra i preferiti»), coperto da RF_STALLI_3.
+- TF-STA-33, 34 (OMP-43): area e tariffa sintetica nella mappa sono chieste dall'issue #7, non da `UC_STALLI_1` (ISSUE_7).
+- TF-STA-35, 36: `SD_IOT_1` 2.2 e 3.1. La riga bloccata permette a Gestione stalli di calcolare il nuovo stato senza corse con altre transazioni.
+- TF-STA-37…40: RF_SOSTA_6 e `SD_SOSTA_1` 6.3. Il passaggio `Occupato → Non disponibile` è condizionato allo stato atteso in un'unica istruzione, quindi una rilevazione concorrente non può essere sovrascritta. In TF-STA-40, in READ COMMITTED, l'UPDATE di B attende il blocco di A e poi rivaluta la condizione sulla riga confermata.
 
 ## 6. Nota per il sottosistema Gestione stalli: il cursore
 

@@ -8,7 +8,9 @@ import {
 } from "../test/databaseDiTest";
 import { ErroreDominio, type CodiceErrore } from "./errori";
 import {
+  bloccaStallo,
   impostaStatoStallo,
+  impostaStatoStalloSe,
   preferiti,
   registraRilevazione,
   salvaAreaPreferita,
@@ -18,10 +20,12 @@ import {
   stalliSenzaRilevazioniDa,
   trovaStallo,
   type StalloMappa,
+  type StalloZona,
   type Zona,
 } from "./stalliTariffe";
 
-// Test frame TF-STA-01…31 di docs/test/cp_persistenza_stalli_tariffe.md (OMP-34).
+// Test frame TF-STA-01…32 di docs/test/cp_persistenza_stalli_tariffe.md (OMP-34) e
+// TF-STA-33…39 (OMP-43). TF-STA-40 è in stalliTariffe.commit.db.test.ts.
 
 const ID_INESISTENTE = 999999;
 const ISTANTE_DATASET = new Date("2026-11-15T08:00:00+01:00");
@@ -330,5 +334,51 @@ describe("OMP-34 · TCS persistenza · stalli, tariffe e rilevazioni", () => {
       stalli: [],
       aree: [{ id: areaId, nome: "Area di prova senza stalli", stalli: [] }],
     });
+  });
+
+  // OMP-43: TF-STA-33…39
+
+  it("ISSUE_7 · TF-STA-33 · zona Piazza Aubry → ogni stallo con area 5 e tariffa 1, il 14 con { 5, Piazza Aubry } e { 1, 150 }", async () => {
+    const stalli: StalloZona[] = await stalliNellaZona(client, PIAZZA_AUBRY);
+    expect(ids(stalli)).toEqual(STALLI_AUBRY);
+    expect(stalli[0].areaDiSosta).toEqual({ id: 5, nome: "Piazza Aubry" });
+    expect(stalli[0].tariffa).toEqual({ id: 1, costoOrario: 150 });
+    expect(stalli.map((s) => s.areaDiSosta.id)).toEqual(STALLI_AUBRY.map(() => 5));
+    expect(stalli.map((s) => s.tariffa.id)).toEqual(STALLI_AUBRY.map(() => 1));
+  });
+
+  it("ISSUE_7 · TF-STA-34 · stallo 16 modificato dopo l'istante → solo il 16 con area { 5, Piazza Aubry } e tariffa { 1, 150 }", async () => {
+    expect(await impostaStatoStallo(client, 16, "NON_DISPONIBILE")).toBe(true);
+    const risultato = await stalliModificatiDopo(client, PIAZZA_AUBRY, ISTANTE_DATASET);
+    expect(ids(risultato.stalli)).toEqual([16]);
+    expect(risultato.stalli[0].areaDiSosta).toEqual({ id: 5, nome: "Piazza Aubry" });
+    expect(risultato.stalli[0].tariffa).toEqual({ id: 1, costoOrario: 150 });
+  });
+
+  it("RF_IOT_1 · TF-STA-35 · blocco dello stallo 17 rilevato → OCCUPATO, VEICOLO_PRESENTE, rilevato all'istante del dataset", async () => {
+    const stallo = await bloccaStallo(client, 17);
+    expect(stallo).not.toBeNull();
+    expect(stallo).toMatchObject({ stato: "OCCUPATO", occupazioneRilevata: "VEICOLO_PRESENTE" });
+    expect(stallo?.dataEOraUltimaRilevazione?.getTime()).toBe(ISTANTE_DATASET.getTime());
+  });
+
+  it("RF_IOT_1 · TF-STA-36 · blocco di uno stallo inesistente → null", async () => {
+    expect(await bloccaStallo(client, ID_INESISTENTE)).toBeNull();
+  });
+
+  it("RF_SOSTA_6 · TF-STA-37 · stallo 17 OCCUPATO come atteso portato a NON_DISPONIBILE → true", async () => {
+    expect(await impostaStatoStalloSe(client, 17, "OCCUPATO", "NON_DISPONIBILE")).toBe(true);
+    expect((await trovaStallo(client, 17))?.stato).toBe("NON_DISPONIBILE");
+  });
+
+  it("RF_SOSTA_6 · TF-STA-38 · stallo 16 LIBERO diverso dall'atteso OCCUPATO → false, resta LIBERO", async () => {
+    expect(await impostaStatoStalloSe(client, 16, "OCCUPATO", "NON_DISPONIBILE")).toBe(false);
+    expect((await trovaStallo(client, 16))?.stato).toBe("LIBERO");
+  });
+
+  it("RF_SOSTA_6 · TF-STA-39 · aggiornamento condizionato di uno stallo inesistente → false", async () => {
+    expect(await impostaStatoStalloSe(client, ID_INESISTENTE, "OCCUPATO", "NON_DISPONIBILE")).toBe(
+      false,
+    );
   });
 });
