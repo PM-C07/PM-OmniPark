@@ -508,14 +508,14 @@ describe("OMP-48 · cp_apiAccesso", () => {
 
   // ---- Proxy ----
 
-  it("NRF_SIC_1 · TF-ACC-32 · proxy su /automobilista senza cookie → redirect a /accesso?da=%2Fautomobilista", async () => {
-    verificaRedirect(await chiamaProxy("/automobilista"), "/accesso?da=%2Fautomobilista");
+  it("NRF_SIC_1 · TF-ACC-32 · proxy su /mappa senza cookie → redirect a /accesso?da=%2Fmappa", async () => {
+    verificaRedirect(await chiamaProxy("/mappa"), "/accesso?da=%2Fmappa");
   });
 
-  it("NRF_SIC_1 · TF-ACC-33 · proxy su /automobilista/mappa con il cookie di Marco Rossi → nessun redirect", async () => {
+  it("NRF_SIC_1 · TF-ACC-33 · proxy su /mappa con il cookie di Marco Rossi → nessun redirect", async () => {
     const cookie = await cookieDiAccesso(MARCO_ROSSI, PASSWORD_AUTOMOBILISTA);
 
-    verificaNessunRedirect(await chiamaProxy("/automobilista/mappa", cookie));
+    verificaNessunRedirect(await chiamaProxy("/mappa", cookie));
   });
 
   it("NRF_SIC_1 · TF-ACC-34 · proxy su /ausiliario con il cookie di Marco Rossi → redirect a /accesso-negato", async () => {
@@ -524,10 +524,10 @@ describe("OMP-48 · cp_apiAccesso", () => {
     verificaRedirect(await chiamaProxy("/ausiliario", cookie), "/accesso-negato");
   });
 
-  it("NRF_SIC_1 · TF-ACC-35 · proxy su /automobilista con sessione scaduta dell'utente 8 → redirect a /accesso?da=%2Fautomobilista", async () => {
+  it("NRF_SIC_1 · TF-ACC-35 · proxy su /mappa con sessione scaduta dell'utente 8 → redirect a /accesso?da=%2Fmappa", async () => {
     const cookie = await sessioneScaduta(8, "35");
 
-    verificaRedirect(await chiamaProxy("/automobilista", cookie), "/accesso?da=%2Fautomobilista");
+    verificaRedirect(await chiamaProxy("/mappa", cookie), "/accesso?da=%2Fmappa");
   });
 
   it("NRF_SIC_1 · TF-ACC-36 · proxy su /ausiliario/segnalazioni con il cookie di Paolo Ferri → nessun redirect", async () => {
@@ -536,21 +536,49 @@ describe("OMP-48 · cp_apiAccesso", () => {
     verificaNessunRedirect(await chiamaProxy("/ausiliario/segnalazioni", cookie));
   });
 
-  it("NRF_SIC_1 · TF-ACC-37 · proxy su /amministratore con il cookie di Paolo Ferri → redirect a /accesso-negato", async () => {
+  it("NRF_SIC_1 · TF-ACC-37 · proxy su /admin con il cookie di Paolo Ferri → redirect a /accesso-negato", async () => {
     const cookie = await cookieDiAccesso(PAOLO_FERRI, PASSWORD_AUSILIARIO);
 
-    verificaRedirect(await chiamaProxy("/amministratore", cookie), "/accesso-negato");
+    verificaRedirect(await chiamaProxy("/admin", cookie), "/accesso-negato");
+  });
+
+  it("NRF_SIC_1 · TF-ACC-39 · proxy su /profilo con il cookie di Paolo Ferri → redirect a /accesso-negato", async () => {
+    const cookie = await cookieDiAccesso(PAOLO_FERRI, PASSWORD_AUSILIARIO);
+
+    verificaRedirect(await chiamaProxy("/profilo", cookie), "/accesso-negato");
+  });
+
+  it("NRF_SIC_1 · TF-ACC-40 · proxy su /admin/ausiliari con il cookie di Marco Rossi → redirect a /accesso-negato", async () => {
+    const cookie = await cookieDiAccesso(MARCO_ROSSI, PASSWORD_AUTOMOBILISTA);
+
+    verificaRedirect(await chiamaProxy("/admin/ausiliari", cookie), "/accesso-negato");
+  });
+
+  it("ISSUE_28 · TF-ACC-41 · proxy su / senza cookie → redirect a /accesso", async () => {
+    verificaRedirect(await chiamaProxy("/"), "/accesso");
+  });
+
+  it("RF_AUTH_4 · TF-ACC-42 · proxy su / con il cookie di Marco Rossi → redirect a /mappa", async () => {
+    const cookie = await cookieDiAccesso(MARCO_ROSSI, PASSWORD_AUTOMOBILISTA);
+
+    verificaRedirect(await chiamaProxy("/", cookie), "/mappa");
+  });
+
+  it("RF_AUTH_4 · TF-ACC-43 · proxy su / con il cookie di Paolo Ferri → redirect a /ausiliario", async () => {
+    const cookie = await cookieDiAccesso(PAOLO_FERRI, PASSWORD_AUSILIARIO);
+
+    verificaRedirect(await chiamaProxy("/", cookie), "/ausiliario");
   });
 
   // Ultimo frame del file: sostituisce il pool applicativo.
-  it("ISSUE_27 · TF-ACC-38 · proxy su /automobilista con database non raggiungibile → redirect a /accesso?da=%2Fautomobilista, nessun 500", async () => {
+  it("ISSUE_27 · TF-ACC-38 · proxy su /mappa con database non raggiungibile → redirect a /accesso?da=%2Fmappa, nessun 500", async () => {
     await chiudiPool();
     vi.stubEnv("DATABASE_URL", DB_IRRAGGIUNGIBILE);
     try {
-      const risposta = await chiamaProxy("/automobilista", "qualsiasi-38");
+      const risposta = await chiamaProxy("/mappa", "qualsiasi-38");
 
       expect(risposta.status).not.toBe(500);
-      verificaRedirect(risposta, "/accesso?da=%2Fautomobilista");
+      verificaRedirect(risposta, "/accesso?da=%2Fmappa");
     } finally {
       await chiudiPool();
       vi.stubEnv("DATABASE_URL", process.env.DATABASE_URL_TEST!);

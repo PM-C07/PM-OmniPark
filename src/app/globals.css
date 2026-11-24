@@ -1,7 +1,8 @@
 @import "tailwindcss";
 
+/* Tema chiaro soltanto: il tema scuro torna con COD-27 (OMP-57, decisione D3). */
 :root {
-  --background: #ffffff;
+  --background: #fafafa;
   --foreground: #171717;
 }
 
@@ -12,15 +13,37 @@
   --font-mono: var(--font-geist-mono);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
-}
-
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-geist-sans), Arial, Helvetica, sans-serif;
+}
+
+/* Focus sempre visibile per chi naviga da tastiera (NRF_USA_1). */
+:focus-visible {
+  outline: 3px solid #1d4ed8;
+  outline-offset: 2px;
+}
+
+/* Il contenuto principale riceve il focus dal link «Salta al contenuto»: niente contorno sul main. */
+main:focus {
+  outline: none;
+}
+
+/* «Salta al contenuto»: nascosto finché non riceve il focus da tastiera. */
+.salta-al-contenuto {
+  position: absolute;
+  left: 0.5rem;
+  top: -100px;
+  z-index: 50;
+  padding: 0.75rem 1rem;
+  border-radius: 0.375rem;
+  background: #ffffff;
+  color: #064e3b;
+  font-weight: 600;
+  text-decoration: underline;
+}
+
+.salta-al-contenuto:focus {
+  top: 0.5rem;
 }
