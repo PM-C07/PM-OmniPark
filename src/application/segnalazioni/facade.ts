@@ -14,7 +14,12 @@ import { creaFacadeUtentiAccessi, type FacadeUtentiAccessi } from "../utenti-acc
 import { chiudi } from "./chiusura.ts";
 import type { ContestoSegnalazioni } from "./contesto.ts";
 import { elaboraLettura, type EsitoRiscontro, type Lettura } from "./riscontro.ts";
-import { segnalazioniModificateDopo, segnalazioniNonChiuse } from "./segnalazioniEnte.ts";
+import {
+  fotografiaSegnalazioni,
+  segnalazioniModificateDopo,
+  segnalazioniNonChiuse,
+  variazioniDopo,
+} from "./segnalazioniEnte.ts";
 
 export { ErroreSegnalazioni, type CodiceErroreSegnalazioni } from "./errori.ts";
 export type { Esito, EsitoRiscontro, Lettura, Motivo, SegnalazioneMappa, StatoSegnalazione };
@@ -29,6 +34,16 @@ export type FacadeSegnalazioni = {
     ente: number,
     istante: Date,
   ): Promise<{ segnalazioni: SegnalazioneMappa[]; cursore: Date | null }>;
+  // Cursore del database e margine di 5 s (OMP-48, usate dalle API)
+  fotografiaSegnalazioni(
+    ausiliario: number,
+    ente: number,
+  ): Promise<{ segnalazioni: SegnalazioneMappa[]; cursore: Date }>;
+  variazioniDopo(
+    ausiliario: number,
+    ente: number,
+    cursore: Date,
+  ): Promise<{ segnalazioni: SegnalazioneMappa[]; cursore: Date }>;
   // Chiusura con esito (UC_OP_4, SD_OP_4)
   chiudi(ausiliario: number, segnalazione: number, esito: Esito): Promise<void>;
 };
@@ -58,6 +73,10 @@ export function creaFacadeSegnalazioni(dipendenze: {
     segnalazioniNonChiuse: (ausiliario, ente) => segnalazioniNonChiuse(contesto, ausiliario, ente),
     segnalazioniModificateDopo: (ausiliario, ente, istante) =>
       segnalazioniModificateDopo(contesto, ausiliario, ente, istante),
+    fotografiaSegnalazioni: (ausiliario, ente) =>
+      fotografiaSegnalazioni(contesto, ausiliario, ente),
+    variazioniDopo: (ausiliario, ente, cursore) =>
+      variazioniDopo(contesto, ausiliario, ente, cursore),
     chiudi: (ausiliario, segnalazione, esito) => chiudi(contesto, ausiliario, segnalazione, esito),
   };
 }

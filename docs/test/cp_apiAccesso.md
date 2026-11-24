@@ -1,0 +1,148 @@
+# cp_apiAccesso
+
+Specifica dei casi di test (category partition) del gruppo di API Accesso e profilo: `POST /api/auth/registrazione`, `POST /api/auth/accesso`, `POST /api/auth/uscita`, `GET /api/auth/io`, `GET`, `POST` e `DELETE /api/automobilista/targhe`, e del controllo delle pagine protette in `src/proxy.ts`.
+Requisiti: RF_AUTH_1 (registrazione), RF_AUTH_4 (accesso e uscita), RF_AUTH_5 (targhe), NRF_SIC_1 (controllo degli accessi). Task OMP-48 (issue #27).
+
+- **Fonti dell'esito atteso:** `UC_AUTH_1`, `UC_AUTH_4`, `UC_AUTH_5`, `SD_AUTH_1`, `SD_AUTH_4`, `SD_AUTH_5`, `docs/rad/vincoli_dominio.md` (VD_19), TCS dei servizi (`cp_registraAutomobilista.md`, `cp_accedi.md`, `cp_targhe.md`, `cp_verificaAutorizzazione.md`), issue #27 (cookie, formato degli errori, tabella codici → status, proxy), piano approvato di OMP-48.
+- **File di test:** `src/app/api/auth/accesso.db.test.ts`, eseguito con `npx vitest run --config vitest.db.config.ts <file>`.
+
+## 1. Tracciabilità
+
+Ogni frame riporta un solo riferimento, scelto in quest'ordine: un requisito dell'Elenco (`RF_…`, `NRF_…`) se il suo testo copre davvero il comportamento; altrimenti il vincolo di dominio `VD_<n>`; altrimenti `ISSUE_27` per le scelte dell'issue #27 e del piano approvato (cookie, status HTTP, formato delle richieste).
+
+Nome del test: `<riferimento> · <frame> · <descrizione> → <esito>`, per esempio `NRF_SIC_1 · TF-ACC-19 · targhe senza sessione → 401 SESSIONE_NON_VALIDA`.
+
+## 2. Route verificate
+
+Gli handler si chiamano direttamente con una `Request` reale, come in `src/app/api/anpr/letture/route.db.test.ts`. Le route `GET` ricevono la `Request`; quelle con parametri ricevono `{ params: Promise<…> }`.
+
+| Metodo e percorso                            | Corpo o parametri             | Sessione e operazione       | Risposta positiva                                           |
+| :------------------------------------------- | :---------------------------- | :-------------------------- | :---------------------------------------------------------- |
+| `POST /api/auth/registrazione`               | `{ email, password, targa }`  | nessuna                     | 201, cookie di sessione, `{ utente: { id, ruolo, ente } }`  |
+| `POST /api/auth/accesso`                     | `{ email, password }`         | nessuna                     | 200, cookie di sessione, `{ utente: { id, ruolo, ente } }`  |
+| `POST /api/auth/uscita`                      | —                             | facoltativa                 | 204, cookie cancellato                                      |
+| `GET /api/auth/io`                           | —                             | qualsiasi ruolo             | 200, `{ utente: { id, ruolo, ente } }`                      |
+| `GET /api/automobilista/targhe`              | —                             | `UC_AUTH_5` (Automobilista) | 200, `{ targhe: [{ veicolo, targa }] }`, ordinate per targa |
+| `POST /api/automobilista/targhe`             | `{ targa }`                   | `UC_AUTH_5`                 | 201, `{ targhe }` aggiornate                                |
+| `DELETE /api/automobilista/targhe?targa=<t>` | parametro `targa`             | `UC_AUTH_5`                 | 200, `{ targhe }` aggiornate                                |
+| `proxy(request)` (`src/proxy.ts`)            | percorso della pagina, cookie | ruolo dell'area             | nessun redirect (la richiesta prosegue)                     |
+
+- **Cookie di sessione:** nome `omnipark_sessione`, attributi `HttpOnly`, `Secure`, `SameSite=Lax`, `Path=/`, `Max-Age=28800` (8 ore). All'uscita: stesso nome, `Max-Age=0`.
+- **Errori:** corpo `{ errore: { codice, messaggio } }`, con il messaggio non vuoto e lo status della tabella comune (`src/app/api/_errori.ts`): 401 `SESSIONE_NON_VALIDA`, `CREDENZIALI_NON_VALIDE`; 403 `RUOLO_NON_AMMESSO`, `ACCOUNT_DISATTIVATO`; 404 `TARGA_NON_PRESENTE`; 409 `EMAIL_GIA_REGISTRATA`, `TARGA_GIA_PRESENTE`, `ULTIMA_TARGA`, `TARGA_CON_SOSTA_ATTIVA`; 422 `RICHIESTA_NON_VALIDA`, `EMAIL_NON_VALIDA`, `PASSWORD_TROPPO_CORTA`, `TARGA_NON_VALIDA`.
+- **`RICHIESTA_NON_VALIDA`:** corpo non JSON, campo mancante o di tipo diverso da stringa, parametro `targa` assente.
+- **Proxy:** pagine sotto `/automobilista`, `/ausiliario`, `/amministratore`. Senza sessione valida, o se la verifica fallisce per un errore del database: redirect (307) a `/accesso?da=<percorso>`. Con un ruolo diverso da quello dell'area: redirect a `/accesso-negato`. Con il ruolo giusto la richiesta prosegue (nessuna intestazione `Location`).
+
+## 3. Ambiente
+
+- Database di test riportato allo stato noto da `preparaDatabaseDiTest()` nel `beforeAll`; come in OMP-47, `DATABASE_URL` punta al database di test con `vi.stubEnv` e il test verifica che il pool applicativo sia quello di test. Le route compongono le Facade con il punto unico (`src/app/_composizione.ts`): nessuno stub. Le scritture vanno in commit: ogni frame usa i propri utenti, email e targhe.
+- **Accesso con il dataset:** password dimostrative del README, `Demo-Automobilista-2026` per gli automobilisti e `Demo-Ausiliario-2026` per gli ausiliari. Il cookie si prende dall'intestazione `Set-Cookie` della risposta di `POST /api/auth/accesso` e si rimanda nell'intestazione `cookie`.
+- **Automobilista nuovo del frame `n`:** `POST /api/auth/registrazione` con email `api.acc<n>@test.example`, dove `<n>` è il numero del frame su due cifre, password `parola-di-prova-lunga` e targa `AC0<n>XX`, cioè con il numero del frame su tre cifre (per esempio `AC018XX`), nel formato `AB123CD` richiesto da Utenti e accessi.
+- **Sessione da Amministratore** (se un frame ne ha bisogno): come la sessione scaduta, con `utenteId` 1 e scadenza futura (`2027-01-01 00:00:00+01`). La password dell'Amministratore non compare nei test né in nessun file; le password dimostrative del README si usano solo per Ausiliari e Automobilisti.
+- **Sessione scaduta:** inserita con la persistenza, `creaSessione(pool, { utenteId, hashToken: calcolaHashToken("scaduta-<n>"), scadenza: 2026-01-01 00:00:00+01 })`; il cookie vale `scaduta-<n>`.
+- **Sessione inesistente:** cookie `omnipark_sessione=inesistente-<n>`.
+- **Sosta attiva per una targa** (TF-ACC-29): `creaSosta` della persistenza sullo stallo 17, con `impostaNonDisponibile` della Facade di Gestione stalli.
+
+### Righe del dataset usate (migrazione `0002_dati_esempio.sql`)
+
+| Tabella                   | id  | Contenuto                                            |
+| :------------------------ | :-- | :--------------------------------------------------- |
+| `utente`, `automobilista` | 7   | `elena.bianchi@omnipark.example`                     |
+| `utente`, `automobilista` | 8   | `marco.rossi@omnipark.example`, targa `MN234PQ`      |
+| `ausiliario_del_traffico` | 2   | `paolo.ferri@omnipark.example`, ente 1, `ATTIVO`     |
+| `ausiliario_del_traffico` | 4   | `luca.russo@omnipark.example`, ente 1, `DISATTIVATO` |
+| `stallo`                  | 17  | `OCCUPATO`                                           |
+
+Colonne usate dai test: `utente` (`id`, `email`, `ruolo`), `sessione` (`utente_id`, `hash_token`, `scadenza`), `veicolo` e `automobilista_veicolo` (targhe del profilo), `sosta` (`veicolo_id`, `stallo_id`, `stato`).
+
+## 4. Categorie e scelte
+
+**Sessione** (route protette)
+
+1. valida
+2. assente [error] → 401
+3. scaduta [error] → 401
+4. inesistente [error] → 401
+
+**Ruolo**
+
+1. ammesso
+2. non ammesso [error] → 403
+
+**Ente dei dati:** non applicabile in questo gruppo.
+
+**Corpo o parametri**
+
+1. validi
+2. non JSON [error] → 422
+3. campo o parametro mancante [error] → 422
+
+**Codici di dominio:** uno per frame, con lo status della tabella (§2).
+
+**Proxy — area e sessione**
+
+1. sessione dell'area giusta
+2. senza cookie
+3. sessione scaduta
+4. ruolo di un'altra area
+5. database non raggiungibile [single]
+
+## 5. Test frame (38)
+
+| Frame     | Richiesta e preparazione                                                                                                                                                                                           | Esito atteso                                                                                                                                                                                                                   | Riferimento |
+| :-------- | :----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | :----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | :---------- |
+| TF-ACC-01 | `POST /api/auth/registrazione` con email `api.acc01@test.example`, password valida, targa `AC001XX`                                                                                                                | 201; cookie `omnipark_sessione` con `HttpOnly`, `Secure`, `SameSite=Lax`, `Path=/`, `Max-Age=28800`; `{ utente: { id, ruolo: "AUTOMOBILISTA", ente: null } }`; `GET /api/auth/io` con quel cookie restituisce lo stesso utente | RF_AUTH_1   |
+| TF-ACC-02 | `POST /api/auth/registrazione` con corpo non JSON                                                                                                                                                                  | 422 `RICHIESTA_NON_VALIDA`; nessun cookie                                                                                                                                                                                      | ISSUE_27    |
+| TF-ACC-03 | `POST /api/auth/registrazione` senza `targa`                                                                                                                                                                       | 422 `RICHIESTA_NON_VALIDA`; nessun utente con l'email del frame                                                                                                                                                                | ISSUE_27    |
+| TF-ACC-04 | `POST /api/auth/registrazione` con email `elena.bianchi@omnipark.example`                                                                                                                                          | 409 `EMAIL_GIA_REGISTRATA`; nessun cookie                                                                                                                                                                                      | RF_AUTH_1   |
+| TF-ACC-05 | `POST /api/auth/registrazione` con email `senza-chiocciola`                                                                                                                                                        | 422 `EMAIL_NON_VALIDA`                                                                                                                                                                                                         | RF_AUTH_1   |
+| TF-ACC-06 | `POST /api/auth/registrazione` con password `corta`                                                                                                                                                                | 422 `PASSWORD_TROPPO_CORTA`                                                                                                                                                                                                    | RF_AUTH_1   |
+| TF-ACC-07 | `POST /api/auth/registrazione` con targa `12-AB`                                                                                                                                                                   | 422 `TARGA_NON_VALIDA`; nessun utente con l'email del frame                                                                                                                                                                    | RF_AUTH_5   |
+| TF-ACC-08 | `POST /api/auth/accesso` come `marco.rossi@omnipark.example`                                                                                                                                                       | 200; cookie con gli attributi di TF-ACC-01; `{ utente: { id: 8, ruolo: "AUTOMOBILISTA", ente: null } }`                                                                                                                        | RF_AUTH_4   |
+| TF-ACC-09 | `POST /api/auth/accesso` come `paolo.ferri@omnipark.example`                                                                                                                                                       | 200; cookie; `{ utente: { id: 2, ruolo: "AUSILIARIO_DEL_TRAFFICO", ente: 1 } }`                                                                                                                                                | RF_AUTH_4   |
+| TF-ACC-10 | `POST /api/auth/accesso` come `marco.rossi@omnipark.example` con password errata                                                                                                                                   | 401 `CREDENZIALI_NON_VALIDE`; nessun cookie                                                                                                                                                                                    | RF_AUTH_4   |
+| TF-ACC-11 | `POST /api/auth/accesso` come `luca.russo@omnipark.example` (disattivato) con la password giusta                                                                                                                   | 403 `ACCOUNT_DISATTIVATO`; nessun cookie                                                                                                                                                                                       | VD_19       |
+| TF-ACC-12 | `POST /api/auth/accesso` senza `password`                                                                                                                                                                          | 422 `RICHIESTA_NON_VALIDA`                                                                                                                                                                                                     | ISSUE_27    |
+| TF-ACC-13 | `GET /api/auth/io` senza cookie                                                                                                                                                                                    | 401 `SESSIONE_NON_VALIDA`                                                                                                                                                                                                      | NRF_SIC_1   |
+| TF-ACC-14 | `GET /api/auth/io` con una sessione scaduta dell'utente 8                                                                                                                                                          | 401 `SESSIONE_NON_VALIDA`                                                                                                                                                                                                      | NRF_SIC_1   |
+| TF-ACC-15 | `GET /api/auth/io` con una sessione inesistente                                                                                                                                                                    | 401 `SESSIONE_NON_VALIDA`                                                                                                                                                                                                      | NRF_SIC_1   |
+| TF-ACC-16 | automobilista nuovo; `POST /api/auth/uscita` con il suo cookie; poi `GET /api/auth/io` con lo stesso cookie                                                                                                        | uscita: 204 e cookie `omnipark_sessione` con `Max-Age=0`; `io`: 401 `SESSIONE_NON_VALIDA`                                                                                                                                      | RF_AUTH_4   |
+| TF-ACC-17 | `POST /api/auth/uscita` senza cookie                                                                                                                                                                               | 204 e cookie con `Max-Age=0`                                                                                                                                                                                                   | ISSUE_27    |
+| TF-ACC-18 | automobilista nuovo; `GET /api/automobilista/targhe`                                                                                                                                                               | 200, `{ targhe: [{ veicolo, targa: "AC018XX" }] }`                                                                                                                                                                             | RF_AUTH_5   |
+| TF-ACC-19 | `GET /api/automobilista/targhe` senza cookie                                                                                                                                                                       | 401 `SESSIONE_NON_VALIDA`                                                                                                                                                                                                      | NRF_SIC_1   |
+| TF-ACC-20 | `GET /api/automobilista/targhe` con una sessione scaduta dell'utente 8                                                                                                                                             | 401 `SESSIONE_NON_VALIDA`                                                                                                                                                                                                      | NRF_SIC_1   |
+| TF-ACC-21 | accesso come Paolo Ferri; `GET /api/automobilista/targhe`                                                                                                                                                          | 403 `RUOLO_NON_AMMESSO`                                                                                                                                                                                                        | NRF_SIC_1   |
+| TF-ACC-22 | automobilista nuovo; `POST /api/automobilista/targhe` con `{ targa: "ac022 yy" }`                                                                                                                                  | 201, `{ targhe }` con `AC022XX` e `AC022YY`, in ordine di targa                                                                                                                                                                | RF_AUTH_5   |
+| TF-ACC-23 | automobilista nuovo; `POST /api/automobilista/targhe` con la sua targa `AC023XX`                                                                                                                                   | 409 `TARGA_GIA_PRESENTE`; il profilo ha ancora la sola `AC023XX`                                                                                                                                                               | RF_AUTH_5   |
+| TF-ACC-24 | automobilista nuovo; `POST /api/automobilista/targhe` con `{ targa: "12-AB" }`                                                                                                                                     | 422 `TARGA_NON_VALIDA`; profilo invariato                                                                                                                                                                                      | RF_AUTH_5   |
+| TF-ACC-25 | automobilista nuovo; `POST /api/automobilista/targhe` con `{}`                                                                                                                                                     | 422 `RICHIESTA_NON_VALIDA`; profilo invariato                                                                                                                                                                                  | ISSUE_27    |
+| TF-ACC-26 | automobilista nuovo con una seconda targa `AC026YY` aggiunta via API; `DELETE /api/automobilista/targhe?targa=AC026YY`                                                                                             | 200, `{ targhe }` con la sola `AC026XX`                                                                                                                                                                                        | RF_AUTH_5   |
+| TF-ACC-27 | automobilista nuovo; `DELETE /api/automobilista/targhe?targa=AC027XX` (unica targa)                                                                                                                                | 409 `ULTIMA_TARGA`; profilo invariato                                                                                                                                                                                          | RF_AUTH_5   |
+| TF-ACC-28 | automobilista nuovo; `DELETE /api/automobilista/targhe?targa=ZZ999ZZ`                                                                                                                                              | 404 `TARGA_NON_PRESENTE`; profilo invariato                                                                                                                                                                                    | RF_AUTH_5   |
+| TF-ACC-29 | automobilista nuovo con la seconda targa `AC029YY`; sosta attiva di `AC029YY` sullo stallo 17; `DELETE …?targa=AC029YY`                                                                                            | 409 `TARGA_CON_SOSTA_ATTIVA`; profilo invariato                                                                                                                                                                                | RF_AUTH_5   |
+| TF-ACC-30 | automobilista nuovo; `DELETE /api/automobilista/targhe` senza parametro                                                                                                                                            | 422 `RICHIESTA_NON_VALIDA`; profilo invariato                                                                                                                                                                                  | ISSUE_27    |
+| TF-ACC-31 | `POST /api/automobilista/targhe` con `{ targa: "AC031YY" }` senza cookie                                                                                                                                           | 401 `SESSIONE_NON_VALIDA`; nessun veicolo `AC031YY` nel database                                                                                                                                                               | NRF_SIC_1   |
+| TF-ACC-32 | `proxy` su `/automobilista` senza cookie                                                                                                                                                                           | redirect a `/accesso?da=%2Fautomobilista`                                                                                                                                                                                      | NRF_SIC_1   |
+| TF-ACC-33 | `proxy` su `/automobilista/mappa` con il cookie di Marco Rossi                                                                                                                                                     | nessun redirect                                                                                                                                                                                                                | NRF_SIC_1   |
+| TF-ACC-34 | `proxy` su `/ausiliario` con il cookie di Marco Rossi                                                                                                                                                              | redirect a `/accesso-negato`                                                                                                                                                                                                   | NRF_SIC_1   |
+| TF-ACC-35 | `proxy` su `/automobilista` con una sessione scaduta dell'utente 8                                                                                                                                                 | redirect a `/accesso?da=%2Fautomobilista`                                                                                                                                                                                      | NRF_SIC_1   |
+| TF-ACC-36 | `proxy` su `/ausiliario/segnalazioni` con il cookie di Paolo Ferri                                                                                                                                                 | nessun redirect                                                                                                                                                                                                                | NRF_SIC_1   |
+| TF-ACC-37 | `proxy` su `/amministratore` con il cookie di Paolo Ferri                                                                                                                                                          | redirect a `/accesso-negato`                                                                                                                                                                                                   | NRF_SIC_1   |
+| TF-ACC-38 | pool applicativo chiuso e `DATABASE_URL` verso `postgresql://127.0.0.1:1/omnipark_irraggiungibile_test` (nessuna credenziale, la connessione fallisce subito); `proxy` su `/automobilista` con un cookie qualsiasi | redirect a `/accesso?da=%2Fautomobilista`, nessun errore 500. Il pool si chiude prima e dopo il frame e `DATABASE_URL` si ripristina in un `finally` o `afterEach`, anche se il test fallisce                                  | ISSUE_27    |
+
+Totale 38: 7 sulla registrazione, 5 sull'accesso, 3 su `io`, 2 sull'uscita, 14 sulle targhe, 7 sul proxy. TF-ACC-38 è l'ultimo frame del file, perché sostituisce il pool applicativo.
+
+Note sui riferimenti:
+
+- TF-ACC-01, 08, 09: RF_AUTH_1 e RF_AUTH_4, con gli attributi del cookie dell'issue #27 (`httpOnly`, `Secure`, `SameSite=Lax`, 8 ore).
+- TF-ACC-02, 03, 12, 25, 30: formato della richiesta (issue #27, «mancanti o non validi → 422»).
+- TF-ACC-11: VD_19 (un Ausiliario disattivato non accede); status 403 dalla tabella comune.
+- TF-ACC-13…15, 19, 20, 31: NRF_SIC_1 e criterio di accettazione dell'issue («ogni route protetta risponde 401 senza sessione valida… senza effetti»).
+- TF-ACC-21: ruolo non ammesso (`UC_AUTH_5` è dell'Automobilista).
+- TF-ACC-32…37: issue #27 (`src/proxy.ts` porta su `/accesso` senza sessione e su una pagina 403 con il ruolo sbagliato). TF-ACC-38: correzione 5 del piano approvato (con un errore del database il proxy non lascia passare e non risponde 500).
+
+## 6. Note
+
+- Il proxy è solo un controllo ottimistico per le pagine: il controllo vero lo fa ogni route con `richiediSessione` (frame di questo file e degli altri `cp_api*.md`).
+- Le pagine `/accesso` e `/accesso-negato` sono provvisorie (solo testo) fino a COD-16; il loro contenuto non è verificato.
+- **Già verificati altrove** (nessun frame qui): regole di registrazione, accesso, uscita e targhe, `cp_registraAutomobilista.md`, `cp_accedi.md`, `cp_targhe.md`; sessione, ruolo ed ente, `cp_verificaAutorizzazione.md`; tabella codici → status completa, `src/app/api/_errori.test.ts` (test unitario).
+- Fuori ambito (COD-25): limite ai tentativi di accesso.

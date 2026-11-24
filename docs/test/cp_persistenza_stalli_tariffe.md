@@ -173,9 +173,15 @@ Note sui riferimenti:
 
 ## 6. Nota per il sottosistema Gestione stalli: il cursore
 
-Il chiamante usa il `cursore` restituito da `stalliModificatiDopo` come `istante` della richiesta successiva, al posto del proprio orologio. Limite: `ultima_modifica` vale l'istante di inizio della transazione che ha modificato lo stallo (`now()` del trigger), non quello del commit. Una transazione iniziata prima del cursore e confermata dopo scrive un valore minore del cursore, e la sua modifica non compare nella richiesta successiva. Il sottosistema deve tenerne conto, per esempio ripartendo da un cursore arretrato di qualche secondo e scartando i duplicati, oppure rileggendo periodicamente l'intera zona. Lo stesso vale per `segnalazioniModificateDopo`.
+**Limite del cursore di `stalliModificatiDopo`.** Il `cursore` restituito da questa funzione è la massima `ultima_modifica` delle righe restituite (`null` se nessuna). `ultima_modifica` vale l'istante di inizio della transazione che ha modificato lo stallo (`now()` del trigger), non quello del commit. Una transazione iniziata prima del cursore e confermata dopo scrive un valore minore del cursore, e la sua modifica non compare nella richiesta successiva. In più il cursore è un `Date` di JavaScript, al millisecondo, mentre `ultima_modifica` è al microsecondo: la stessa riga può tornare una seconda volta. Lo stesso vale per `segnalazioniModificateDopo`. Le due funzioni restano invariate, con i loro frame, per compatibilità.
 
-Precisione: il cursore è un `Date` di JavaScript, al millisecondo, mentre `ultima_modifica` in PostgreSQL è al microsecondo. Il cursore è quindi troncato e può essere minore della `ultima_modifica` reale: nella richiesta successiva la stessa riga può tornare una seconda volta, ma non va mai persa. Il sottosistema scarta i duplicati per id.
+**Correzione (OMP-48, issue #27).** Le API e i client della mappa e delle segnalazioni non usano quel cursore, ma le operazioni `variazioniDopo` dei sottosistemi Gestione stalli e Segnalazioni:
+
+- il nuovo cursore è l'istante del database (`istanteDelDatabase`, cioè `now()`), letto prima delle righe, quindi non dipende dalle righe restituite e non è mai `null`;
+- le righe restituite sono quelle con `ultima_modifica` maggiore del cursore ricevuto meno un margine di sicurezza di 5 secondi (`MARGINE_CURSORE_MS`, nei sottosistemi), tramite le stesse funzioni di persistenza;
+- una modifica confermata dopo la lettura precedente, da una transazione iniziata prima del cursore ma da meno di 5 secondi, compare nella risposta successiva; le righe già viste possono tornare e il client le applica per id, sostituendone lo stato (risposte idempotenti). Il margine copre anche il troncamento al millisecondo.
+
+Limite residuo: una transazione che dura più di 5 secondi tra l'inizio e il commit può ancora sfuggire. I frame sono in `cp_mappa.md` (TF-MAP-17…24), `cp_segnalazioniEnte.md` (TF-ENT-14…22), `cp_persistenza_base.md` (TF-BASE-48, 49) e nelle TCS delle API (`cp_apiStalli.md`, `cp_apiSegnalazioni.md`).
 
 ## 7. Regole lasciate ai sottosistemi
 

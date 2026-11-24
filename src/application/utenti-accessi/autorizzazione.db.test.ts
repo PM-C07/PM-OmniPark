@@ -21,7 +21,8 @@ import {
   type FacadeUtentiAccessi,
 } from "./facade";
 
-// Test frame TF-01…09 di docs/test/cp_verificaAutorizzazione.md (OMP-42).
+// Test frame TF-01…09 di docs/test/cp_verificaAutorizzazione.md (OMP-42), TF-10…12 (OMP-46)
+// e TF-13…17 (utenteDellaSessione, OMP-48).
 
 const ISTANTE = new Date("2026-11-20T09:00:00+01:00");
 const PASSWORD = "parola-di-prova-lunga";
@@ -208,5 +209,58 @@ describe("OMP-42 · cp_verificaAutorizzazione", () => {
 
   it("NRF_SIC_1 · TF-12 · Ausiliario inesistente (999999) → null", async () => {
     await expect(facade.trovaAusiliario(999999)).resolves.toBeNull();
+  });
+
+  // Test frame TF-13…17 di docs/test/cp_verificaAutorizzazione.md (OMP-48): utenteDellaSessione.
+
+  it("NRF_SIC_1 · TF-13 · sessione valida dell'Automobilista → { utenteId, AUTOMOBILISTA, enteId null }", async () => {
+    const email = "autorizza.tf13@test.example";
+    const id = await creaAutomobilista(poolDiTest(), { email, hashPassword });
+    const { token } = await facade.accedi(email, PASSWORD);
+
+    await expect(facade.utenteDellaSessione(token)).resolves.toEqual({
+      utenteId: id,
+      ruolo: "AUTOMOBILISTA",
+      enteId: null,
+    });
+  });
+
+  it("NRF_SIC_1 · TF-14 · sessione valida dell'Ausiliario attivo del primo ente → { utenteId, AUSILIARIO_DEL_TRAFFICO, ente 1 }", async () => {
+    const email = "autorizza.tf14@test.example";
+    const id = await nuovoAusiliario(email, ENTE_1);
+    const { token } = await facade.accedi(email, PASSWORD);
+
+    await expect(facade.utenteDellaSessione(token)).resolves.toEqual({
+      utenteId: id,
+      ruolo: "AUSILIARIO_DEL_TRAFFICO",
+      enteId: ENTE_1,
+    });
+  });
+
+  it("NRF_SIC_1 · TF-15 · sessione scaduta → SESSIONE_NON_VALIDA", async () => {
+    const email = "autorizza.tf15@test.example";
+    await creaAutomobilista(poolDiTest(), { email, hashPassword });
+    const { token } = await facade.accedi(email, PASSWORD);
+
+    istante = new Date(ISTANTE.getTime() + DURATA_SESSIONE_MS + 1);
+
+    await rifiutato(facade.utenteDellaSessione(token), "SESSIONE_NON_VALIDA");
+  });
+
+  it("NRF_SIC_1 · TF-16 · sessione inesistente → SESSIONE_NON_VALIDA", async () => {
+    await rifiutato(facade.utenteDellaSessione("token-inesistente"), "SESSIONE_NON_VALIDA");
+  });
+
+  it("NRF_SIC_1 · TF-17 · sessione non scaduta di un Ausiliario disattivato → SESSIONE_NON_VALIDA", async () => {
+    const disattivato = await nuovoAusiliario("autorizza.tf17@test.example", ENTE_1);
+    await disattivaAusiliario(poolDiTest(), disattivato);
+    const token = generaToken();
+    await creaSessione(poolDiTest(), {
+      utenteId: disattivato,
+      hashToken: calcolaHashToken(token),
+      scadenza: new Date(ISTANTE.getTime() + DURATA_SESSIONE_MS),
+    });
+
+    await rifiutato(facade.utenteDellaSessione(token), "SESSIONE_NON_VALIDA");
   });
 });

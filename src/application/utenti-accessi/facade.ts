@@ -13,6 +13,7 @@ import {
 import {
   ausiliariDellEntePreposto,
   trovaAusiliarioDelTraffico,
+  utenteDellaSessione,
   verificaAutorizzazione,
   type Operazione,
   type UtenteAutorizzato,
@@ -38,6 +39,8 @@ export type FacadeUtentiAccessi = {
     operazione: Operazione,
     ente: number | null,
   ): Promise<UtenteAutorizzato>;
+  /** Utente di una sessione valida, senza controllo dell'operazione (OMP-48). */
+  utenteDellaSessione(sessione: string): Promise<UtenteAutorizzato>;
   ausiliariDellEntePreposto(ente: number): Promise<Ausiliario[]>;
   /** Ausiliario con ente e stato dell'account; null se l'id non è di un Ausiliario (OMP-46). */
   trovaAusiliario(ausiliario: number): Promise<Ausiliario | null>;
@@ -60,6 +63,7 @@ export function creaFacadeUtentiAccessi(
     rimuoviTarga: (automobilista, targa) => rimuoviTarga(contesto, automobilista, targa),
     verificaAutorizzazione: (sessione, operazione, ente) =>
       verificaAutorizzazione(contesto, sessione, operazione, ente),
+    utenteDellaSessione: (sessione) => utenteDellaSessione(contesto, sessione),
     ausiliariDellEntePreposto: (ente) => ausiliariDellEntePreposto(contesto, ente),
     trovaAusiliario: (ausiliario) => trovaAusiliarioDelTraffico(contesto, ausiliario),
   };

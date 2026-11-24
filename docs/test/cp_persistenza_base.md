@@ -223,3 +223,22 @@ Chiarimenti sull'esecuzione:
 
 - La segregazione per ente (VD_18) e le altre regole di dominio restano ai sottosistemi (piano approvato).
 - Il controllo del saldo di `addebita` vale solo dentro una transazione: lo garantisce il tipo `PoolClient` del primo parametro, non un controllo a runtime.
+
+## 7. Aggiunte di OMP-48 (issue #27): istante del database
+
+```ts
+// src/persistence/accessoDati/istante.ts
+istanteDelDatabase(es: Esecutore): Promise<Date>; // SELECT now(): inizio della transazione o, fuori transazione, dell'istruzione
+```
+
+Serve come cursore delle variazioni di stalli e segnalazioni (`cp_persistenza_stalli_tariffe.md` §6): è l'orologio dello stesso database che scrive `ultima_modifica` con `now()`.
+
+- **File di test:** `src/persistence/accessoDati/istante.db.test.ts` (`npm run test:db`), con il pool `poolDiTest()` e, per TF-BASE-49, una transazione annullata alla fine.
+- **Categorie:** esecutore: pool (fuori transazione) · client in una transazione [single].
+
+| Frame      | Servizio e scelte                                                                                          | Esito atteso                                                                 | Riferimento |
+| :--------- | :--------------------------------------------------------------------------------------------------------- | :--------------------------------------------------------------------------- | :---------- |
+| TF-BASE-48 | `istanteDelDatabase(poolDiTest())` due volte di seguito                                                    | due `Date` valide; la seconda non precede la prima                           | NRF_PER_3   |
+| TF-BASE-49 | in una transazione: `istanteDelDatabase(client)` due volte, con una query `SELECT pg_sleep(0.05)` in mezzo | i due istanti sono uguali (inizio della transazione, come `ultima_modifica`) | ISSUE_27    |
+
+Totale aggiunto: 2 frame (in tutto 49).

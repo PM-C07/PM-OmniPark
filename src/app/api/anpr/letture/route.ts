@@ -1,11 +1,6 @@
 // Ingresso delle letture della telecamera ANPR simulata (RF_ANPR_1, UC_ANPR_1).
-import { creaFacadeGestioneSoste } from "../../../../application/gestione-soste/facade.ts";
-import {
-  creaFacadeSegnalazioni,
-  ErroreSegnalazioni,
-} from "../../../../application/segnalazioni/facade.ts";
-import { creaFacadeWallet } from "../../../../application/wallet/facade.ts";
-import { SimulatorePagamento } from "../../../../simulators/pagamento/simulatorePagamento.ts";
+import { ErroreSegnalazioni } from "../../../../application/segnalazioni/facade.ts";
+import { componiSottosistemi } from "../../../_composizione.ts";
 import {
   leggiCorpoJson,
   leggiDataOra,
@@ -28,10 +23,8 @@ export async function POST(richiesta: Request): Promise<Response> {
   }
 
   try {
-    // Le Facade si creano qui: il pool nasce alla prima richiesta, non all'import del modulo.
-    const wallet = creaFacadeWallet({ pagamento: new SimulatorePagamento() });
-    const gestioneSoste = creaFacadeGestioneSoste({ wallet });
-    const esito = await creaFacadeSegnalazioni({ gestioneSoste }).elaboraLettura({
+    // Le Facade vengono dal punto unico di composizione: il pool nasce alla prima richiesta.
+    const esito = await componiSottosistemi().segnalazioni.elaboraLettura({
       targa: corpo.targa,
       stallo: corpo.stallo,
       dataOra,

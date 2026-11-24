@@ -1,9 +1,6 @@
 // Ingresso delle rilevazioni dei sensori simulati (RF_IOT_1, UC_IOT_1).
-import { osservatoreGestioneSoste } from "../../../../application/gestione-soste/facade.ts";
-import {
-  creaFacadeGestioneStalli,
-  ErroreGestioneStalli,
-} from "../../../../application/gestione-stalli/facade.ts";
+import { ErroreGestioneStalli } from "../../../../application/gestione-stalli/facade.ts";
+import { componiSottosistemi } from "../../../_composizione.ts";
 import {
   leggiCorpoJson,
   leggiDataOra,
@@ -31,9 +28,8 @@ export async function POST(richiesta: Request): Promise<Response> {
   }
 
   try {
-    // La Facade si crea qui: il pool nasce alla prima richiesta, non all'import del modulo.
-    const facade = creaFacadeGestioneStalli({ osservatori: [osservatoreGestioneSoste] });
-    const stato = await facade.registraRilevazione({
+    // Le Facade vengono dal punto unico di composizione: il pool nasce alla prima richiesta.
+    const stato = await componiSottosistemi().gestioneStalli.registraRilevazione({
       stallo: corpo.stallo,
       presenza: corpo.presenza,
       dataOra,

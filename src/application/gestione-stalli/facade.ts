@@ -10,7 +10,7 @@ import type {
 import { orologioDiSistema, type Orologio } from "../orologio.ts";
 import type { ContestoGestioneStalli, OsservatoreStalli, StalloLiberato } from "./contesto.ts";
 import { contaStalliGestiti } from "./conteggio.ts";
-import { stalliModificatiDopo, stalliNellaZona } from "./mappa.ts";
+import { fotografiaZona, stalliModificatiDopo, stalliNellaZona, variazioniDopo } from "./mappa.ts";
 import { registraRilevazione, type RilevazioneRicevuta } from "./rilevazioni.ts";
 import {
   impostaNonDisponibile,
@@ -40,6 +40,9 @@ export type FacadeGestioneStalli = {
     zona: Zona,
     istante: Date,
   ): Promise<{ stalli: StalloZona[]; cursore: Date | null }>;
+  // Mappa con il cursore del database e il margine di 5 s (OMP-48, usate dalle API)
+  fotografiaZona(zona: Zona): Promise<{ stalli: StalloZona[]; cursore: Date }>;
+  variazioniDopo(zona: Zona, cursore: Date): Promise<{ stalli: StalloZona[]; cursore: Date }>;
   // Stato per la sosta (SD_SOSTA_1, SD_SOSTA_7, RF_SOSTA_6)
   statoETariffa(stallo: number, esecutore?: PoolClient): Promise<StatoETariffa>;
   impostaNonDisponibile(stallo: number, esecutore?: PoolClient): Promise<void>;
@@ -65,6 +68,8 @@ export function creaFacadeGestioneStalli(
     registraRilevazione: (rilevazione) => registraRilevazione(contesto, rilevazione),
     stalliNellaZona: (zona) => stalliNellaZona(contesto, zona),
     stalliModificatiDopo: (zona, istante) => stalliModificatiDopo(contesto, zona, istante),
+    fotografiaZona: (zona) => fotografiaZona(contesto, zona),
+    variazioniDopo: (zona, cursore) => variazioniDopo(contesto, zona, cursore),
     statoETariffa: (stallo, esecutore) => statoETariffa(contesto, stallo, esecutore),
     impostaNonDisponibile: (stallo, esecutore) =>
       impostaNonDisponibile(contesto, stallo, esecutore),

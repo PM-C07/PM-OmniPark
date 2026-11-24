@@ -46,12 +46,13 @@ export type UtenteAutorizzato = {
   enteId: number | null;
 };
 
-/** Controlla nell'ordine sessione, ruolo ed ente; rifiuta con ErroreUtentiAccessi. */
-export async function verificaAutorizzazione(
+/**
+ * Utente di una sessione valida, senza controllo dell'operazione (OMP-48: GET /api/auth/io, proxy).
+ * Un Ausiliario disattivato non opera, anche se gli è rimasta una sessione.
+ */
+export async function utenteDellaSessione(
   contesto: ContestoUtentiAccessi,
   sessione: string,
-  operazione: Operazione,
-  ente: number | null,
 ): Promise<UtenteAutorizzato> {
   const { pool, orologio } = contesto;
   const trovata = await trovaSessione(pool, calcolaHashToken(sessione), orologio.adesso());
@@ -68,18 +69,29 @@ export async function verificaAutorizzazione(
     }
     enteId = ausiliario.enteId;
   }
+  return { utenteId: trovata.utenteId, ruolo: trovata.ruolo, enteId };
+}
+
+/** Controlla nell'ordine sessione, ruolo ed ente; rifiuta con ErroreUtentiAccessi. */
+export async function verificaAutorizzazione(
+  contesto: ContestoUtentiAccessi,
+  sessione: string,
+  operazione: Operazione,
+  ente: number | null,
+): Promise<UtenteAutorizzato> {
+  const utente = await utenteDellaSessione(contesto, sessione);
 
   // Il controllo a runtime copre anche un nome di operazione che non è nel catalogo.
   const regola: RegolaOperazione | undefined = Object.hasOwn(OPERAZIONI, operazione)
     ? OPERAZIONI[operazione]
     : undefined;
-  if (!regola || regola.ruolo !== trovata.ruolo) {
+  if (!regola || regola.ruolo !== utente.ruolo) {
     throw new ErroreUtentiAccessi("RUOLO_NON_AMMESSO");
   }
-  if (regola.perEnte && ente !== enteId) {
+  if (regola.perEnte && ente !== utente.enteId) {
     throw new ErroreUtentiAccessi("ENTE_NON_AMMESSO");
   }
-  return { utenteId: trovata.utenteId, ruolo: trovata.ruolo, enteId };
+  return utente;
 }
 
 /** L'Ausiliario del Traffico con il suo ente e lo stato dell'account; null se l'id non è di un Ausiliario. */
