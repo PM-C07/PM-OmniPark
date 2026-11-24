@@ -1,13 +1,13 @@
-// Schermata iniziale dell'Ausiliario del Traffico (MU_4): segnaposto fino a COD-18.
+// Boundary :MappaSegnalazioni (MU_4), schermata iniziale dell'Ausiliario del Traffico: segnaposto fino a COD-18.
 import type { Metadata } from "next";
 import { Avviso } from "../../../presentation/Avviso.tsx";
 
-export const metadata: Metadata = { title: "Segnalazioni · OmniPark" };
+export const metadata: Metadata = { title: "Mappa delle segnalazioni · OmniPark" };
 
-export default function PaginaAusiliario() {
+export default function MappaSegnalazioni() {
   return (
     <>
-      <h1 className="text-2xl font-bold text-zinc-900">Segnalazioni</h1>
+      <h1 className="text-2xl font-bold text-zinc-900">Mappa delle segnalazioni</h1>
       <p className="text-base text-zinc-800">
         Qui vedrai la mappa delle segnalazioni del tuo ente.
       </p>

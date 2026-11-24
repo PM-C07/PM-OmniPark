@@ -1,10 +1,10 @@
-// Gestione degli Ausiliari (MU_5): segnaposto fino a COD-24.
+// Boundary :SchermataAusiliari (MU_6), gestione degli Ausiliari: segnaposto fino a COD-24.
 import type { Metadata } from "next";
 import { Avviso } from "../../../../presentation/Avviso.tsx";
 
 export const metadata: Metadata = { title: "Gestione Ausiliari · OmniPark" };
 
-export default function PaginaGestioneAusiliari() {
+export default function SchermataAusiliari() {
   return (
     <>
       <h1 className="text-2xl font-bold text-zinc-900">Gestione Ausiliari</h1>

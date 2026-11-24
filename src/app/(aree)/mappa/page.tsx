@@ -1,10 +1,10 @@
-// Schermata iniziale dell'Automobilista (MU_2): segnaposto fino a COD-17.
+// Boundary :MappaStalli (MU_2), schermata iniziale dell'Automobilista: segnaposto fino a COD-17.
 import type { Metadata } from "next";
 import { Avviso } from "../../../presentation/Avviso.tsx";
 
 export const metadata: Metadata = { title: "Mappa degli stalli · OmniPark" };
 
-export default function PaginaMappa() {
+export default function MappaStalli() {
   return (
     <>
       <h1 className="text-2xl font-bold text-zinc-900">Mappa degli stalli</h1>

@@ -1,6 +1,6 @@
-// Aree dei ruoli (OMP-57): intestazione con utente, menu del ruolo ed «Esci». L'accesso alle aree
+// Aree dei ruoli (OMP-57): :MenuUtente con utente, menu del ruolo ed «Esci». L'accesso alle aree
 // lo controlla src/proxy.ts; i dati li proteggono le route API.
-import { IntestazioneArea } from "../../presentation/IntestazioneArea.tsx";
+import { MenuUtente } from "../../presentation/MenuUtente.tsx";
 
 export default function LayoutAree({ children }: LayoutProps<"/">) {
   return (
@@ -8,7 +8,7 @@ export default function LayoutAree({ children }: LayoutProps<"/">) {
       <a href="#contenuto" className="salta-al-contenuto">
         Salta al contenuto
       </a>
-      <IntestazioneArea />
+      <MenuUtente />
       <main
         id="contenuto"
         tabIndex={-1}

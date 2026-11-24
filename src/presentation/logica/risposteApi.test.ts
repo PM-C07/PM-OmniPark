@@ -152,4 +152,11 @@ describe("interpretazione delle risposte delle API", () => {
       messaggio: MSG_RETE,
     });
   });
+
+  it("ISSUE_28 · TF-RAP-19 · TARGA_NON_PRESENTE nella rimozione → accanto alla targa (riga)", () => {
+    const msg = "La targa non è presente nel profilo.";
+    expect(
+      interpretaRisposta(404, erroreApi("TARGA_NON_PRESENTE", msg), CAMPI_RIMOZIONE_TARGA),
+    ).toEqual({ esito: "errore", campo: "riga", messaggio: msg });
+  });
 });

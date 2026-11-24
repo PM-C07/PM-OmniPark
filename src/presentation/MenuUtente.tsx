@@ -1,5 +1,5 @@
 "use client";
-// Intestazione delle aree (OMP-57): utente collegato con il ruolo, menu del ruolo (np_00) e «Esci».
+// Boundary :MenuUtente (barra comune, SD_AUTH_4 3.a1, np_00): utente collegato con il ruolo, menu del ruolo e «Esci».
 // Legge l'utente da GET /api/auth/io; con la sessione scaduta torna a /accesso.
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
@@ -9,10 +9,11 @@ import { chiamaApi } from "./logica/risposteApi.ts";
 
 type Utente = { id: number; ruolo: string; ente: number | null };
 
-export function IntestazioneArea() {
+export function MenuUtente() {
   const router = useRouter();
   const percorso = usePathname();
   const [utente, setUtente] = useState<Utente | null>(null);
+  const [erroreUtente, setErroreUtente] = useState(false);
   const [inUscita, setInUscita] = useState(false);
 
   useEffect(() => {
@@ -24,7 +25,11 @@ export function IntestazioneArea() {
       if (esito.esito === "sessioneScaduta") {
         router.replace(indirizzoDiAccesso(percorso));
       } else if (esito.esito === "successo") {
+        setErroreUtente(false);
         setUtente((esito.dati as { utente: Utente }).utente);
+      } else {
+        // Server o rete non disponibili: niente «Caricamento…» infinito; «Esci» resta attivo.
+        setErroreUtente(true);
       }
     });
     return () => {
@@ -46,7 +51,11 @@ export function IntestazioneArea() {
         <p className="text-xl font-bold text-emerald-900">OmniPark</p>
         <div className="flex items-center gap-3">
           <p className="text-sm text-zinc-800" aria-live="polite">
-            {utente ? etichettaRuolo(utente.ruolo, utente.ente) : "Caricamento…"}
+            {utente
+              ? etichettaRuolo(utente.ruolo, utente.ente)
+              : erroreUtente
+                ? "Utente non disponibile"
+                : "Caricamento…"}
           </p>
           <button
             type="button"

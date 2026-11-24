@@ -8,7 +8,7 @@ Requisiti: RF_AUTH_1 (registrazione), RF_AUTH_4 (accesso e uscita), RF_AUTH_5 (t
 
 ## 1. Tracciabilità
 
-Ogni frame riporta un solo riferimento, scelto in quest'ordine: un requisito dell'Elenco (`RF_…`, `NRF_…`) se il suo testo copre davvero il comportamento; altrimenti il vincolo di dominio `VD_<n>`; altrimenti `ISSUE_27` per le scelte dell'issue #27 e del piano approvato (cookie, status HTTP, formato delle richieste).
+Ogni frame riporta un solo riferimento, scelto in quest'ordine: un requisito dell'Elenco (`RF_…`, `NRF_…`) se il suo testo copre davvero il comportamento; altrimenti il vincolo di dominio `VD_<n>`; altrimenti `ISSUE_27` per le scelte dell'issue #27 e del piano approvato (cookie, status HTTP, formato delle richieste), o `ISSUE_28` per quelle aggiunte con l'issue #28 e il piano approvato di OMP-57 (radice `/` senza sessione, TF-ACC-41).
 
 Nome del test: `<riferimento> · <frame> · <descrizione> → <esito>`, per esempio `NRF_SIC_1 · TF-ACC-19 · targhe senza sessione → 401 SESSIONE_NON_VALIDA`.
 

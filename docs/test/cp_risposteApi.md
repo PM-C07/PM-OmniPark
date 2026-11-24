@@ -22,6 +22,8 @@ type EsitoRisposta =
   | { esito: "sessioneScaduta" };                       // il chiamante porta su /accesso
 interpretaRisposta(status: number, corpo: unknown, campiPerCodice: Readonly<Record<string, string>>): EsitoRisposta;
 erroreDiRete(): EsitoRisposta;                          // la richiesta non è arrivata al server
+chiamaApi(url: string, opzioni: RequestInit, campiPerCodice: Readonly<Record<string, string>>)
+  : Promise<EsitoRisposta>;                             // fetch + interpretaRisposta, o erroreDiRete se fetch fallisce
 
 const CAMPI_REGISTRAZIONE;     // EMAIL_NON_VALIDA, EMAIL_GIA_REGISTRATA → "email"; PASSWORD_TROPPO_CORTA → "password"; TARGA_NON_VALIDA → "targa"
 const CAMPI_ACCESSO;           // nessun codice: credenziali errate e account disattivato vanno sull'avviso generale
@@ -54,7 +56,7 @@ Funzioni pure: nessun database, nessuna rete, nessun DOM. I corpi dei frame sono
 
 **Rete:** risposta ricevuta · richiesta non arrivata [single].
 
-## 5. Test frame (18)
+## 5. Test frame (19)
 
 | Frame     | Chiamata                                                                                                                                       | Esito atteso                                                                                                                 | Riferimento |
 | :-------- | :--------------------------------------------------------------------------------------------------------------------------------------------- | :--------------------------------------------------------------------------------------------------------------------------- | :---------- |
@@ -76,8 +78,9 @@ Funzioni pure: nessun database, nessuna rete, nessun DOM. I corpi dei frame sono
 | TF-RAP-16 | `interpretaRisposta(500, { errore: { codice: "ERRORE_INTERNO", messaggio: "Si è verificato un errore. Riprova più tardi." } }, CAMPI_ACCESSO)` | `{ esito: "errore", campo: "generale", messaggio: "Si è verificato un errore. Riprova più tardi." }`                         | ISSUE_28    |
 | TF-RAP-17 | `interpretaRisposta(502, "<html>Bad gateway</html>", CAMPI_ACCESSO)`                                                                           | `{ esito: "errore", campo: "generale", messaggio: "Si è verificato un errore. Riprova più tardi." }`                         | ISSUE_28    |
 | TF-RAP-18 | `erroreDiRete()`                                                                                                                               | `{ esito: "errore", campo: "generale", messaggio: "Impossibile contattare il server. Controlla la connessione e riprova." }` | ISSUE_28    |
+| TF-RAP-19 | `interpretaRisposta(404, { errore: { codice: "TARGA_NON_PRESENTE", messaggio: <msg> } }, CAMPI_RIMOZIONE_TARGA)`                               | `{ esito: "errore", campo: "riga", messaggio: <msg> }`                                                                       | ISSUE_28    |
 
-Totale 18: 3 di successo, 12 di errore di dominio (uno per codice dei form, compreso il 401 che non è una sessione scaduta), 1 di sessione scaduta, 2 di forma non riconosciuta o rete.
+Totale 19: 3 di successo, 13 di errore di dominio (uno per codice dei form, compreso il 401 che non è una sessione scaduta), 1 di sessione scaduta, 2 di forma non riconosciuta o rete.
 
 Note sui riferimenti:
 
@@ -85,7 +88,9 @@ Note sui riferimenti:
 - TF-RAP-09, 10: RF_AUTH_4 e `UC_AUTH_4` 2.a1 (credenziali errate senza indicare quale dato è sbagliato: avviso generale), 2.a2 (account disattivato).
 - TF-RAP-11: categoria minima dell'issue «401 → ritorno a `/accesso`»: solo `SESSIONE_NON_VALIDA` porta su `/accesso` (`indirizzoDiAccesso`, `cp_navigazioneRuoli.md` TF-NAV-31).
 - TF-RAP-12…15: RF_AUTH_5 e `UC_AUTH_5` 4.a1 (targa non valida o già nel profilo, accanto al campo) e 3.a2 (unica targa o targa con sosta attiva, accanto alla targa da rimuovere).
+- TF-RAP-19: `TARGA_NON_PRESENTE` (404, `cp_apiAccesso.md` TF-ACC-28) non è un'alternativa di `UC_AUTH_5`: capita se la targa è già stata rimossa, per esempio da un'altra scheda. Il piano approvato di OMP-57 lo mette accanto alla targa da rimuovere, come gli altri errori della rimozione: riferimento `ISSUE_28`.
 
 ## 6. Note
 
 - **Già verificati altrove** (nessun frame qui): codici e status delle API, `cp_apiAccesso.md`; la visualizzazione dei messaggi nei form si verifica a mano.
+- **`chiamaApi`: nessun frame.** È un involucro di `fetch` che legge il corpo (JSON, testo o vuoto) e delega a `interpretaRisposta`, o a `erroreDiRete` se la richiesta non arriva al server: le regole che applica sono quelle dei frame TF-RAP-01…19. Si verifica a mano con i form, senza simulare `fetch` (nessuna dipendenza nuova).
