@@ -2,15 +2,15 @@
 // Boundary :MenuUtente (barra comune, SD_AUTH_4 3.a1, np_00): utente collegato con il ruolo, menu del ruolo e «Esci».
 // Legge l'utente da GET /api/auth/io; con la sessione scaduta torna a /accesso.
 import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
-import { etichettaRuolo, indirizzoDiAccesso, vociDiMenu } from "./logica/navigazione.ts";
+import { etichettaRuolo, vociDiMenu } from "./logica/navigazione.ts";
 import { chiamaApi } from "./logica/risposteApi.ts";
+import { vaiAllAccesso } from "./vaiAllAccesso.ts";
 
 type Utente = { id: number; ruolo: string; ente: number | null };
 
 export function MenuUtente() {
-  const router = useRouter();
   const percorso = usePathname();
   const [utente, setUtente] = useState<Utente | null>(null);
   const [erroreUtente, setErroreUtente] = useState(false);
@@ -23,7 +23,7 @@ export function MenuUtente() {
         return;
       }
       if (esito.esito === "sessioneScaduta") {
-        router.replace(indirizzoDiAccesso(percorso));
+        vaiAllAccesso(percorso);
       } else if (esito.esito === "successo") {
         setErroreUtente(false);
         setUtente((esito.dati as { utente: Utente }).utente);
@@ -35,13 +35,14 @@ export function MenuUtente() {
     return () => {
       attivo = false;
     };
-  }, [percorso, router]);
+  }, [percorso]);
 
   async function esci() {
     setInUscita(true);
     // Il cookie lo cancella la risposta; si torna all'accesso anche se la chiamata fallisce.
     await chiamaApi("/api/auth/uscita", { method: "POST" }, {});
-    router.replace("/accesso");
+    // Caricamento completo (vaiAllAccesso): non deve restare nulla dell'utente precedente.
+    vaiAllAccesso();
   }
 
   const voci = utente ? vociDiMenu(utente.ruolo) : [];

@@ -1,11 +1,10 @@
 "use client";
 // Boundary :MappaStalli (MU_2, UC_STALLI_1, SD_STALLI_1): mostraZona con la fotografia di
 // GET /api/stalli, poi aggiornaStato con GET /api/stalli/modifiche un secondo dopo la risposta
-// precedente (NRF_PER_3), applicando le righe per id. Il polling non accavalla richieste, si
-// sospende con la scheda nascosta e si ferma lasciando la pagina; 401 → /accesso?da=%2Fmappa.
+// precedente (NRF_PER_3, hook useAggiornamentoPeriodico), applicando le righe per id; 401 →
+// /accesso?da=%2Fmappa con caricamento completo (vaiAllAccesso).
 // Contiene la scheda dello stallo con l'avvio della sosta e «La mia sosta».
-import { useRouter } from "next/navigation";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useMemo, useRef, useState } from "react";
 import { Avviso } from "./Avviso.tsx";
 import { BadgeStato } from "./BadgeStato.tsx";
 import { formattaOra } from "./logica/importi.ts";
@@ -19,91 +18,33 @@ import {
   zonaDallaVista,
   type StalloDellaMappa,
 } from "./logica/mappaStalli.ts";
-import { indirizzoDiAccesso } from "./logica/navigazione.ts";
-import { chiamaApi } from "./logica/risposteApi.ts";
 import { SchedaStallo, type SostaAvviata } from "./SchedaStallo.tsx";
 import { SostaInCorso } from "./SostaInCorso.tsx";
+import { useAggiornamentoPeriodico } from "./useAggiornamentoPeriodico.ts";
+import { vaiAllAccesso } from "./vaiAllAccesso.ts";
 import { VistaMappa, type ElementoMappa, type VistaGeografica } from "./VistaMappa.tsx";
 
-const INTERVALLO_MS = 1000;
-
-type Caricamento = "inCorso" | "pronto" | "nonDisponibile";
-
 export function MappaStalli() {
-  const router = useRouter();
   const [zona, setZona] = useState(ZONA_INIZIALE);
   const [stalli, setStalli] = useState<readonly StalloDellaMappa[]>([]);
-  const [caricamento, setCaricamento] = useState<Caricamento>("inCorso");
-  const [nonAggiornati, setNonAggiornati] = useState(false);
   const [selezionato, setSelezionato] = useState<number | null>(null);
   const [versioneSoste, setVersioneSoste] = useState(0);
   const [conferma, setConferma] = useState<string | null>(null);
   const titoloSosta = useRef<HTMLHeadingElement>(null);
 
-  const sessioneScaduta = useCallback(() => {
-    router.replace(indirizzoDiAccesso("/mappa"));
-  }, [router]);
+  const sessioneScaduta = useCallback(() => vaiAllAccesso("/mappa"), []);
 
   // Fotografia della zona e poi variazioni dopo il cursore; tutto riparte quando cambia la zona.
-  useEffect(() => {
-    let attivo = true;
-    let inCorso = false;
-    let cursore: string | null = null;
-    let timer: ReturnType<typeof setTimeout> | undefined;
-    let controllo: AbortController | undefined;
-
-    async function ciclo() {
-      if (!attivo || inCorso || document.visibilityState === "hidden") {
-        return;
-      }
-      inCorso = true;
-      controllo = new AbortController();
-      const url =
-        cursore === null
-          ? `/api/stalli?zona=${zona}`
-          : `/api/stalli/modifiche?zona=${zona}&dopo=${encodeURIComponent(cursore)}`;
-      const esito = await chiamaApi(url, { method: "GET", signal: controllo.signal }, {});
-      inCorso = false;
-      if (!attivo) {
-        return;
-      }
-      if (esito.esito === "sessioneScaduta") {
-        sessioneScaduta();
-        return;
-      }
-      if (esito.esito === "successo") {
-        const dati = esito.dati as { stalli: StalloDellaMappa[]; cursore: string };
-        const fotografia = cursore === null;
-        setStalli((attuali) => (fotografia ? dati.stalli : applicaModifiche(attuali, dati.stalli)));
-        cursore = dati.cursore;
-        setCaricamento("pronto");
-        setNonAggiornati(false);
-      } else if (cursore === null) {
-        setCaricamento("nonDisponibile"); // UC_STALLI_1 2.a2
-      } else {
-        setNonAggiornati(true); // 4.a1: si ritenta al giro successivo
-      }
-      timer = setTimeout(ciclo, INTERVALLO_MS);
-    }
-
-    function visibilita() {
-      if (document.visibilityState === "visible") {
-        clearTimeout(timer);
-        void ciclo();
-      } else {
-        clearTimeout(timer);
-      }
-    }
-
-    document.addEventListener("visibilitychange", visibilita);
-    void ciclo();
-    return () => {
-      attivo = false;
-      clearTimeout(timer);
-      controllo?.abort();
-      document.removeEventListener("visibilitychange", visibilita);
-    };
-  }, [zona, sessioneScaduta]);
+  // Dati non disponibili all'inizio: UC_STALLI_1 2.a2; errore successivo: 4.a1, nuovo tentativo.
+  const { caricamento, nonAggiornati } = useAggiornamentoPeriodico<StalloDellaMappa>({
+    urlFotografia: `/api/stalli?zona=${zona}`,
+    urlModifiche: (cursore) =>
+      `/api/stalli/modifiche?zona=${zona}&dopo=${encodeURIComponent(cursore)}`,
+    righe: (dati) => (dati as { stalli: StalloDellaMappa[] }).stalli,
+    onFotografia: (righe) => setStalli(righe),
+    onModifiche: (righe) => setStalli((attuali) => applicaModifiche(attuali, righe)),
+    onSessioneScaduta: sessioneScaduta,
+  });
 
   const cambioVista = useCallback((vista: VistaGeografica) => {
     setZona(zonaDallaVista(vista));
