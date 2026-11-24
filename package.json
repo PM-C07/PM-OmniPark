@@ -20,6 +20,7 @@
     "misura:anpr": "node --env-file=.env --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/misuraAnpr.ts"
   },
   "dependencies": {
+    "leaflet": "1.9.4",
     "next": "16.4.6",
     "pg": "^8.23.1",
     "react": "19.3.0",
@@ -27,6 +28,7 @@
   },
   "devDependencies": {
     "@tailwindcss/turbopack": "4.3.3",
+    "@types/leaflet": "1.9.22",
     "@types/node": "^26.6.6",
     "@types/pg": "^8.23.1",
     "@types/react": "^19",

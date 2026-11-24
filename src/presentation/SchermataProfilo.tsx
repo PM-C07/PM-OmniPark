@@ -1,7 +1,7 @@
 "use client";
 // Boundary :SchermataProfilo (MU_3, SD_AUTH_5): targhe del profilo (UC_AUTH_5), con elenco,
 // aggiunta e rimozione e gli errori del dominio accanto al campo o alla targa interessata; con la
-// sessione scaduta torna a /accesso. Il wallet arriva con COD-17.
+// sessione scaduta torna a /accesso; il wallet (saldo e ricarica, OMP-58) è in PannelloWallet.
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useState, type FormEvent } from "react";
 import { Avviso } from "./Avviso.tsx";
@@ -16,6 +16,7 @@ import {
 } from "./logica/risposteApi.ts";
 import { validaTarga } from "./logica/validazione.ts";
 import { Pannello } from "./Pannello.tsx";
+import { PannelloWallet } from "./PannelloWallet.tsx";
 
 type Targa = { veicolo: number; targa: string };
 
@@ -189,7 +190,7 @@ export function SchermataProfilo() {
         </div>
       </Pannello>
       <Pannello titolo="Wallet" idTitolo="titolo-wallet">
-        <Avviso tipo="informazione">Contenuto in arrivo con COD-17.</Avviso>
+        <PannelloWallet />
       </Pannello>
     </>
   );
