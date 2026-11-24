@@ -2,6 +2,7 @@
 
 /* Tema chiaro soltanto: il tema scuro torna con COD-27 (OMP-57, decisione D3). */
 :root {
+  color-scheme: light;
   --background: #fafafa;
   --foreground: #171717;
 }
@@ -135,6 +136,13 @@ main:focus {
 .marcatore[data-tono="blu"],
 .legenda-simbolo[data-tono="blu"] {
   background: #1d4ed8;
+  color: #ffffff;
+}
+
+/* OMP-59: motivo «targa non corrispondente» nella mappa delle segnalazioni. */
+.marcatore[data-tono="viola"],
+.legenda-simbolo[data-tono="viola"] {
+  background: #6d28d9;
   color: #ffffff;
 }
 

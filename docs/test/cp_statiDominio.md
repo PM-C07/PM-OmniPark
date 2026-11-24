@@ -17,7 +17,7 @@ Nome del test: `<riferimento> · <frame> · <descrizione> → <esito>`, per esem
 ```ts
 // src/presentation/logica/statiDominio.ts — nessuna dipendenza da React né dai sottosistemi
 type TipoStato = "stallo" | "sosta" | "segnalazione";
-type Tono = "verde" | "rosso" | "arancione" | "grigio" | "blu";
+type Tono = "verde" | "rosso" | "arancione" | "grigio" | "blu" | "viola"; // viola: solo motivo «targa non corrispondente» (OMP-59), mai restituito da descriviStato
 descriviStato(tipo: TipoStato, stato: string): { testo: string; tono: Tono };
 ```
 

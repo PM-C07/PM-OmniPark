@@ -7,6 +7,7 @@ const CLASSI: Readonly<Record<Tono, string>> = {
   arancione: "border-orange-700 bg-orange-50 text-orange-900",
   grigio: "border-zinc-600 bg-zinc-100 text-zinc-900",
   blu: "border-blue-700 bg-blue-50 text-blue-900",
+  viola: "border-violet-700 bg-violet-50 text-violet-900",
 };
 
 export function BadgeStato({ tipo, stato }: { tipo: TipoStato; stato: string }) {

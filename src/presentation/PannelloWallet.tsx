@@ -1,16 +1,14 @@
 "use client";
 // Wallet del profilo (MU_3, UC_WALLET_3 per il saldo, UC_WALLET_1 per la ricarica): saldo in
 // evidenza da GET /api/wallet e ricarica con i tagli previsti. La cronologia arriva con COD-23.
-import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { Avviso } from "./Avviso.tsx";
 import { formattaEuro } from "./logica/importi.ts";
-import { indirizzoDiAccesso } from "./logica/navigazione.ts";
 import { chiamaApi } from "./logica/risposteApi.ts";
 import { Ricarica } from "./Ricarica.tsx";
+import { vaiAllAccesso } from "./vaiAllAccesso.ts";
 
 export function PannelloWallet() {
-  const router = useRouter();
   const [saldo, setSaldo] = useState<number | null>(null);
   const [errore, setErrore] = useState<string | null>(null);
 
@@ -22,7 +20,7 @@ export function PannelloWallet() {
         return;
       }
       if (esito.esito === "sessioneScaduta") {
-        router.replace(indirizzoDiAccesso("/profilo"));
+        vaiAllAccesso("/profilo");
       } else if (esito.esito === "successo") {
         setSaldo((esito.dati as { saldo: number }).saldo);
       } else {
@@ -32,7 +30,7 @@ export function PannelloWallet() {
     return () => {
       attivo = false;
     };
-  }, [router]);
+  }, []);
 
   return (
     <div className="flex flex-col gap-4">
@@ -46,7 +44,7 @@ export function PannelloWallet() {
       <Ricarica
         idTitolo="titolo-ricarica-profilo"
         onRicaricata={setSaldo}
-        onSessioneScaduta={() => router.replace(indirizzoDiAccesso("/profilo"))}
+        onSessioneScaduta={() => vaiAllAccesso("/profilo")}
       />
     </div>
   );

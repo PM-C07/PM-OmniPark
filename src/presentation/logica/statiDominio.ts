@@ -2,7 +2,8 @@
 // sempre un testo, mai solo un colore (NRF_USA_1). Stati da SCD_1, SCD_2 e SCD_3.
 
 export type TipoStato = "stallo" | "sosta" | "segnalazione";
-export type Tono = "verde" | "rosso" | "arancione" | "grigio" | "blu";
+// viola (OMP-59): solo per il motivo «targa non corrispondente», distinto dal blu di «Presa in carico».
+export type Tono = "verde" | "rosso" | "arancione" | "grigio" | "blu" | "viola";
 
 const STATI: Readonly<Record<TipoStato, Readonly<Record<string, { testo: string; tono: Tono }>>>> =
   {

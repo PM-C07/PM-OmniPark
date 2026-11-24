@@ -50,6 +50,8 @@ export type PropsVistaMappa = {
   dettaglio: ReactNode;
   avvisi?: ReactNode;
   contenutoRiga?: (elemento: ElementoMappa) => ReactNode;
+  /** Testo dell'elenco vuoto (OMP-59); predefinito quello della mappa degli stalli. */
+  testoElencoVuoto?: string;
 };
 
 export function VistaMappa(props: PropsVistaMappa) {
@@ -95,11 +97,13 @@ export function VistaMappa(props: PropsVistaMappa) {
         <div>{props.dettaglio}</div>
       </div>
       <section aria-labelledby="titolo-elenco-mappa" className="flex flex-col gap-3">
-        <h2 id="titolo-elenco-mappa" className="text-lg font-semibold text-zinc-900">
+        <h2 id="titolo-elenco-mappa" tabIndex={-1} className="text-lg font-semibold text-zinc-900">
           {props.titoloElenco}
         </h2>
         {gruppi.length === 0 ? (
-          <p className="text-base text-zinc-800">Nessun elemento in questa zona.</p>
+          <p className="text-base text-zinc-800">
+            {props.testoElencoVuoto ?? "Nessun elemento in questa zona."}
+          </p>
         ) : (
           gruppi.map(([gruppo, voci]) => (
             <div key={gruppo} className="flex flex-col gap-2">

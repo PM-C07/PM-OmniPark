@@ -2,12 +2,10 @@
 // Boundary :SchermataProfilo (MU_3, SD_AUTH_5): targhe del profilo (UC_AUTH_5), con elenco,
 // aggiunta e rimozione e gli errori del dominio accanto al campo o alla targa interessata; con la
 // sessione scaduta torna a /accesso; il wallet (saldo e ricarica, OMP-58) è in PannelloWallet.
-import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useState, type FormEvent } from "react";
 import { Avviso } from "./Avviso.tsx";
 import { Bottone } from "./Bottone.tsx";
 import { Campo } from "./Campo.tsx";
-import { indirizzoDiAccesso } from "./logica/navigazione.ts";
 import {
   CAMPI_AGGIUNTA_TARGA,
   CAMPI_RIMOZIONE_TARGA,
@@ -17,6 +15,7 @@ import {
 import { validaTarga } from "./logica/validazione.ts";
 import { Pannello } from "./Pannello.tsx";
 import { PannelloWallet } from "./PannelloWallet.tsx";
+import { vaiAllAccesso } from "./vaiAllAccesso.ts";
 
 type Targa = { veicolo: number; targa: string };
 
@@ -32,7 +31,6 @@ function idRiga(targa: string): string {
 }
 
 export function SchermataProfilo() {
-  const router = useRouter();
   const [targhe, setTarghe] = useState<Targa[] | null>(null);
   const [nuova, setNuova] = useState("");
   const [erroreCampo, setErroreCampo] = useState<string | null>(null);
@@ -45,7 +43,7 @@ export function SchermataProfilo() {
   const applica = useCallback(
     (esito: EsitoRisposta): esito is { esito: "successo"; dati: unknown } => {
       if (esito.esito === "sessioneScaduta") {
-        router.replace(indirizzoDiAccesso("/profilo"));
+        vaiAllAccesso("/profilo");
         return false;
       }
       if (esito.esito === "successo") {
@@ -54,7 +52,7 @@ export function SchermataProfilo() {
       }
       return false;
     },
-    [router],
+    [],
   );
 
   useEffect(() => {
