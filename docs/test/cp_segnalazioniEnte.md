@@ -114,3 +114,41 @@ Note sui riferimenti:
 - **Cursore e transazioni confermate dopo la lettura** (stessa nota di `cp_mappa.md`): una transazione che modifica una segnalazione e conferma dopo che il cursore è stato letto, con un `ultima_modifica` precedente al cursore, non compare nella richiesta successiva. Per l'aggiornamento della mappa il rischio è accettato; nessun frame lo verifica.
 - **Comportamenti già verificati altrove** (nessun frame qui): filtro per stato e per ente di `segnalazioniNonChiuseDellEnte`, ente inesistente, `segnalazioniModificateDopo` dopo una presa in carico o una chiusura, `cp_persistenza_segnalazioni_verifiche.md` TF-SV-11…18; `trovaAusiliario`, `cp_verificaAutorizzazione.md` TF-10…12.
 - I permessi da verificare (RF_OP_2, `SD_OP_1` 2.3) restano alla COD-21 (risposta D6 del piano).
+
+## 7. Aggiunte di OMP-48 (issue #27): fotografia e variazioni con il cursore del database
+
+Operazioni nuove della Facade, usate dalle API dell'Ausiliario (`cp_apiSegnalazioni.md`). Le operazioni dei §2…5 restano invariate, per compatibilità.
+
+```ts
+facade.fotografiaSegnalazioni(ausiliario: number, ente: number)
+  : Promise<{ segnalazioni: SegnalazioneMappa[]; cursore: Date }>;
+// segnalazioni non chiuse dell'ente (come segnalazioniNonChiuse) e cursore = istante del database letto prima delle righe
+facade.variazioniDopo(ausiliario: number, ente: number, cursore: Date)
+  : Promise<{ segnalazioni: SegnalazioneMappa[]; cursore: Date }>;
+// segnalazioni dell'ente, in qualsiasi stato, con ultimaModifica > cursore − 5 s (MARGINE_CURSORE_MS), per id;
+// nuovo cursore = istante del database letto prima delle righe
+```
+
+- Controllo dell'Ausiliario come in §2 (`AUSILIARIO_NON_ATTIVO`, `ENTE_NON_AMMESSO`), poi il cursore (`ISTANTE_NON_VALIDO`).
+- **Ambiente:** come §3; i frame si eseguono dopo TF-ENT-13, nell'ordine della tabella. **Variazione:** `creaSegnalazioneDaLettura(pool, { stalloId, targa, dataEOra: 2026-11-20 09:00:00+01, motivo: "SOSTA_ASSENTE" })`; per la variazione confermata con ritardo, la stessa funzione su un client della seconda connessione dopo `BEGIN`, con il `COMMIT` dopo la lettura indicata. **Cursore + 6 s:** calcolato, senza attese.
+
+**Categorie e scelte (OMP-48)**
+
+- `fotografiaSegnalazioni`: ente con segnalazioni · richiedente disattivato [error] · ente di un altro [error].
+- `variazioniDopo` — cursore: precedente a una variazione · appena restituito, con una variazione negli ultimi 5 s (margine) · successivo all'ultima variazione di più di 5 s (cursore + 6 s) · non valido [error]; variazione confermata con ritardo entro il margine [single]; ente di un altro [error].
+
+| Frame     | Operazione                                                                                                                                                                        | Esito atteso                                                                 | Riferimento |
+| :-------- | :-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | :--------------------------------------------------------------------------- | :---------- |
+| TF-ENT-14 | `fotografiaSegnalazioni(5, 2)`                                                                                                                                                    | `segnalazioni` id `[12]`; `cursore` è un `Date` valido                       | RF_OP_1     |
+| TF-ENT-15 | `c0 = fotografiaSegnalazioni(5, 2).cursore`; segnalazione sullo stallo 22, targa `EN15AA`; `variazioniDopo(5, 2, c0)`                                                             | contiene la segnalazione `EN15AA`, `APERTA`; `cursore` non precedente a `c0` | NRF_PER_3   |
+| TF-ENT-16 | `c0` di `(5, 2)`; segnalazione sullo stallo 24, targa `EN16AA`; `r1 = variazioniDopo(5, 2, c0)`; `r2 = variazioniDopo(5, 2, r1.cursore)`                                          | `r1` e `r2` contengono `EN16AA` (margine)                                    | ISSUE_10    |
+| TF-ENT-17 | `c0` di `(6, 3)`; segnalazione sullo stallo 29, targa `EN17AA`; `r1 = variazioniDopo(6, 3, c0)`; `r2 = variazioniDopo(6, 3, r1.cursore + 6 s)`                                    | `r1` contiene `EN17AA`; `r2.segnalazioni` è `[]`                             | NRF_PER_3   |
+| TF-ENT-18 | `c0` di `(6, 3)`; seconda connessione: `BEGIN` e segnalazione sullo stallo 30, targa `EN18AA`; `r1 = variazioniDopo(6, 3, c0)`; `COMMIT`; `r2 = variazioniDopo(6, 3, r1.cursore)` | `r1` non contiene `EN18AA`; `r2` la contiene                                 | NRF_PER_3   |
+| TF-ENT-19 | `variazioniDopo(2, 2, 2026-11-20 09:00:00+01)`                                                                                                                                    | errore `ENTE_NON_AMMESSO`                                                    | NRF_SIC_1   |
+| TF-ENT-20 | `variazioniDopo(6, 3, new Date("non valida"))`                                                                                                                                    | errore `ISTANTE_NON_VALIDO`                                                  | ISSUE_10    |
+| TF-ENT-21 | `fotografiaSegnalazioni(4, 1)`                                                                                                                                                    | errore `AUSILIARIO_NON_ATTIVO`                                               | VD_19       |
+| TF-ENT-22 | `fotografiaSegnalazioni(2, 2)`                                                                                                                                                    | errore `ENTE_NON_AMMESSO`                                                    | NRF_SIC_1   |
+
+Totale aggiunto: 9 frame (in tutto 22).
+
+Note: TF-ENT-15, 17, 18 verificano il criterio di accettazione dell'issue #27 sulla variazione confermata dopo la lettura precedente (TF-ENT-18: transazione iniziata prima del cursore e confermata dopo, entro il margine); TF-ENT-17 la correzione 2 del piano di OMP-48; TF-ENT-16 le risposte idempotenti.

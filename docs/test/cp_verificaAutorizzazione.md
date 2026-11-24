@@ -71,3 +71,27 @@ Operazione `trovaAusiliario(ausiliario: number): Promise<Ausiliario | null>`: l'
 | TF-12 | trovaAusiliario | inesistente (`999999`) | `null`                                                                                                                        |
 
 Gli Ausiliari 2 e 4 sono quelli del dataset (`0002_dati_esempio.sql`). Che un utente esistente ma non Ausiliario non sia restituito lo verifica `cp_segnalazioniEnte.md` TF-ENT-07.
+
+## Categorie e scelte: utenteDellaSessione (OMP-48)
+
+Operazione `utenteDellaSessione(sessione: string): Promise<UtenteAutorizzato>` della Facade di Utenti e accessi: l'utente di una sessione valida (`{ utenteId, ruolo, enteId }`), senza controllo dell'operazione. Usata da `GET /api/auth/io`, da `richiediSessione` per le operazioni dell'Ausiliario senza ente indicato e da `src/proxy.ts` (issue #27). È la prima parte di `verificaAutorizzazione`, ora in una funzione comune: i frame TF-01…12 restano invariati.
+
+**Sessione**
+
+1. valida, Automobilista
+2. valida, Ausiliario attivo
+3. scaduta [error]
+4. inesistente [error]
+5. di un Ausiliario disattivato [error]
+
+## Frame ed esiti attesi: utenteDellaSessione (OMP-48)
+
+| Frame | Operazione          | Sessione                                                                                        | Esito atteso                                                           |
+| ----- | ------------------- | ----------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------- |
+| TF-13 | utenteDellaSessione | valida, dell'Automobilista dell'ambiente                                                        | `{ utenteId, ruolo: "AUTOMOBILISTA", enteId: null }`                   |
+| TF-14 | utenteDellaSessione | valida, dell'Ausiliario attivo del primo ente                                                   | `{ utenteId, ruolo: "AUSILIARIO_DEL_TRAFFICO", enteId: <primo ente> }` |
+| TF-15 | utenteDellaSessione | scaduta (orologio dei test oltre la durata della sessione)                                      | errore `SESSIONE_NON_VALIDA`                                           |
+| TF-16 | utenteDellaSessione | inesistente                                                                                     | errore `SESSIONE_NON_VALIDA`                                           |
+| TF-17 | utenteDellaSessione | dell'Ausiliario disattivato, inserita con `creaSessione` della persistenza e non ancora scaduta | errore `SESSIONE_NON_VALIDA`                                           |
+
+Riferimento dei frame TF-13…17: NRF_SIC_1. TF-17 corrisponde a VD_19 (un Ausiliario disattivato non opera, anche se gli è rimasta una sessione).

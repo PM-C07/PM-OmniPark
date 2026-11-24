@@ -1,4 +1,6 @@
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import { istanteDelDatabase } from "../../persistence/accessoDati/istante";
+import { impostaStatoStallo } from "../../persistence/accessoDati/stalliTariffe";
 import {
   chiudiDatabaseDiTest,
   poolDiTest,
@@ -13,7 +15,8 @@ import {
   type Zona,
 } from "./facade";
 
-// Test frame TF-MAP-01…16 di docs/test/cp_mappa.md (OMP-43).
+// Test frame TF-MAP-01…16 di docs/test/cp_mappa.md (OMP-43) e TF-MAP-17…24 (§7, OMP-48:
+// fotografia e variazioni con il cursore del database).
 
 const ISTANTE_DATASET = new Date("2026-11-15T08:00:00+01:00");
 const PRIMA_DEL_DATASET = new Date("2026-11-15T07:59:59+01:00");
@@ -58,6 +61,13 @@ const LATITUDINE_FUORI_INTERVALLO: Zona = {
 const VALORE_NON_FINITO: Zona = { latMin: 40.688, latMax: 40.689, lonMin: NaN, lonMax: 14.5223 };
 
 const ID_PIAZZA_AUBRY = [14, 15, 16, 17, 18, 19, 20, 21];
+
+// Zone aggiunte da OMP-48 (§7)
+const SORRENTINO: Zona = { latMin: 40.6896, latMax: 40.6898, lonMin: 14.5201, lonMax: 14.5202 };
+const SAN_LEONE: Zona = { latMin: 40.6917, latMax: 40.6919, lonMin: 14.523, lonMax: 14.5231 };
+const GARIBALDI: Zona = { latMin: 40.7457, latMax: 40.7459, lonMin: 14.7705, lonMax: 14.7706 };
+
+const SEI_SECONDI_MS = 6000;
 
 describe("OMP-43 · cp_mappa", () => {
   beforeAll(async () => {
@@ -227,6 +237,100 @@ describe("OMP-43 · cp_mappa", () => {
     await rifiutato(
       facade().stalliModificatiDopo(PIAZZA_AUBRY, new Date(NaN)),
       "ISTANTE_NON_VALIDO",
+    );
+  });
+
+  // --- OMP-48 · fotografiaZona e variazioniDopo (§7) ---
+
+  function stallo(stalli: StalloZona[], id: number): StalloZona | undefined {
+    return stalli.find((s) => s.id === id);
+  }
+
+  it("NRF_PER_3 · TF-MAP-17 · fotografia di Piazza Aubry → stalli 14…21 con area e tariffa, cursore tra prima e dopo", async () => {
+    const prima = await istanteDelDatabase(poolDiTest());
+    const r = await facade().fotografiaZona(PIAZZA_AUBRY);
+    const dopo = await istanteDelDatabase(poolDiTest());
+
+    expect(ids(r.stalli)).toEqual(ID_PIAZZA_AUBRY);
+    for (const s of r.stalli) {
+      expect(s.areaDiSosta).toEqual({ id: 5, nome: "Piazza Aubry" });
+      expect(s.tariffa).toEqual({ id: 1, costoOrario: 150 });
+    }
+    expect(r.cursore).toBeInstanceOf(Date);
+    expect(r.cursore.getTime()).toBeGreaterThanOrEqual(prima.getTime());
+    expect(r.cursore.getTime()).toBeLessThanOrEqual(dopo.getTime());
+  });
+
+  it("NRF_PER_3 · TF-MAP-18 · cursore precedente a una variazione → contiene lo stallo 1 Occupato, cursore non precedente a c0", async () => {
+    const f = facade();
+    const c0 = (await f.fotografiaZona(SORRENTINO)).cursore;
+    await f.registraRilevazione({ stallo: 1, presenza: true, dataOra: ISTANTE_PROVA });
+
+    const r = await f.variazioniDopo(SORRENTINO, c0);
+
+    expect(stallo(r.stalli, 1)?.stato).toBe("OCCUPATO");
+    expect(r.cursore).toBeInstanceOf(Date);
+    expect(r.cursore.getTime()).toBeGreaterThanOrEqual(c0.getTime());
+  });
+
+  it("ISSUE_27 · TF-MAP-19 · cursore appena restituito con variazione negli ultimi 5 s → r1 e r2 contengono lo stallo 5 Occupato", async () => {
+    const f = facade();
+    const c0 = (await f.fotografiaZona(SAN_LEONE)).cursore;
+    await f.registraRilevazione({ stallo: 5, presenza: true, dataOra: ISTANTE_PROVA });
+
+    const r1 = await f.variazioniDopo(SAN_LEONE, c0);
+    const r2 = await f.variazioniDopo(SAN_LEONE, r1.cursore);
+
+    expect(stallo(r1.stalli, 5)?.stato).toBe("OCCUPATO");
+    expect(stallo(r2.stalli, 5)?.stato).toBe("OCCUPATO");
+  });
+
+  it("NRF_PER_3 · TF-MAP-20 · cursore successivo all'ultima variazione di più di 5 s → r1 con lo stallo 28, r2 vuoto", async () => {
+    const f = facade();
+    const c0 = (await f.fotografiaZona(GARIBALDI)).cursore;
+    await f.registraRilevazione({ stallo: 28, presenza: true, dataOra: ISTANTE_PROVA });
+
+    const r1 = await f.variazioniDopo(GARIBALDI, c0);
+    expect(stallo(r1.stalli, 28)).toBeDefined();
+
+    const r2 = await f.variazioniDopo(GARIBALDI, new Date(r1.cursore.getTime() + SEI_SECONDI_MS));
+    expect(r2.stalli).toEqual([]);
+  });
+
+  it("NRF_PER_3 · TF-MAP-21 · variazione confermata con ritardo entro il margine → r1 senza lo stallo 16, r2 con lo stallo 16 Non disponibile", async () => {
+    const f = facade();
+    const c0 = (await f.fotografiaZona(PIAZZA_AUBRY)).cursore;
+
+    const client = await poolDiTest().connect();
+    let r1: { stalli: StalloZona[]; cursore: Date } | undefined;
+    try {
+      await client.query("BEGIN");
+      await impostaStatoStallo(client, 16, "NON_DISPONIBILE");
+      r1 = await f.variazioniDopo(PIAZZA_AUBRY, c0);
+      await client.query("COMMIT");
+    } finally {
+      client.release();
+    }
+
+    expect(r1).toBeDefined();
+    const r2 = await f.variazioniDopo(PIAZZA_AUBRY, r1!.cursore);
+
+    expect(stallo(r1!.stalli, 16)).toBeUndefined();
+    expect(stallo(r2.stalli, 16)?.stato).toBe("NON_DISPONIBILE");
+  });
+
+  it("ISSUE_7 · TF-MAP-22 · variazioniDopo con cursore non valido → ISTANTE_NON_VALIDO", async () => {
+    await rifiutato(facade().variazioniDopo(PIAZZA_AUBRY, new Date(NaN)), "ISTANTE_NON_VALIDO");
+  });
+
+  it("ISSUE_7 · TF-MAP-23 · fotografiaZona con zona non valida → ZONA_NON_VALIDA", async () => {
+    await rifiutato(facade().fotografiaZona(LATITUDINI_INVERTITE), "ZONA_NON_VALIDA");
+  });
+
+  it("ISSUE_7 · TF-MAP-24 · variazioniDopo con zona non valida → ZONA_NON_VALIDA", async () => {
+    await rifiutato(
+      facade().variazioniDopo(LATITUDINI_INVERTITE, ISTANTE_PROVA),
+      "ZONA_NON_VALIDA",
     );
   });
 });

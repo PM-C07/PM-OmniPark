@@ -1,5 +1,8 @@
 // Servizio Mappa: stalli di una zona e stalli modificati dopo un istante (UC_STALLI_1,
 // SD_STALLI_1, NRF_PER_3). L'aggiornamento della mappa interroga le modifiche dopo il cursore.
+// Da OMP-48 le API usano fotografiaZona e variazioniDopo: cursore letto dal database e margine di
+// 5 s (docs/test/cp_persistenza_stalli_tariffe.md §6); le due operazioni precedenti restano.
+import { istanteDelDatabase } from "../../persistence/accessoDati/istante.ts";
 import {
   stalliModificatiDopo as stalliModificatiDopoInZona,
   stalliNellaZona as stalliInZona,
@@ -48,4 +51,46 @@ export async function stalliModificatiDopo(
     throw new ErroreGestioneStalli("ISTANTE_NON_VALIDO");
   }
   return stalliModificatiDopoInZona(contesto.pool, zona, istante);
+}
+
+/**
+ * Margine di sicurezza del cursore: una variazione confermata dopo la lettura precedente, da una
+ * transazione iniziata prima del cursore da meno di 5 s, compare nella risposta successiva.
+ */
+export const MARGINE_CURSORE_MS = 5_000;
+
+function verificaCursore(cursore: Date): void {
+  if (!(cursore instanceof Date) || Number.isNaN(cursore.getTime())) {
+    throw new ErroreGestioneStalli("ISTANTE_NON_VALIDO");
+  }
+}
+
+/** Stalli della zona e cursore iniziale, letto dal database prima delle righe. */
+export async function fotografiaZona(
+  contesto: ContestoGestioneStalli,
+  zona: Zona,
+): Promise<{ stalli: StalloZona[]; cursore: Date }> {
+  verificaZona(zona);
+  const cursore = await istanteDelDatabase(contesto.pool);
+  return { stalli: await stalliInZona(contesto.pool, zona), cursore };
+}
+
+/**
+ * Stalli della zona modificati dopo il cursore meno il margine, per id, e nuovo cursore letto dal
+ * database prima delle righe. Le righe già viste possono tornare: il chiamante le applica per id.
+ */
+export async function variazioniDopo(
+  contesto: ContestoGestioneStalli,
+  zona: Zona,
+  cursore: Date,
+): Promise<{ stalli: StalloZona[]; cursore: Date }> {
+  verificaZona(zona);
+  verificaCursore(cursore);
+  const nuovoCursore = await istanteDelDatabase(contesto.pool);
+  const { stalli } = await stalliModificatiDopoInZona(
+    contesto.pool,
+    zona,
+    new Date(cursore.getTime() - MARGINE_CURSORE_MS),
+  );
+  return { stalli, cursore: nuovoCursore };
 }
