@@ -47,3 +47,99 @@ main:focus {
 .salta-al-contenuto:focus {
   top: 0.5rem;
 }
+
+/*
+ * Marker della mappa e simboli della legenda (OMP-58): il colore indica lo stato, ma il simbolo del
+ * tipo e quello dello stato restano leggibili senza colore (NRF_USA_1). Colori con contrasto AA sul
+ * testo bianco.
+ */
+.marcatore-contenitore {
+  background: transparent;
+  border: none;
+}
+
+.marcatore {
+  position: relative;
+  display: flex;
+  width: 36px;
+  height: 36px;
+  align-items: center;
+  justify-content: center;
+  border: 2px solid #ffffff;
+  border-radius: 9999px;
+  box-shadow: 0 1px 4px rgb(0 0 0 / 0.45);
+  color: #ffffff;
+  font-weight: 700;
+  font-size: 16px;
+  line-height: 1;
+}
+
+.marcatore--selezionato {
+  outline: 4px solid #1d4ed8;
+  outline-offset: 1px;
+}
+
+.marcatore__stato {
+  position: absolute;
+  right: -6px;
+  bottom: -6px;
+  display: flex;
+  width: 18px;
+  height: 18px;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid #3f3f46;
+  border-radius: 9999px;
+  background: #ffffff;
+  color: #18181b;
+  font-size: 11px;
+}
+
+.legenda-simbolo {
+  display: inline-flex;
+  min-width: 1.75rem;
+  height: 1.75rem;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid #52525b;
+  border-radius: 9999px;
+  background: #ffffff;
+  color: #18181b;
+  font-weight: 700;
+}
+
+.marcatore[data-tono="verde"],
+.legenda-simbolo[data-tono="verde"] {
+  background: #047857;
+  color: #ffffff;
+}
+
+.marcatore[data-tono="rosso"],
+.legenda-simbolo[data-tono="rosso"] {
+  background: #b91c1c;
+  color: #ffffff;
+}
+
+.marcatore[data-tono="arancione"],
+.legenda-simbolo[data-tono="arancione"] {
+  background: #c2410c;
+  color: #ffffff;
+}
+
+.marcatore[data-tono="grigio"],
+.legenda-simbolo[data-tono="grigio"] {
+  background: #52525b;
+  color: #ffffff;
+}
+
+.marcatore[data-tono="blu"],
+.legenda-simbolo[data-tono="blu"] {
+  background: #1d4ed8;
+  color: #ffffff;
+}
+
+/* Il marker con il focus da tastiera ha lo stesso contorno del resto dell'interfaccia. */
+.leaflet-marker-icon:focus-visible {
+  outline: 3px solid #1d4ed8;
+  outline-offset: 2px;
+}

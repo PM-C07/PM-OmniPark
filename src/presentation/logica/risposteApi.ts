@@ -76,12 +76,27 @@ export async function chiamaApi(
   opzioni: RequestInit,
   campiPerCodice: Readonly<Record<string, string>>,
 ): Promise<EsitoRisposta> {
+  return (await chiamaApiConOra(url, opzioni, campiPerCodice)).esito;
+}
+
+/**
+ * Come chiamaApi, e in più l'intestazione Date e gli istanti di invio e ricezione, per stimare lo
+ * scarto dell'orologio del dispositivo (sostaInCorso.ts, scartoOrologio). Senza risposta, Date null.
+ */
+export async function chiamaApiConOra(
+  url: string,
+  opzioni: RequestInit,
+  campiPerCodice: Readonly<Record<string, string>>,
+): Promise<{ esito: EsitoRisposta; dataServer: string | null; inviata: number; ricevuta: number }> {
+  const inviata = Date.now();
   let risposta: Response;
   try {
     risposta = await fetch(url, { ...opzioni, credentials: "same-origin" });
   } catch {
-    return erroreDiRete();
+    return { esito: erroreDiRete(), dataServer: null, inviata, ricevuta: Date.now() };
   }
+  const ricevuta = Date.now();
+  const dataServer = risposta.headers.get("date");
   const testo = await risposta.text().catch(() => "");
   let corpo: unknown = null;
   if (testo !== "") {
@@ -91,5 +106,10 @@ export async function chiamaApi(
       corpo = testo;
     }
   }
-  return interpretaRisposta(risposta.status, corpo, campiPerCodice);
+  return {
+    esito: interpretaRisposta(risposta.status, corpo, campiPerCodice),
+    dataServer,
+    inviata,
+    ricevuta,
+  };
 }
