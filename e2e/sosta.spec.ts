@@ -108,13 +108,16 @@ test("TS-01 · RF_SOSTA_1 · registrazione, ricarica dalla scheda, avvio e pagam
     await scheda
       .getByRole("button", { name: formattaEuro(RICARICA_DALLA_SCHEDA), exact: true })
       .click();
+    const ricaricaInviata = page.waitForResponse((r) => r.url().endsWith("/api/wallet/ricarica"));
     await scheda.getByRole("button", { name: "Conferma la ricarica" }).click();
-    await expect(
-      scheda.getByText(`Ricarica di ${formattaEuro(RICARICA_DALLA_SCHEDA)} approvata`, {
-        exact: false,
-      }),
-    ).toBeVisible();
+    expect((await ricaricaInviata).status()).toBe(200);
+    // Con il credito sufficiente il riquadro della ricarica (e il suo messaggio) esce dalla scheda
+    // e il focus torna su «Conferma e paga» (SchedaStallo, OMP-58; DIF-03 per il saldo non mostrato).
+    await expect(scheda.getByText("Credito insufficiente.")).toBeHidden();
     await expect(conferma).toBeEnabled();
+    await expect(conferma).toBeFocused();
+    const wallet = await page.request.get("/api/wallet");
+    expect(((await wallet.json()) as { saldo: number }).saldo).toBe(RICARICA_DALLA_SCHEDA);
     await expect(page.getByLabel("Targa")).toHaveValue(utente.targa);
     await expect(page.getByLabel("Durata")).toHaveValue("15");
   });
