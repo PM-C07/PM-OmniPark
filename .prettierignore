@@ -2,6 +2,8 @@
 node_modules
 .next
 coverage
+e2e-report
+e2e-risultati
 out
 build
 package-lock.json

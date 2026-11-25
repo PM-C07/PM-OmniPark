@@ -13,6 +13,10 @@
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
     "test:db": "vitest run --config vitest.db.config.ts",
+    "test:copertura": "vitest run --config vitest.copertura.config.ts --coverage",
+    "test:e2e": "playwright test --grep-invert \"@lenta|@misura\"",
+    "test:e2e:lenta": "playwright test --grep @lenta",
+    "misura:e2e": "playwright test --grep @misura",
     "db:migrate": "node --env-file-if-exists=.env --disable-warning=MODULE_TYPELESS_PACKAGE_JSON src/persistence/cli/migra.ts",
     "db:reset": "node --env-file-if-exists=.env --disable-warning=MODULE_TYPELESS_PACKAGE_JSON src/persistence/cli/reset.ts",
     "sim:sensori": "node --env-file=.env --disable-warning=MODULE_TYPELESS_PACKAGE_JSON src/simulators/sensori.ts",
@@ -27,6 +31,7 @@
     "react-dom": "19.3.0"
   },
   "devDependencies": {
+    "@playwright/test": "1.65.1",
     "@tailwindcss/turbopack": "4.3.3",
     "@types/leaflet": "1.9.22",
     "@types/node": "^26.6.6",
