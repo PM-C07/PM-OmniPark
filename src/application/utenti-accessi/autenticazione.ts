@@ -27,9 +27,10 @@ import { normalizzaTarga, verificaFormato } from "./targa.ts";
 
 export const DURATA_SESSIONE_MS = 8 * 60 * 60 * 1000;
 
-const LUNGHEZZA_MINIMA_PASSWORD = 8;
+// Regole di email e password, usate anche dalla gestione degli Ausiliari (OMP-62).
+export const LUNGHEZZA_MINIMA_PASSWORD = 8;
 // Stessa regola del vincolo utente_email_formato dello schema.
-const FORMATO_EMAIL = /^[^@\s]+@[^@\s]+$/;
+export const FORMATO_EMAIL = /^[^@\s]+@[^@\s]+$/;
 
 export type ContestoUtentiAccessi = {
   pool: Pool;

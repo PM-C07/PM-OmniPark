@@ -13,6 +13,17 @@ export const AUSILIARI = {
   lucaRusso: "luca.russo@omnipark.example", // ente 1, disattivato
 } as const;
 
+/** Amministratore dei dati di partenza: la sua password non è nel repository (OMP-62). */
+export const AMMINISTRATORE = "marco.esposito@omnipark.example";
+
+export const MOTIVO_SENZA_AMMINISTRATORE =
+  "Non eseguito: OMNIPARK_E2E_PASSWORD_AMMINISTRATORE non è impostata (la password dell'Amministratore la conoscono solo i PM).";
+
+/** Password dell'Amministratore, facoltativa: senza, TS-09 e TS-13 sono saltati. */
+export function passwordAmministratore(): string | undefined {
+  return process.env.OMNIPARK_E2E_PASSWORD_AMMINISTRATORE || undefined;
+}
+
 /** Password dimostrativa degli Ausiliari del README, letta dall'ambiente. */
 export function passwordAusiliario(): string {
   return variabileObbligatoria(process.env, "OMNIPARK_E2E_PASSWORD_AUSILIARIO");

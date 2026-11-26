@@ -1,7 +1,8 @@
 // Testo e tono degli stati per BadgeStato (OMP-57, docs/test/cp_statiDominio.md): il badge mostra
-// sempre un testo, mai solo un colore (NRF_USA_1). Stati da SCD_1, SCD_2 e SCD_3.
+// sempre un testo, mai solo un colore (NRF_USA_1). Stati da SCD_1, SCD_2 e SCD_3; stati dell'account
+// dell'Ausiliario da StatoAccount del class diagram (OMP-62).
 
-export type TipoStato = "stallo" | "sosta" | "segnalazione";
+export type TipoStato = "stallo" | "sosta" | "segnalazione" | "account";
 // viola (OMP-59): solo per il motivo «targa non corrispondente», distinto dal blu di «Presa in carico».
 export type Tono = "verde" | "rosso" | "arancione" | "grigio" | "blu" | "viola";
 
@@ -22,6 +23,10 @@ const STATI: Readonly<Record<TipoStato, Readonly<Record<string, { testo: string;
       APERTA: { testo: "Aperta", tono: "rosso" },
       PRESA_IN_CARICO: { testo: "Presa in carico", tono: "blu" },
       CHIUSA: { testo: "Chiusa", tono: "grigio" },
+    },
+    account: {
+      ATTIVO: { testo: "Attivo", tono: "verde" },
+      DISATTIVATO: { testo: "Disattivato", tono: "grigio" },
     },
   };
 
