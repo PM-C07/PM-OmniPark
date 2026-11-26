@@ -54,7 +54,7 @@ Questa configurazione vale per lo sviluppo in locale. Anteprime e produzione su 
 
 **Database di test.** I test sul database (`npm run test:db`) usano un database personale sul branch Neon `dev-teamc07`, con nome `omnipark_<nome>_test`, indicato nella variabile `DATABASE_URL_TEST` del file `.env` (stringa pooled con `sslmode=verify-full`, come `DATABASE_URL`). All'inizio di ogni file di test il database viene ricreato con schema e dati di esempio, e ogni test gira in una transazione annullata alla fine: i dati di sviluppo non vengono mai toccati. Il comando rifiuta di partire se `DATABASE_URL_TEST` manca, se il nome del database non finisce con `_test` o se indica lo stesso database di `DATABASE_URL`. `npm test` e la CI non usano il database.
 
-**Credenziali dimostrative.** Valgono solo per i dati di esempio. La password dell'amministratore (`marco.esposito@omnipark.example`) la comunicano i PM.
+**Credenziali dimostrative.** Valgono solo per i dati di esempio. La password dell'amministratore (`marco.esposito@omnipark.example`) la comunicano i PM: è stata reimpostata dalla migrazione `0003_password_amministratore.sql`, che contiene solo l'hash, e non è scritta in nessun file del repository.
 
 | Ruolo                    | Email                             | Ente      | Password                  |
 | :----------------------- | :-------------------------------- | :-------- | :------------------------ |
