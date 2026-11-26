@@ -1,6 +1,7 @@
 // Logica dell'avvio della sosta nella scheda dello stallo (OMP-58, docs/test/cp_avvioInterfaccia.md,
 // UC_SOSTA_1, NRF_USA_2): disponibilità di «Avvia sosta», durata proposta, controllo anticipato del
-// credito e campi degli errori di POST /api/soste. Il server resta l'autorità su ogni controllo.
+// credito, campi degli errori e corpo di POST /api/soste (JSON, oppure multipart con la foto del
+// permesso dalla OMP-61). Il server resta l'autorità su ogni controllo.
 import { formattaEuro } from "./importi.ts";
 
 export type Disponibilita = { disponibile: true } | { disponibile: false; motivo: string };
@@ -13,12 +14,13 @@ const MOTIVO_PER_STATO: Readonly<Record<string, string>> = {
   SCONOSCIUTO: "Lo stato dello stallo non è affidabile: la sosta non si può avviare.",
 };
 
-const MOTIVO_DISABILI =
-  "Per gli stalli riservati alle persone con disabilità servono la dichiarazione e la foto del permesso: l'avvio da qui arriverà con un prossimo aggiornamento.";
+/** Tipi di stallo su cui si avvia la sosta; su disabili e rosa con il permesso (OMP-61, CR_01). */
+const TIPI_AVVIABILI: readonly string[] = ["ORDINARIO_A_PAGAMENTO", "DISABILI", "ROSA"];
 
 /**
- * «Avvia sosta» solo su uno stallo Occupato (UC_SOSTA_1, entry condition e 2.a1), a pagamento o
- * rosa (decisione D2: sul rosa senza permesso, come il server). Prima lo stato, poi il tipo.
+ * «Avvia sosta» solo su uno stallo Occupato (UC_SOSTA_1, entry condition e 2.a1) di un tipo
+ * previsto; sugli stalli riservati porta al passaggio del permesso (richiedePermesso). Prima lo
+ * stato, poi il tipo.
  */
 export function disponibilitaAvvio(stato: string, tipoDiStallo: string): Disponibilita {
   if (stato !== "OCCUPATO") {
@@ -27,13 +29,9 @@ export function disponibilitaAvvio(stato: string, tipoDiStallo: string): Disponi
       motivo: Object.hasOwn(MOTIVO_PER_STATO, stato) ? MOTIVO_PER_STATO[stato] : NON_AVVIABILE,
     };
   }
-  if (tipoDiStallo === "ORDINARIO_A_PAGAMENTO" || tipoDiStallo === "ROSA") {
-    return { disponibile: true };
-  }
-  return {
-    disponibile: false,
-    motivo: tipoDiStallo === "DISABILI" ? MOTIVO_DISABILI : NON_AVVIABILE,
-  };
+  return TIPI_AVVIABILI.includes(tipoDiStallo)
+    ? { disponibile: true }
+    : { disponibile: false, motivo: NON_AVVIABILE };
 }
 
 const PASSO_DURATA = 15;
@@ -74,9 +72,12 @@ export function creditoSufficiente(saldo: number, importo: number): boolean {
   return saldo >= importo;
 }
 
-/** Testo del pulsante dell'interazione 3: «Conferma e paga (3,00 €)». */
+/**
+ * Testo del pulsante dell'interazione 3 (e della conferma del prolungamento): «Conferma e paga
+ * (3,00 €)»; senza importo, per le soste gratuite, «Conferma (senza addebito)».
+ */
 export function etichettaConferma(importo: number): string {
-  return `Conferma e paga (${formattaEuro(importo)})`;
+  return importo > 0 ? `Conferma e paga (${formattaEuro(importo)})` : "Conferma (senza addebito)";
 }
 
 /** Codici di POST /api/soste e GET /api/soste/importo → campo del modulo; gli altri vanno su "generale". */
@@ -85,4 +86,37 @@ export const CAMPI_AVVIO_SOSTA: Readonly<Record<string, string>> = {
   DURATA_NON_VALIDA: "durata",
   TARGA_NON_NEL_PROFILO: "targa",
   SOSTA_GIA_ATTIVA: "targa",
+  PERMESSO_MANCANTE: "permesso",
+  PERMESSO_NON_VALIDO: "permesso",
 };
+
+/** Dichiarazione e foto del permesso per l'avvio su uno stallo riservato (UC_SOSTA_5). */
+export type PermessoDiAvvio = { dichiarazione: string; foto: Blob };
+
+/**
+ * Richiesta di POST /api/soste: JSON senza permesso; con il permesso multipart/form-data, con la
+ * foto come file (cp_apiWalletSoste.md §2). Il content-type del multipart lo imposta il browser.
+ */
+export function richiestaDiAvvio(dati: {
+  stallo: number;
+  targa: string;
+  durata: number;
+  permesso?: PermessoDiAvvio;
+}): RequestInit {
+  const { stallo, targa, durata, permesso } = dati;
+  if (!permesso) {
+    return {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ stallo, targa, durata }),
+    };
+  }
+  const modulo = new FormData();
+  modulo.set("stallo", String(stallo));
+  modulo.set("targa", targa);
+  modulo.set("durata", String(durata));
+  modulo.set("dichiarazioneDiPermesso", permesso.dichiarazione);
+  const nome = permesso.foto.type === "image/png" ? "permesso.png" : "permesso.jpg";
+  modulo.set("fotoDelPermesso", permesso.foto, nome);
+  return { method: "POST", body: modulo };
+}

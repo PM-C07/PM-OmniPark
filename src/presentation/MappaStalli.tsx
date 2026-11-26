@@ -3,23 +3,28 @@
 // GET /api/stalli, poi aggiornaStato con GET /api/stalli/modifiche un secondo dopo la risposta
 // precedente (NRF_PER_3, hook useAggiornamentoPeriodico), applicando le righe per id; 401 →
 // /accesso?da=%2Fmappa con caricamento completo (vaiAllAccesso).
-// Contiene la scheda dello stallo con l'avvio della sosta e «La mia sosta».
+// Contiene la scheda dello stallo con l'avvio della sosta e «La mia sosta». Dalla OMP-61 ricorda gli
+// stalli già visti, così «La mia sosta» indica numero e area anche dopo un cambio di zona (DIF-04).
 import { useCallback, useMemo, useRef, useState } from "react";
 import { Avviso } from "./Avviso.tsx";
 import { BadgeStato } from "./BadgeStato.tsx";
 import { formattaOra } from "./logica/importi.ts";
 import {
   applicaModifiche,
+  descrizioneStallo,
   descriviTipo,
   elementoDelloStallo,
   LEGENDA_STALLI,
+  ricordaStalli,
   VISTA_INIZIALE,
   ZONA_INIZIALE,
   zonaDallaVista,
   type StalloDellaMappa,
 } from "./logica/mappaStalli.ts";
 import { SchedaStallo, type SostaAvviata } from "./SchedaStallo.tsx";
-import { SostaInCorso } from "./SostaInCorso.tsx";
+import { messaggioProlungata } from "./logica/prolungamento.ts";
+import type { SostaProlungata } from "./ProlungamentoSosta.tsx";
+import { SostaInCorso, type ConfermaSosta } from "./SostaInCorso.tsx";
 import { useAggiornamentoPeriodico } from "./useAggiornamentoPeriodico.ts";
 import { vaiAllAccesso } from "./vaiAllAccesso.ts";
 import { VistaMappa, type ElementoMappa, type VistaGeografica } from "./VistaMappa.tsx";
@@ -27,9 +32,11 @@ import { VistaMappa, type ElementoMappa, type VistaGeografica } from "./VistaMap
 export function MappaStalli() {
   const [zona, setZona] = useState(ZONA_INIZIALE);
   const [stalli, setStalli] = useState<readonly StalloDellaMappa[]>([]);
+  // Stalli visti in qualsiasi zona durante l'apertura della pagina (DIF-04).
+  const [noti, setNoti] = useState<ReadonlyMap<number, StalloDellaMappa>>(() => new Map());
   const [selezionato, setSelezionato] = useState<number | null>(null);
   const [versioneSoste, setVersioneSoste] = useState(0);
-  const [conferma, setConferma] = useState<string | null>(null);
+  const [conferma, setConferma] = useState<ConfermaSosta | null>(null);
   const titoloSosta = useRef<HTMLHeadingElement>(null);
 
   const sessioneScaduta = useCallback(() => vaiAllAccesso("/mappa"), []);
@@ -41,8 +48,14 @@ export function MappaStalli() {
     urlModifiche: (cursore) =>
       `/api/stalli/modifiche?zona=${zona}&dopo=${encodeURIComponent(cursore)}`,
     righe: (dati) => (dati as { stalli: StalloDellaMappa[] }).stalli,
-    onFotografia: (righe) => setStalli(righe),
-    onModifiche: (righe) => setStalli((attuali) => applicaModifiche(attuali, righe)),
+    onFotografia: (righe) => {
+      setStalli(righe);
+      setNoti((attuali) => ricordaStalli(attuali, righe));
+    },
+    onModifiche: (righe) => {
+      setStalli((attuali) => applicaModifiche(attuali, righe));
+      setNoti((attuali) => ricordaStalli(attuali, righe));
+    },
     onSessioneScaduta: sessioneScaduta,
   });
 
@@ -55,16 +68,25 @@ export function MappaStalli() {
   const stallo = selezionato === null ? undefined : perId.get(selezionato);
 
   const descriviStallo = useCallback(
-    (stalloId: number) => {
-      const noto = perId.get(stalloId);
-      return noto ? `Stallo n. ${noto.numero}, ${noto.areaDiSosta.nome}` : `Stallo ${stalloId}`;
-    },
-    [perId],
+    (stalloId: number) => descrizioneStallo(stalloId, noti),
+    [noti],
   );
 
   function sostaAvviata(sosta: SostaAvviata) {
     setSelezionato(null);
-    setConferma(`Sosta avviata: scade alle ${formattaOra(sosta.orarioDiScadenza)}.`);
+    setConferma({
+      sosta: sosta.sosta,
+      testo: `Sosta avviata: scade alle ${formattaOra(sosta.orarioDiScadenza)}.`,
+    });
+    setVersioneSoste((v) => v + 1);
+    requestAnimationFrame(() => titoloSosta.current?.focus());
+  }
+
+  function sostaProlungata(prolungata: SostaProlungata) {
+    setConferma({
+      sosta: prolungata.sosta,
+      testo: messaggioProlungata(prolungata.orarioDiScadenza),
+    });
     setVersioneSoste((v) => v + 1);
     requestAnimationFrame(() => titoloSosta.current?.focus());
   }
@@ -114,6 +136,7 @@ export function MappaStalli() {
         versione={versioneSoste}
         conferma={conferma}
         descriviStallo={descriviStallo}
+        onProlungata={sostaProlungata}
         onSessioneScaduta={sessioneScaduta}
       />
       <VistaMappa

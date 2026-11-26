@@ -7,14 +7,19 @@ import { Avviso } from "./Avviso.tsx";
 import { Bottone } from "./Bottone.tsx";
 import { formattaEuro } from "./logica/importi.ts";
 import { chiamaApi } from "./logica/risposteApi.ts";
-import { CAMPI_RICARICA, esitoRicaricaDa, TAGLI_RICARICA } from "./logica/wallet.ts";
+import {
+  CAMPI_RICARICA,
+  esitoRicaricaDa,
+  messaggioRicaricaApprovata,
+  TAGLI_RICARICA,
+} from "./logica/wallet.ts";
 
 export function Ricarica({
   onRicaricata,
   onSessioneScaduta,
   idTitolo,
 }: {
-  onRicaricata(saldo: number): void;
+  onRicaricata(saldo: number, importo: number): void;
   onSessioneScaduta(): void;
   idTitolo: string;
 }) {
@@ -49,12 +54,9 @@ export function Ricarica({
       return;
     }
     if (risultato.esito === "approvata") {
-      setEsito({
-        tipo: "successo",
-        testo: `Ricarica di ${formattaEuro(scelto)} approvata. Nuovo saldo: ${formattaEuro(risultato.saldo)}.`,
-      });
+      setEsito({ tipo: "successo", testo: messaggioRicaricaApprovata(scelto, risultato.saldo) });
       setScelto(null);
-      onRicaricata(risultato.saldo);
+      onRicaricata(risultato.saldo, scelto);
       return;
     }
     setEsito({ tipo: "errore", testo: risultato.messaggio });

@@ -1,5 +1,11 @@
 import { describe, expect, it } from "vitest";
-import { eTaglioPrevisto, esitoRicarica, TAGLI_RICARICA } from "./wallet.ts";
+import {
+  eTaglioPrevisto,
+  esitoRicarica,
+  messaggioRicaricaApprovata,
+  riquadroRicarica,
+  TAGLI_RICARICA,
+} from "./wallet.ts";
 
 describe("logica del wallet nell'interfaccia (cp_walletInterfaccia)", () => {
   it("RF_WALLET_1 · TF-WALUI-01 · tagli di ricarica → [500, 1000, 2000]", () => {
@@ -78,5 +84,47 @@ describe("logica del wallet nell'interfaccia (cp_walletInterfaccia)", () => {
       esito: "errore",
       messaggio: "Si è verificato un errore. Riprova più tardi.",
     });
+  });
+
+  it("RF_WALLET_1 · TF-WALUI-13 · ricarica di 5 € con saldo 5 € → messaggio con taglio e saldo", () => {
+    expect(messaggioRicaricaApprovata(500, 500)).toBe(
+      "Ricarica di 5,00\u00a0€ approvata. Nuovo saldo: 5,00\u00a0€.",
+    );
+  });
+
+  it("RF_WALLET_1 · TF-WALUI-14 · ricarica di 10 € con saldo 10,50 € → saldo con decimali", () => {
+    expect(messaggioRicaricaApprovata(1000, 1050)).toBe(
+      "Ricarica di 10,00\u00a0€ approvata. Nuovo saldo: 10,50\u00a0€.",
+    );
+  });
+
+  it("RF_WALLET_2 · TF-WALUI-15 · credito scarso → proposta", () => {
+    expect(
+      riquadroRicarica({ creditoScarso: true, erroreCredito: false, ricaricaApprovata: false }),
+    ).toBe("proposta");
+  });
+
+  it("RF_WALLET_2 · TF-WALUI-16 · errore di credito dal server → proposta", () => {
+    expect(
+      riquadroRicarica({ creditoScarso: false, erroreCredito: true, ricaricaApprovata: false }),
+    ).toBe("proposta");
+  });
+
+  it("RF_WALLET_1 · TF-WALUI-17 · ricarica approvata con il credito ora sufficiente → approvata", () => {
+    expect(
+      riquadroRicarica({ creditoScarso: false, erroreCredito: false, ricaricaApprovata: true }),
+    ).toBe("approvata");
+  });
+
+  it("RF_WALLET_2 · TF-WALUI-18 · ricarica approvata ma credito ancora scarso → proposta", () => {
+    expect(
+      riquadroRicarica({ creditoScarso: true, erroreCredito: false, ricaricaApprovata: true }),
+    ).toBe("proposta");
+  });
+
+  it("ISSUE_33 · TF-WALUI-19 · nessuna ricarica, credito sufficiente → nessuno", () => {
+    expect(
+      riquadroRicarica({ creditoScarso: false, erroreCredito: false, ricaricaApprovata: false }),
+    ).toBe("nessuno");
   });
 });

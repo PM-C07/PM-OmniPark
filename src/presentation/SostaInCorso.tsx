@@ -3,12 +3,20 @@
 // RF_SOSTA_7): soste ATTIVA e SCADUTA da GET /api/soste, con targa, stallo, scadenza e tempo
 // rimanente. Un timer locale porta la sosta a Scaduta allo zero senza ricaricare la pagina, poi una
 // nuova lettura conferma lo stato del server. Il tempo usa lo scarto stimato dall'intestazione Date.
+// Dalla OMP-61: «Prolunga» sulle soste Attive (UC_SOSTA_2) e messaggio di conferma dell'avvio o del
+// prolungamento visibile solo finché quella sosta è Attiva.
 import { useEffect, useRef, useState, type Ref } from "react";
 import { Avviso } from "./Avviso.tsx";
 import { BadgeStato } from "./BadgeStato.tsx";
 import { formattaOra } from "./logica/importi.ts";
 import { chiamaApiConOra } from "./logica/risposteApi.ts";
-import { scartoOrologio, statoMostrato, tempoRimanente } from "./logica/sostaInCorso.ts";
+import {
+  confermaVisibile,
+  scartoOrologio,
+  statoMostrato,
+  tempoRimanente,
+} from "./logica/sostaInCorso.ts";
+import { ProlungamentoSosta, type SostaProlungata } from "./ProlungamentoSosta.tsx";
 
 type Sosta = {
   id: number;
@@ -19,16 +27,21 @@ type Sosta = {
   orarioDiScadenza: string;
 };
 
+/** Messaggio di conferma dell'avvio o del prolungamento, con la sosta a cui si riferisce. */
+export type ConfermaSosta = { sosta: number; testo: string };
+
 export function SostaInCorso({
   versione,
   conferma,
   descriviStallo,
+  onProlungata,
   onSessioneScaduta,
   ref,
 }: {
   versione: number;
-  conferma: string | null;
+  conferma: ConfermaSosta | null;
   descriviStallo(stalloId: number): string;
+  onProlungata(prolungata: SostaProlungata): void;
   onSessioneScaduta(): void;
   ref?: Ref<HTMLHeadingElement>;
 }) {
@@ -94,7 +107,8 @@ export function SostaInCorso({
     }
   }, [soste, oraServer]);
 
-  if (soste.length === 0 && !conferma && !nonDisponibili) {
+  const mostraConferma = conferma !== null && confermaVisibile(conferma.sosta, soste, oraServer);
+  if (soste.length === 0 && !mostraConferma && !nonDisponibili) {
     return null;
   }
   return (
@@ -110,13 +124,14 @@ export function SostaInCorso({
       >
         La mia sosta
       </h2>
-      {conferma ? <Avviso tipo="successo">{conferma}</Avviso> : null}
+      {mostraConferma ? <Avviso tipo="successo">{conferma.testo}</Avviso> : null}
       {nonDisponibili ? (
         <Avviso tipo="errore">Le soste in corso non sono disponibili. Riprova più tardi.</Avviso>
       ) : null}
       <ul className="flex flex-col gap-3">
         {soste.map((sosta) => {
           const tempo = tempoRimanente(Date.parse(sosta.orarioDiScadenza), oraServer);
+          const stato = statoMostrato(sosta.stato, tempo.scaduta);
           return (
             <li
               key={sosta.id}
@@ -124,7 +139,7 @@ export function SostaInCorso({
             >
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <span className="font-mono text-lg font-semibold text-zinc-900">{sosta.targa}</span>
-                <BadgeStato tipo="sosta" stato={statoMostrato(sosta.stato, tempo.scaduta)} />
+                <BadgeStato tipo="sosta" stato={stato} />
               </div>
               <p className="text-base text-zinc-900">{descriviStallo(sosta.stalloId)}</p>
               <p className="text-base text-zinc-900">
@@ -135,6 +150,12 @@ export function SostaInCorso({
                   </>
                 ) : null}
               </p>
+              <ProlungamentoSosta
+                sosta={sosta}
+                statoMostrato={stato}
+                onProlungata={onProlungata}
+                onSessioneScaduta={onSessioneScaduta}
+              />
             </li>
           );
         })}

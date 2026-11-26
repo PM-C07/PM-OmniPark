@@ -1,14 +1,14 @@
 # cp_walletInterfaccia
 
 Specifica dei casi di test (category partition) della logica del wallet nell'interfaccia: funzioni pure di `src/presentation/logica/wallet.ts`, usate dal pannello Wallet del boundary `:SchermataProfilo` (`MU_3`) e dalla ricarica proposta con il credito insufficiente nella scheda dello stallo.
-Requisiti: RF_WALLET_1 (wallet e ricarica simulata). Task OMP-58 (issue #29).
+Requisiti: RF_WALLET_1 (wallet e ricarica simulata). Task OMP-58 (issue #29); dalla OMP-61 (issue #33, blocco B) messaggio della ricarica approvata e riquadro della ricarica nei flussi di avvio e prolungamento (DIF-03), TF-WALUI-13…19.
 
-- **Fonti dell'esito atteso:** `UC_WALLET_1` (passo 1: tagli 5, 10 o 20 €; On failure: il saldo non cambia), `SD_WALLET_1`, `cp_apiWalletSoste.md` §2 (`POST /api/wallet/ricarica` → 200 `{ saldo }`, codici `IMPORTO_NON_PREVISTO` e `PAGAMENTO_RIFIUTATO`), `cp_ricarica.md` (TF-04…06), issue #29 (categorie minime: taglio di ricarica 5, 10, 20 €; esito della ricarica approvata o rifiutata), piano approvato di OMP-58 (punto 8, decisione D3: il rifiuto è coperto da questi test e non dalla verifica manuale).
+- **Fonti dell'esito atteso:** `UC_WALLET_1` (passo 1: tagli 5, 10 o 20 €; On failure: il saldo non cambia), `SD_WALLET_1`, `cp_apiWalletSoste.md` §2 (`POST /api/wallet/ricarica` → 200 `{ saldo }`, codici `IMPORTO_NON_PREVISTO` e `PAGAMENTO_RIFIUTATO`), `cp_ricarica.md` (TF-04…06), issue #29 (categorie minime: taglio di ricarica 5, 10, 20 €; esito della ricarica approvata o rifiutata), piano approvato di OMP-58 (punto 8, decisione D3: il rifiuto è coperto da questi test e non dalla verifica manuale); dalla OMP-61: `UC_WALLET_1` passo 4 («registra la ricarica …, aggiorna il saldo e lo mostra; se la ricarica è partita da `UC_SOSTA_1` o `UC_SOSTA_2`, il flusso torna al caso d'uso di partenza»), `UC_SOSTA_1` 5.a1 e `UC_SOSTA_2` 5.a1, `np_01_automobilista` (ErrCredito → Ricarica → «torna alla conferma»), `docs/test/test_di_sistema.md` §8 DIF-03.
 - **File di test:** `src/presentation/logica/wallet.test.ts`, eseguito da `npm test` (ambiente node, senza database).
 
 ## 1. Tracciabilità
 
-Ogni frame riporta un solo riferimento, scelto in quest'ordine: un requisito dell'Elenco (`RF_…`, `NRF_…`) se il suo testo copre davvero il comportamento; altrimenti il vincolo di dominio `VD_<n>`; altrimenti `ISSUE_29` per le scelte dell'issue #29 e del piano approvato.
+Ogni frame riporta un solo riferimento, scelto in quest'ordine: un requisito dell'Elenco (`RF_…`, `NRF_…`) se il suo testo copre davvero il comportamento; altrimenti il vincolo di dominio `VD_<n>`; altrimenti `ISSUE_29` o `ISSUE_33` per le scelte delle issue #29 e #33 e dei piani approvati di OMP-58 e OMP-61.
 
 Nome del test: `<riferimento> · <frame> · <descrizione> → <esito>`, per esempio `RF_WALLET_1 · TF-WALUI-08 · PAGAMENTO_RIFIUTATO → rifiutata con il messaggio`.
 
@@ -24,6 +24,10 @@ type EsitoRicarica =
   | { esito: "errore"; messaggio: string }
   | { esito: "sessioneScaduta" };
 esitoRicarica(status: number, corpo: unknown): EsitoRicarica;
+// dalla OMP-61
+messaggioRicaricaApprovata(importo: number, saldo: number): string; // centesimi
+type RiquadroRicarica = "proposta" | "approvata" | "nessuno";
+riquadroRicarica(stato: { creditoScarso: boolean; erroreCredito: boolean; ricaricaApprovata: boolean }): RiquadroRicarica;
 ```
 
 Regole di `esitoRicarica`, in quest'ordine:
@@ -34,9 +38,19 @@ Regole di `esitoRicarica`, in quest'ordine:
 4. altro errore nella forma `{ errore: { codice, messaggio } }` → `{ esito: "errore", messaggio }`;
 5. altrimenti (successo senza `saldo` intero, corpo di forma diversa) → `{ esito: "errore", messaggio: "Si è verificato un errore. Riprova più tardi." }`.
 
+**`messaggioRicaricaApprovata(importo, saldo)`** = `"Ricarica di " + formattaEuro(importo) + " approvata. Nuovo saldo: " + formattaEuro(saldo) + "."` (`cp_formatoImporti.md`). È il messaggio del componente `Ricarica` (OMP-58), spostato nella logica perché lo mostrano anche la scheda dello stallo e il prolungamento.
+
+**`riquadroRicarica`** decide che cosa mostra, nella conferma dell'avvio o del prolungamento, il riquadro della ricarica:
+
+1. `creditoScarso` (saldo noto minore dell'importo) oppure `erroreCredito` (il server ha risposto `CREDITO_INSUFFICIENTE`) → `"proposta"`: avviso «Credito insufficiente» con la ricarica (`UC_SOSTA_1` 5.a1, `UC_SOSTA_2` 5.a1);
+2. altrimenti, se una ricarica di questo flusso è stata approvata (`ricaricaApprovata`) → `"approvata"`: resta visibile `messaggioRicaricaApprovata` con il nuovo saldo, e la conferma è di nuovo possibile (`UC_WALLET_1` passo 4, DIF-03);
+3. altrimenti → `"nessuno"`.
+
+`ricaricaApprovata` torna falso quando il flusso si chiude (conferma riuscita o annullamento).
+
 ## 3. Ambiente
 
-Funzioni pure: nessun database, nessuna rete, nessun DOM. I messaggi dei corpi sono quelli del Wallet: `PAGAMENTO_RIFIUTATO` «Il pagamento è stato rifiutato. Il saldo non è cambiato.», `IMPORTO_NON_PREVISTO` «Puoi ricaricare solo 5, 10 o 20 €.».
+Funzioni pure: nessun database, nessuna rete, nessun DOM. I messaggi dei corpi sono quelli del Wallet: `PAGAMENTO_RIFIUTATO` «Il pagamento è stato rifiutato. Il saldo non è cambiato.», `IMPORTO_NON_PREVISTO` «Puoi ricaricare solo 5, 10 o 20 €.». Negli importi dei testi attesi lo spazio prima di `€` è quello indivisibile di `formattaEuro` (`cp_formatoImporti.md`).
 
 ## 4. Categorie e scelte
 
@@ -44,7 +58,11 @@ Funzioni pure: nessun database, nessuna rete, nessun DOM. I messaggi dei corpi s
 
 **Esito della ricarica:** approvata · rifiutata [error] · importo non previsto [error] · sessione scaduta [error] · risposta di successo senza saldo [error] · risposta non riconosciuta [error].
 
-## 5. Test frame (12)
+**Messaggio della ricarica approvata** (dalla OMP-61): taglio e saldo · saldo con decimali.
+
+**Riquadro della ricarica** (dalla OMP-61): credito scarso · errore di credito dal server · ricarica approvata con il credito ora sufficiente (DIF-03) · ricarica approvata ma credito ancora scarso [single] · nessuna ricarica, credito sufficiente.
+
+## 5. Test frame (19)
 
 | Frame       | Chiamata                                                                                                                                   | Esito atteso                                                                                    | Riferimento |
 | :---------- | :----------------------------------------------------------------------------------------------------------------------------------------- | :---------------------------------------------------------------------------------------------- | :---------- |
@@ -60,16 +78,26 @@ Funzioni pure: nessun database, nessuna rete, nessun DOM. I messaggi dei corpi s
 | TF-WALUI-10 | `esitoRicarica(401, { errore: { codice: "SESSIONE_NON_VALIDA", messaggio: "La sessione non è valida." } })`                                | `{ esito: "sessioneScaduta" }`                                                                  | NRF_SIC_1   |
 | TF-WALUI-11 | `esitoRicarica(200, { saldo: "1600" })`                                                                                                    | `{ esito: "errore", messaggio: "Si è verificato un errore. Riprova più tardi." }`               | ISSUE_29    |
 | TF-WALUI-12 | `esitoRicarica(502, "<html>Bad gateway</html>")`                                                                                           | `{ esito: "errore", messaggio: "Si è verificato un errore. Riprova più tardi." }`               | ISSUE_29    |
+| TF-WALUI-13 | `messaggioRicaricaApprovata(500, 500)`                                                                                                     | `"Ricarica di 5,00 € approvata. Nuovo saldo: 5,00 €."`                                          | RF_WALLET_1 |
+| TF-WALUI-14 | `messaggioRicaricaApprovata(1000, 1050)`                                                                                                   | `"Ricarica di 10,00 € approvata. Nuovo saldo: 10,50 €."`                                        | RF_WALLET_1 |
+| TF-WALUI-15 | `riquadroRicarica({ creditoScarso: true, erroreCredito: false, ricaricaApprovata: false })`                                                | `"proposta"`                                                                                    | RF_WALLET_2 |
+| TF-WALUI-16 | `riquadroRicarica({ creditoScarso: false, erroreCredito: true, ricaricaApprovata: false })`                                                | `"proposta"`                                                                                    | RF_WALLET_2 |
+| TF-WALUI-17 | `riquadroRicarica({ creditoScarso: false, erroreCredito: false, ricaricaApprovata: true })`                                                | `"approvata"`                                                                                   | RF_WALLET_1 |
+| TF-WALUI-18 | `riquadroRicarica({ creditoScarso: true, erroreCredito: false, ricaricaApprovata: true })`                                                 | `"proposta"`                                                                                    | RF_WALLET_2 |
+| TF-WALUI-19 | `riquadroRicarica({ creditoScarso: false, erroreCredito: false, ricaricaApprovata: false })`                                               | `"nessuno"`                                                                                     | ISSUE_33    |
 
-Totale 12: 6 sui tagli, 6 sull'esito della ricarica.
+Totale 19: 6 sui tagli, 6 sull'esito della ricarica, 2 sul messaggio della ricarica approvata, 5 sul riquadro della ricarica.
 
 Note sui riferimenti:
 
 - TF-WALUI-01…06: RF_WALLET_1 e `UC_WALLET_1` passo 1 (tagli 5, 10 o 20 €); la costante è duplicata nell'interfaccia e il server la ricontrolla (`IMPORTO_NON_PREVISTO`, TF-WALUI-09).
 - TF-WALUI-07, 08: categoria minima dell'issue «esito della ricarica (approvata; rifiutata)»; il rifiuto è l'On failure di `UC_WALLET_1` (`cp_ricarica.md` TF-06). Decisione D3: in anteprima il simulatore non rifiuta i tagli previsti, quindi il rifiuto è verificato solo qui.
 - TF-WALUI-11, 12: risposta non riconosciuta, come `cp_risposteApi.md` TF-RAP-17.
+- TF-WALUI-13, 14: `UC_WALLET_1` passo 4 («aggiorna il saldo e lo mostra»), con il testo del componente `Ricarica` di OMP-58.
+- TF-WALUI-15, 16, 18: `UC_SOSTA_1` 5.a1 e `UC_SOSTA_2` 5.a1 (proposta di ricarica con il credito insufficiente); TF-WALUI-18: dopo una ricarica che non basta la proposta resta, con il messaggio della ricarica approvata dentro il componente `Ricarica`.
+- TF-WALUI-17 riproduce **DIF-03** (`test_di_sistema.md` §8): in OMP-58 il riquadro dipendeva solo dal credito scarso o dall'errore di credito, e con il credito tornato sufficiente spariva insieme al messaggio e al nuovo saldo; ora mostra la ricarica approvata (`UC_WALLET_1` passo 4). Il frame fallisce prima della correzione perché la funzione non esiste; nel flusso reale lo riproduce TS-01 passo 5 (Blocco C).
 
 ## 6. Note
 
 - **Già verificati altrove** (nessun frame qui): ricarica e rifiuto lato server, `cp_ricarica.md` e `cp_apiWalletSoste.md`; formato del saldo, `cp_formatoImporti.md`.
-- Riepilogo, conferma, annullamento e pulsante disabilitato durante l'invio si verificano a mano sull'anteprima.
+- Riepilogo, conferma, annullamento e pulsante disabilitato durante l'invio si verificano a mano sull'anteprima. Il riquadro «approvata» nella scheda dello stallo e nel prolungamento si verifica con TS-01 passo 5 e TS-13.

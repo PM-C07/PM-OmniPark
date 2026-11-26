@@ -1,6 +1,7 @@
 // Logica di «La mia sosta» (OMP-58, docs/test/cp_sostaInCorso.md, SCD_2, RF_SOSTA_7): tempo
 // rimanente, passaggio locale a Scaduta senza ricaricare la pagina e scarto tra l'orologio del
-// dispositivo e quello del server, stimato dall'intestazione Date di una risposta.
+// dispositivo e quello del server, stimato dall'intestazione Date di una risposta. Dalla OMP-61
+// anche la visibilità del messaggio di conferma dell'avvio e del prolungamento.
 
 /** Secondi rimanenti (per eccesso, mai negativi) e testo: «1 h 05 min», «4 min 30 s», «45 s», «Scaduta». */
 export function tempoRimanente(
@@ -43,4 +44,25 @@ export function scartoOrologio(
     return 0;
   }
   return oraServer + 500 - (inviataMs + ricevutaMs) / 2;
+}
+
+/**
+ * Il messaggio di conferma («Sosta avviata…», «Sosta prolungata…») della sosta indicata si mostra
+ * solo finché la sosta è mostrata Attiva; se la sosta non è ancora tra quelle lette (lettura dopo
+ * l'avvio non ancora tornata), si mostra.
+ */
+export function confermaVisibile(
+  sostaConfermata: number | null,
+  soste: readonly { id: number; stato: string; orarioDiScadenza: string }[],
+  adessoMs: number,
+): boolean {
+  if (sostaConfermata === null) {
+    return false;
+  }
+  const sosta = soste.find((s) => s.id === sostaConfermata);
+  if (!sosta) {
+    return true;
+  }
+  const { scaduta } = tempoRimanente(Date.parse(sosta.orarioDiScadenza), adessoMs);
+  return statoMostrato(sosta.stato, scaduta) === "ATTIVA";
 }

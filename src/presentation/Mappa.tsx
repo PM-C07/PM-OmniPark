@@ -2,9 +2,12 @@
 // Mappa Leaflet generica (OMP-58): sfondo OpenStreetMap, marker divIcon con simbolo del tipo e
 // dello stato, selezione da mouse, tocco e tastiera. Non conosce stalli né segnalazioni: riceve
 // ElementoMappa. Va caricata solo nel browser: VistaMappa la importa con dynamic(…, { ssr: false }).
+// Dalla OMP-61 (DIF-02) i marker che si sovrappongono alla zoom corrente si dispongono a griglia
+// attorno alla loro posizione, così il tocco seleziona sempre l'elemento toccato.
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import { useEffect, useRef } from "react";
+import { DIMENSIONE_MARCATORE, separaMarcatori } from "./logica/marcatori.ts";
 import type { ElementoMappa } from "./logica/mappaStalli.ts";
 
 export type VistaGeografica = { sud: number; ovest: number; nord: number; est: number };
@@ -51,10 +54,33 @@ function vistaDi(mappa: L.Map): VistaGeografica {
   };
 }
 
+type Marcatori = Map<number, { marker: L.Marker; html: string }>;
+
+/**
+ * Posiziona i marker: centri proiettati in pixel alla zoom corrente, separati se si sovrappongono
+ * (separaMarcatori), poi riportati in coordinate geografiche. Con lo zoom alto tornano al loro posto.
+ */
+function posizionaMarcatori(
+  istanza: L.Map,
+  elementi: readonly ElementoMappa[],
+  marcatori: Marcatori,
+): void {
+  const zoom = istanza.getZoom();
+  const punti = elementi.map((elemento) => {
+    const punto = istanza.project([elemento.latitudine, elemento.longitudine], zoom);
+    return { id: elemento.id, x: punto.x, y: punto.y };
+  });
+  for (const { id, x, y } of separaMarcatori(punti, DIMENSIONE_MARCATORE)) {
+    marcatori.get(id)?.marker.setLatLng(istanza.unproject([x, y], zoom));
+  }
+}
+
 export function Mappa(props: PropsMappa) {
   const contenitore = useRef<HTMLDivElement>(null);
   const mappa = useRef<L.Map | null>(null);
-  const marcatori = useRef(new Map<number, { marker: L.Marker; html: string }>());
+  const marcatori = useRef<Marcatori>(new Map());
+  // Elementi dell'ultimo allineamento dei marker, per riposizionarli al cambio di zoom.
+  const elementiMostrati = useRef<readonly ElementoMappa[]>([]);
   // Le callback cambiano a ogni rendering: la mappa le legge da qui senza ricrearsi.
   const callback = useRef(props);
   useEffect(() => {
@@ -92,6 +118,9 @@ export function Mappa(props: PropsMappa) {
       timer = setTimeout(() => callback.current.onCambioVista(vistaDi(istanza)), RITARDO_VISTA_MS);
     });
     callback.current.onCambioVista(vistaDi(istanza));
+    istanza.on("zoomend", () =>
+      posizionaMarcatori(istanza, elementiMostrati.current, marcatori.current),
+    );
 
     const elencoMarcatori = marcatori.current;
     return () => {
@@ -123,8 +152,8 @@ export function Mappa(props: PropsMappa) {
       const icona = L.divIcon({
         html,
         className: "marcatore-contenitore",
-        iconSize: [36, 36],
-        iconAnchor: [18, 18],
+        iconSize: [DIMENSIONE_MARCATORE, DIMENSIONE_MARCATORE],
+        iconAnchor: [DIMENSIONE_MARCATORE / 2, DIMENSIONE_MARCATORE / 2],
       });
       let voce = presenti.get(elemento.id);
       if (!voce) {
@@ -147,7 +176,6 @@ export function Mappa(props: PropsMappa) {
         voce = { marker, html };
         presenti.set(elemento.id, voce);
       } else {
-        voce.marker.setLatLng([elemento.latitudine, elemento.longitudine]);
         if (voce.html !== html) {
           voce.marker.setIcon(icona);
           voce.html = html;
@@ -161,6 +189,8 @@ export function Mappa(props: PropsMappa) {
         nodo.setAttribute("title", elemento.etichetta);
       }
     }
+    elementiMostrati.current = elementi;
+    posizionaMarcatori(istanza, elementi, presenti);
   }, [elementi, selezionato]);
 
   return (
