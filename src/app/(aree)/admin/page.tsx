@@ -1,15 +1,15 @@
-// Boundary :PanoramicaEnti (MU_5), schermata iniziale dell'Amministratore: segnaposto fino a COD-24.
+// Boundary :PanoramicaEnti (MU_5), schermata iniziale dell'Amministratore: riepilogo degli enti
+// clienti con stalli gestiti, soste attive e segnalazioni aperte (UC_ADM_1, OMP-62).
 import type { Metadata } from "next";
-import { Avviso } from "../../../presentation/Avviso.tsx";
+import { PanoramicaEnti } from "../../../presentation/PanoramicaEnti.tsx";
 
 export const metadata: Metadata = { title: "Panoramica degli enti · OmniPark" };
 
-export default function PanoramicaEnti() {
+export default function Page() {
   return (
     <>
       <h1 className="text-2xl font-bold text-zinc-900">Panoramica degli enti</h1>
-      <p className="text-base text-zinc-800">Qui vedrai la panoramica degli enti.</p>
-      <Avviso tipo="informazione">Contenuto in arrivo con COD-24.</Avviso>
+      <PanoramicaEnti />
     </>
   );
 }

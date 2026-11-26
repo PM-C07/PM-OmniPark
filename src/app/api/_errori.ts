@@ -3,6 +3,10 @@
 // Il tipo Record impone uno status per ogni codice di ogni Facade: un codice nuovo senza status fa
 // fallire la compilazione. Le route dei simulatori (OMP-47) mantengono la loro traduzione.
 import {
+  ErroreAmministrazione,
+  type CodiceErroreAmministrazione,
+} from "../../application/amministrazione/facade.ts";
+import {
   ErroreGestioneSoste,
   type CodiceErroreGestioneSoste,
 } from "../../application/gestione-soste/facade.ts";
@@ -45,6 +49,7 @@ export type CodiceErrore =
   | CodiceErroreWallet
   | CodiceErroreGestioneSoste
   | CodiceErroreSegnalazioni
+  | CodiceErroreAmministrazione
   | CodiceErroreApi;
 
 export const STATUS_PER_CODICE: Readonly<Record<CodiceErrore, 401 | 403 | 404 | 409 | 422>> = {
@@ -63,6 +68,7 @@ export const STATUS_PER_CODICE: Readonly<Record<CodiceErrore, 401 | 403 | 404 | 
   SEGNALAZIONE_INESISTENTE: 404,
   ENTE_INESISTENTE: 404,
   SOSTA_INESISTENTE: 404,
+  AUSILIARIO_INESISTENTE: 404,
   // 409: conflitto di stato
   SOSTA_SCADUTA: 409,
   SOSTA_TERMINATA: 409,
@@ -80,6 +86,9 @@ export const STATUS_PER_CODICE: Readonly<Record<CodiceErrore, 401 | 403 | 404 | 
   RILEVAZIONE_SUPERATA: 409,
   SEGNALAZIONE_GIA_CHIUSA: 409,
   SEGNALAZIONE_PRESA_DA_ALTRI: 409,
+  AUSILIARIO_GIA_DISATTIVATO: 409,
+  AUSILIARIO_CON_SEGNALAZIONI_PRESE_IN_CARICO: 409,
+  CAMBIO_ENTE_NON_CONSENTITO: 409,
   // 422: dati non validi
   EMAIL_NON_VALIDA: 422,
   PASSWORD_TROPPO_CORTA: 422,
@@ -99,6 +108,7 @@ export const STATUS_PER_CODICE: Readonly<Record<CodiceErrore, 401 | 403 | 404 | 
   LETTURA_INCOMPLETA: 422,
   LETTURA_NON_VALIDA: 422,
   ESITO_NON_VALIDO: 422,
+  DATI_INCOMPLETI: 422,
   RICHIESTA_NON_VALIDA: 422,
 };
 
@@ -108,6 +118,7 @@ const CLASSI_DI_DOMINIO = [
   ErroreWallet,
   ErroreGestioneSoste,
   ErroreSegnalazioni,
+  ErroreAmministrazione,
   ErroreApi,
 ] as const;
 

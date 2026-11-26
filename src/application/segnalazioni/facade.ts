@@ -13,6 +13,7 @@ import { orologioDiSistema, type Orologio } from "../orologio.ts";
 import { creaFacadeUtentiAccessi, type FacadeUtentiAccessi } from "../utenti-accessi/facade.ts";
 import { chiudi } from "./chiusura.ts";
 import type { ContestoSegnalazioni } from "./contesto.ts";
+import { contaSegnalazioniAperte } from "./conteggio.ts";
 import { elaboraLettura, type EsitoRiscontro, type Lettura } from "./riscontro.ts";
 import {
   fotografiaSegnalazioni,
@@ -46,6 +47,8 @@ export type FacadeSegnalazioni = {
   ): Promise<{ segnalazioni: SegnalazioneMappa[]; cursore: Date }>;
   // Chiusura con esito (UC_OP_4, SD_OP_4)
   chiudi(ausiliario: number, segnalazione: number, esito: Esito): Promise<void>;
+  // Conteggio per la panoramica degli enti (RF_ADM_1, SD_ADM_1 4.2): Aperta e Presa in carico
+  contaSegnalazioniAperte(ente: number): Promise<number>;
 };
 
 /**
@@ -78,5 +81,6 @@ export function creaFacadeSegnalazioni(dipendenze: {
     variazioniDopo: (ausiliario, ente, cursore) =>
       variazioniDopo(contesto, ausiliario, ente, cursore),
     chiudi: (ausiliario, segnalazione, esito) => chiudi(contesto, ausiliario, segnalazione, esito),
+    contaSegnalazioniAperte: (ente) => contaSegnalazioniAperte(contesto, ente),
   };
 }

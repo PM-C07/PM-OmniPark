@@ -1,0 +1,150 @@
+"use client";
+// Boundary :PanoramicaEnti (MU_5, UC_ADM_1, SD_ADM_1; OMP-62): richiediEnti con GET /api/admin/enti,
+// poi richiediRiepilogo per ogni ente con GET /api/admin/enti/<id>/riepilogo, in parallelo. La tabella
+// mostra tutti gli enti con i tre valori: la selezione del passo 3 è la riga e «altro ente» (4.a2) è
+// immediato. Un riepilogo non disponibile (4.a1) resta sulla sua riga con «Riprova»; nessun ente:
+// segnalaNessunEnte (2.a1). 401 → /accesso?da=%2Fadmin.
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { Avviso } from "./Avviso.tsx";
+import { Bottone } from "./Bottone.tsx";
+import { righePanoramica, type RiepilogoCaricato } from "./logica/amministrazione.ts";
+import { chiamaApi } from "./logica/risposteApi.ts";
+import { vaiAllAccesso } from "./vaiAllAccesso.ts";
+
+type Ente = { id: number; nome: string };
+type Riepilogo = { stalliGestiti: number; sosteAttive: number; segnalazioniAperte: number };
+
+export function PanoramicaEnti() {
+  const [enti, setEnti] = useState<Ente[] | null>(null);
+  const [entiNonDisponibili, setEntiNonDisponibili] = useState(false);
+  const [riepiloghi, setRiepiloghi] = useState<ReadonlyMap<number, RiepilogoCaricato>>(new Map());
+  const [versione, setVersione] = useState(0);
+
+  const imposta = useCallback((ente: number, valore: RiepilogoCaricato) => {
+    setRiepiloghi((attuali) => new Map(attuali).set(ente, valore));
+  }, []);
+
+  /** richiediRiepilogo(ente): mostraRiepilogo o segnalaRiepilogoNonDisponibile sulla riga. */
+  const richiediRiepilogo = useCallback(
+    async (ente: number) => {
+      const esito = await chiamaApi(`/api/admin/enti/${ente}/riepilogo`, { method: "GET" }, {});
+      if (esito.esito === "sessioneScaduta") {
+        vaiAllAccesso("/admin");
+      } else if (esito.esito === "successo") {
+        imposta(ente, { stato: "pronto", ...(esito.dati as Riepilogo) });
+      } else {
+        imposta(ente, { stato: "errore" });
+      }
+    },
+    [imposta],
+  );
+
+  // richiediEnti, poi i riepiloghi; «Aggiorna» incrementa la versione e ricomincia.
+  useEffect(() => {
+    let attivo = true;
+    void chiamaApi("/api/admin/enti", { method: "GET" }, {}).then((esito) => {
+      if (!attivo) {
+        return;
+      }
+      if (esito.esito === "sessioneScaduta") {
+        vaiAllAccesso("/admin");
+        return;
+      }
+      if (esito.esito !== "successo") {
+        setEntiNonDisponibili(true);
+        return;
+      }
+      const elenco = (esito.dati as { enti: Ente[] }).enti;
+      setEntiNonDisponibili(false);
+      setRiepiloghi(new Map());
+      setEnti(elenco);
+      for (const ente of elenco) {
+        void richiediRiepilogo(ente.id);
+      }
+    });
+    return () => {
+      attivo = false;
+    };
+  }, [versione, richiediRiepilogo]);
+
+  const righe = useMemo(() => righePanoramica(enti ?? [], riepiloghi), [enti, riepiloghi]);
+
+  function riprova(ente: number) {
+    imposta(ente, { stato: "caricamento" });
+    void richiediRiepilogo(ente);
+  }
+
+  return (
+    <div className="flex flex-col gap-4">
+      {entiNonDisponibili ? (
+        <Avviso tipo="errore">Gli enti clienti non sono disponibili. Riprova più tardi.</Avviso>
+      ) : null}
+      {enti !== null && enti.length === 0 ? (
+        <Avviso tipo="informazione">Non ci sono enti clienti.</Avviso>
+      ) : null}
+      {enti === null && !entiNonDisponibili ? (
+        <p className="text-base text-zinc-800">Caricamento degli enti…</p>
+      ) : null}
+      {righe.length > 0 ? (
+        <div className="overflow-x-auto rounded-lg border border-zinc-300 bg-white">
+          <table className="w-full min-w-[32rem] border-collapse text-left text-base text-zinc-900">
+            <caption className="px-4 pt-3 text-left text-sm text-zinc-800">
+              Riepilogo per ente cliente: stalli gestiti, soste attive e segnalazioni non ancora
+              chiuse (aperte o prese in carico).
+            </caption>
+            <thead>
+              <tr className="border-b border-zinc-300">
+                <th scope="col" className="px-4 py-3 font-semibold">
+                  Ente
+                </th>
+                <th scope="col" className="px-4 py-3 text-right font-semibold">
+                  Stalli gestiti
+                </th>
+                <th scope="col" className="px-4 py-3 text-right font-semibold">
+                  Soste attive
+                </th>
+                <th scope="col" className="px-4 py-3 text-right font-semibold">
+                  Segnalazioni aperte
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              {righe.map((riga) => {
+                const inErrore = riepiloghi.get(riga.id)?.stato === "errore";
+                return (
+                  <tr key={riga.id} className="border-b border-zinc-200 last:border-b-0">
+                    <th scope="row" className="px-4 py-3 font-medium">
+                      {riga.ente}
+                      {inErrore ? (
+                        <span className="mt-1 flex flex-wrap items-center gap-2 text-sm font-normal text-red-800">
+                          Riepilogo non disponibile.
+                          <Bottone
+                            variante="secondario"
+                            onClick={() => riprova(riga.id)}
+                            aria-label={`Riprova il riepilogo di ${riga.ente}`}
+                          >
+                            Riprova
+                          </Bottone>
+                        </span>
+                      ) : null}
+                    </th>
+                    {riga.celle.map((cella, i) => (
+                      <td key={i} className="px-4 py-3 text-right tabular-nums">
+                        {cella}
+                      </td>
+                    ))}
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      ) : null}
+      <div>
+        <Bottone variante="secondario" onClick={() => setVersione((v) => v + 1)}>
+          Aggiorna
+        </Bottone>
+      </div>
+    </div>
+  );
+}

@@ -77,7 +77,9 @@ test("TS-08 · RF_AUTH_4 · accesso per ruolo, aree degli altri ruoli, credenzia
   await test.step("UC_AUTH_4 3.a1 · uscita → /mappa non è più raggiungibile", async () => {
     await page.goto("/mappa");
     await page.getByRole("button", { name: "Esci" }).click();
-    await expect(page).toHaveURL(/\/accesso$/);
+    // Dopo «Esci» si arriva su /accesso, oppure su /accesso?da=%2Fmappa se un 401 delle richieste
+    // ancora in corso nella pagina vince la corsa con il redirect dell'uscita: entrambi corretti.
+    await expect(page).toHaveURL(/\/accesso(\?da=%2Fmappa)?$/);
     await page.goto("/mappa");
     await expect(page).toHaveURL(/\/accesso\?da=%2Fmappa$/);
   });
@@ -96,7 +98,9 @@ test("TS-08 · RF_AUTH_4 · accesso per ruolo, aree degli altri ruoli, credenzia
   await test.step("UC_AUTH_4 2.a2 · Ausiliario disattivato → accesso negato", async () => {
     await page.goto("/ausiliario");
     await page.getByRole("button", { name: "Esci" }).click();
-    await expect(page).toHaveURL(/\/accesso$/);
+    // Dopo «Esci» si arriva su /accesso, oppure su /accesso?da=%2Fausiliario se un 401 delle richieste
+    // ancora in corso nella pagina vince la corsa con il redirect dell'uscita: entrambi corretti.
+    await expect(page).toHaveURL(/\/accesso(\?da=%2Fausiliario)?$/);
     const risposta = rispostaAccesso();
     await compilaAccesso(page, AUSILIARI.lucaRusso, passwordAusiliario());
     const r = await risposta;

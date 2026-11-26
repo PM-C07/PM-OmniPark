@@ -1,5 +1,5 @@
 // Test di sistema della sosta (docs/test/test_di_sistema.md §4 e §5): TS-01, TS-04 e TS-07 in
-// quest'ordine (TS-04 e TS-07 usano la sosta di TS-01), TS-13 (prolungamento, OMP-61), TS-02 lento
+// quest'ordine (TS-04 e TS-07 usano la sosta di TS-01), TS-15 (prolungamento, OMP-61), TS-02 lento
 // (@lenta). Dalla OMP-61 TS-01 verifica anche le correzioni di DIF-02, DIF-03 e DIF-04.
 import { expect, test } from "@playwright/test";
 import type { StalloDellaMappa } from "../src/presentation/logica/mappaStalli.ts";
@@ -257,17 +257,17 @@ test("TS-07 · RF_ANPR_1 · lettura con sosta attiva e lettura duplicata → nes
   }
 });
 
-test("TS-13 · RF_SOSTA_2 · prolungamento di 15 minuti dalla sosta in corso → scadenza posticipata, importo aggiuntivo addebitato", async ({
+test("TS-15 · RF_SOSTA_2 · prolungamento di 15 minuti dalla sosta in corso → scadenza posticipata, importo aggiuntivo addebitato", async ({
   page,
 }, testInfo) => {
   test.skip(!nellaFasciaAPagamento(new Date()), MOTIVO_FUORI_FASCIA);
   const url = urlDelTest(testInfo);
-  const utente = await nuovoAutomobilista(page.request, idEsecuzione, "ts13");
+  const utente = await nuovoAutomobilista(page.request, idEsecuzione, "ts15");
   await ricarica(page.request, RICARICA_DALLA_SCHEDA);
   const stallo = await preparaStalloPerLaSosta(
     page.request,
     url,
-    testInfo.outputPath("ts13-presenza.json"),
+    testInfo.outputPath("ts15-presenza.json"),
   );
   const avviata = await avviaSosta(page.request, {
     stallo: stallo.id,

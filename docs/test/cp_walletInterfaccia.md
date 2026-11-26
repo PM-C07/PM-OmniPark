@@ -100,4 +100,4 @@ Note sui riferimenti:
 ## 6. Note
 
 - **Già verificati altrove** (nessun frame qui): ricarica e rifiuto lato server, `cp_ricarica.md` e `cp_apiWalletSoste.md`; formato del saldo, `cp_formatoImporti.md`.
-- Riepilogo, conferma, annullamento e pulsante disabilitato durante l'invio si verificano a mano sull'anteprima. Il riquadro «approvata» nella scheda dello stallo e nel prolungamento si verifica con TS-01 passo 5 e TS-13.
+- Riepilogo, conferma, annullamento e pulsante disabilitato durante l'invio si verificano a mano sull'anteprima. Il riquadro «approvata» nella scheda dello stallo e nel prolungamento si verifica con TS-01 passo 5 e TS-15.
