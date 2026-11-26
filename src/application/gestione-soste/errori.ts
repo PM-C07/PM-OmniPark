@@ -1,5 +1,5 @@
 // Errori di dominio del sottosistema Gestione soste, con i codici delle specifiche
-// docs/test/cp_calcoloImporto.md, cp_avvioSosta.md e cp_consultazione.md.
+// docs/test/cp_calcoloImporto.md, cp_avvioSosta.md, cp_consultazione.md e cp_prolungamento.md.
 
 export type CodiceErroreGestioneSoste =
   | "TARGA_NON_NEL_PROFILO"
@@ -36,6 +36,23 @@ const MESSAGGI: Readonly<Record<CodiceErroreGestioneSoste, string>> = {
   DURATA_OLTRE_IL_MASSIMO: "Il prolungamento supera la durata massima dello stallo.",
 };
 
+/** Tempo aggiuntivo minimo di un prolungamento, in minuti (come la durata minima dell'avvio). */
+const PROLUNGAMENTO_MINIMO = 15;
+
+/**
+ * Messaggio dell'errore. Per DURATA_OLTRE_IL_MASSIMO con il tempo disponibile (UC_SOSTA_2 2.a2,
+ * cp_prolungamento.md §2): i minuti ancora prolungabili, oppure, sotto il minimo di 15 minuti,
+ * che la sosta non si può più prolungare (decisione D3 del piano di OMP-61).
+ */
+function messaggio(codice: CodiceErroreGestioneSoste, tempoDisponibile?: number): string {
+  if (codice !== "DURATA_OLTRE_IL_MASSIMO" || tempoDisponibile === undefined) {
+    return MESSAGGI[codice];
+  }
+  return tempoDisponibile >= PROLUNGAMENTO_MINIMO
+    ? `${MESSAGGI[codice]} Puoi prolungare al massimo di ${tempoDisponibile} minuti.`
+    : "La sosta non si può più prolungare: ha quasi raggiunto la durata massima dello stallo.";
+}
+
 export class ErroreGestioneSoste extends Error {
   readonly codice: CodiceErroreGestioneSoste;
   /** Minuti ancora disponibili entro la durata massima, solo per DURATA_OLTRE_IL_MASSIMO. */
@@ -45,7 +62,7 @@ export class ErroreGestioneSoste extends Error {
     codice: CodiceErroreGestioneSoste,
     opzioni?: { cause?: unknown; tempoDisponibile?: number },
   ) {
-    super(MESSAGGI[codice], opzioni);
+    super(messaggio(codice, opzioni?.tempoDisponibile), opzioni);
     this.name = "ErroreGestioneSoste";
     this.codice = codice;
     if (opzioni?.tempoDisponibile !== undefined) {

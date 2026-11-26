@@ -24,6 +24,26 @@ export async function leggiCorpoJson(richiesta: Request): Promise<Record<string,
   }
 }
 
+/** Il corpo `multipart/form-data` come FormData, oppure null se non si legge in quel formato. */
+export async function leggiCorpoMultipart(richiesta: Request): Promise<FormData | null> {
+  try {
+    return await richiesta.formData();
+  } catch {
+    return null;
+  }
+}
+
+/** Tipo del corpo dall'intestazione content-type, senza parametri e in minuscolo; "" se assente. */
+export function tipoDelCorpo(richiesta: Request): string {
+  return (richiesta.headers.get("content-type") ?? "").split(";")[0].trim().toLowerCase();
+}
+
+/** Lunghezza dichiarata nell'intestazione content-length, oppure null se assente o non valida. */
+export function lunghezzaDichiarata(richiesta: Request): number | null {
+  const valore = richiesta.headers.get("content-length");
+  return valore !== null && /^\d{1,16}$/.test(valore) ? Number(valore) : null;
+}
+
 /** ISO 8601 completo, con fuso orario e data di calendario reale; altrimenti null. */
 export function leggiDataOra(valore: unknown): Date | null {
   if (typeof valore !== "string") {

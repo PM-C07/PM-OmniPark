@@ -34,9 +34,9 @@ import {
   type FacadeGestioneSoste,
 } from "./facade";
 
-// Test frame TF-PRO-01…17 di docs/test/cp_prolungamento.md (OMP-61, sotto-task 1). Le
-// transazioni della Facade vanno in commit: il database si prepara una volta e ogni frame usa
-// stalli, automobilisti e veicoli propri.
+// Test frame TF-PRO-01…19 di docs/test/cp_prolungamento.md (OMP-61): TF-PRO-01…17 del sotto-task
+// 1, TF-PRO-18, 19 del blocco A dei sotto-task 2–5. Le transazioni della Facade vanno in commit: il
+// database si prepara una volta e ogni frame usa stalli, automobilisti e veicoli propri.
 
 const T = new Date("2026-11-20T10:00:00+01:00");
 const orologio = { adesso: () => T };
@@ -517,5 +517,36 @@ describe("OMP-61 · cp_prolungamento", () => {
       statoStallo: "NON_DISPONIBILE",
     });
     expect(errore.tempoDisponibile).toBe(10);
+  });
+
+  // --- Messaggio con il tempo disponibile ---
+
+  it("RF_SOSTA_2 · TF-PRO-18 · stallo rosa, +61 oltre il massimo (120) → DURATA_OLTRE_IL_MASSIMO, tempoDisponibile 60 nel messaggio", async () => {
+    const p = await automobilista("18");
+    const s = await sosta(p, 4);
+    const errore = await prolungamentoRifiutato(p, s, 4, 61, "DURATA_OLTRE_IL_MASSIMO", {
+      stato: "ATTIVA",
+      scadenza: "10:30",
+      statoStallo: "NON_DISPONIBILE",
+    });
+    expect(errore.tempoDisponibile).toBe(60);
+    expect(errore.message).toBe(
+      "Il prolungamento supera la durata massima dello stallo. Puoi prolungare al massimo di 60 minuti.",
+    );
+  });
+
+  it("RF_SOSTA_2 · TF-PRO-19 · +15 con 10 minuti disponibili → DURATA_OLTRE_IL_MASSIMO, messaggio di sosta non più prolungabile", async () => {
+    const p = await automobilista("19");
+    await portaAOccupato(27);
+    const s = await sosta(p, 27, { avvio: "09:30", scadenza: "11:20" });
+    const errore = await prolungamentoRifiutato(p, s, 27, 15, "DURATA_OLTRE_IL_MASSIMO", {
+      stato: "ATTIVA",
+      scadenza: "11:20",
+      statoStallo: "NON_DISPONIBILE",
+    });
+    expect(errore.tempoDisponibile).toBe(10);
+    expect(errore.message).toBe(
+      "La sosta non si può più prolungare: ha quasi raggiunto la durata massima dello stallo.",
+    );
   });
 });

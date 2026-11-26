@@ -1,3 +1,6 @@
+// Test frame TF-WS-01…59 di docs/test/cp_persistenza_wallet_soste.md: TF-WS-01…43 di OMP-34
+// (issue #5), TF-WS-44…49 di OMP-45 (issue #9), TF-WS-50…52 di OMP-46 (issue #10),
+// TF-WS-53…59 di OMP-61 (issue #33).
 import type { PoolClient } from "pg";
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from "vitest";
 import {
@@ -731,7 +734,7 @@ describe("OMP-34 · TCS persistenza · wallet, movimenti e soste", () => {
     expect(await sosteInCorsoDiTarga(client, "ZZ000ZZ")).toEqual([]);
   });
 
-  // Test frame TF-WS-53…56 (OMP-61).
+  // Test frame TF-WS-53…59 (OMP-61).
 
   // trovaSostaPerAggiornamento
 
@@ -773,5 +776,30 @@ describe("OMP-34 · TCS persistenza · wallet, movimenti e soste", () => {
       await impostaSostaScadutaSeRaggiunta(client, id, new Date("2026-11-20T10:00:01+01:00")),
     ).toBe(true);
     expect((await trovaSosta(client, id))?.stato).toBe("SCADUTA");
+  });
+
+  it("RF_SOSTA_7 · TF-WS-57 · istante uguale alla scadenza → true, SCADUTA", async () => {
+    const id = await creaSosta8Su16();
+    expect(
+      await impostaSostaScadutaSeRaggiunta(client, id, new Date("2026-11-20T10:00:00+01:00")),
+    ).toBe(true);
+    expect((await trovaSosta(client, id))?.stato).toBe("SCADUTA");
+  });
+
+  it("RF_SOSTA_7 · TF-WS-58 · sosta 2 terminata → false, resta TERMINATA", async () => {
+    expect(
+      await impostaSostaScadutaSeRaggiunta(client, 2, new Date("2026-12-31T00:00:00+01:00")),
+    ).toBe(false);
+    expect((await trovaSosta(client, 2))?.stato).toBe("TERMINATA");
+  });
+
+  it("RF_SOSTA_7 · TF-WS-59 · sosta inesistente → false", async () => {
+    expect(
+      await impostaSostaScadutaSeRaggiunta(
+        client,
+        ID_INESISTENTE,
+        new Date("2026-12-31T00:00:00+01:00"),
+      ),
+    ).toBe(false);
   });
 });
