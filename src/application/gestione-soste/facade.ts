@@ -17,16 +17,42 @@ import {
 } from "./consultazione.ts";
 import type { ContestoGestioneSoste } from "./contesto.ts";
 import { osservatoreGestioneSoste } from "./fineSosta.ts";
+import {
+  calcolaImportoDelProlungamento,
+  prolungaSosta,
+  type ImportoDelProlungamento,
+  type SostaProlungata,
+} from "./prolungamento.ts";
 
 export { ErroreGestioneSoste, type CodiceErroreGestioneSoste } from "./errori.ts";
 export { osservatoreGestioneSoste };
-export type { ImportoDellaSosta, Pagamento, RichiestaDiAvvio, Sosta, SostaAvviata, StatoSosta };
+export type {
+  ImportoDellaSosta,
+  ImportoDelProlungamento,
+  Pagamento,
+  RichiestaDiAvvio,
+  Sosta,
+  SostaAvviata,
+  SostaProlungata,
+  StatoSosta,
+};
 
 export type FacadeGestioneSoste = {
   // Calcolo dell'importo (SD_SOSTA_1 3.2)
   calcolaImporto(stallo: number, durata: number): Promise<ImportoDellaSosta>;
   // Avvio (UC_SOSTA_1, SD_SOSTA_1)
   avviaSosta(richiesta: RichiestaDiAvvio): Promise<SostaAvviata>;
+  // Prolungamento (UC_SOSTA_2, SD_SOSTA_2): importo e nuova scadenza (3.2–3.3), poi conferma
+  calcolaImportoDelProlungamento(
+    automobilista: number,
+    sosta: number,
+    tempoAggiuntivo: number,
+  ): Promise<ImportoDelProlungamento>;
+  prolungaSosta(
+    automobilista: number,
+    sosta: number,
+    tempoAggiuntivo: number,
+  ): Promise<SostaProlungata>;
   // Consultazione
   sostaInCorso(stallo: number): Promise<Sosta | null>;
   contaSosteAttive(ente: number): Promise<number>;
@@ -63,6 +89,10 @@ export function creaFacadeGestioneSoste(dipendenze: {
   return {
     calcolaImporto: (stallo, durata) => calcolaImporto(contesto, stallo, durata),
     avviaSosta: (richiesta) => avviaSosta(contesto, richiesta),
+    calcolaImportoDelProlungamento: (automobilista, sosta, tempoAggiuntivo) =>
+      calcolaImportoDelProlungamento(contesto, automobilista, sosta, tempoAggiuntivo),
+    prolungaSosta: (automobilista, sosta, tempoAggiuntivo) =>
+      prolungaSosta(contesto, automobilista, sosta, tempoAggiuntivo),
     sostaInCorso: (stallo) => sostaInCorso(contesto, stallo),
     contaSosteAttive: (ente) => contaSosteAttive(contesto, ente),
     sosteDellAutomobilista: (automobilista) => sosteDellAutomobilista(contesto, automobilista),

@@ -12,7 +12,11 @@ export type CodiceErroreGestioneSoste =
   | "PERMESSO_NON_VALIDO"
   | "PERMESSO_NON_PREVISTO"
   | "CREDITO_INSUFFICIENTE"
-  | "ENTE_INESISTENTE";
+  | "ENTE_INESISTENTE"
+  | "SOSTA_INESISTENTE"
+  | "SOSTA_SCADUTA"
+  | "SOSTA_TERMINATA"
+  | "DURATA_OLTRE_IL_MASSIMO";
 
 const MESSAGGI: Readonly<Record<CodiceErroreGestioneSoste, string>> = {
   TARGA_NON_NEL_PROFILO: "La targa non è tra quelle del tuo profilo.",
@@ -26,14 +30,26 @@ const MESSAGGI: Readonly<Record<CodiceErroreGestioneSoste, string>> = {
   PERMESSO_NON_PREVISTO: "Questo stallo non richiede un permesso.",
   CREDITO_INSUFFICIENTE: "Il credito del wallet non è sufficiente.",
   ENTE_INESISTENTE: "L'ente non esiste.",
+  SOSTA_INESISTENTE: "La sosta non esiste.",
+  SOSTA_SCADUTA: "La sosta è scaduta e non si può prolungare: puoi avviarne una nuova.",
+  SOSTA_TERMINATA: "La sosta è terminata e non si può prolungare.",
+  DURATA_OLTRE_IL_MASSIMO: "Il prolungamento supera la durata massima dello stallo.",
 };
 
 export class ErroreGestioneSoste extends Error {
   readonly codice: CodiceErroreGestioneSoste;
+  /** Minuti ancora disponibili entro la durata massima, solo per DURATA_OLTRE_IL_MASSIMO. */
+  readonly tempoDisponibile?: number;
 
-  constructor(codice: CodiceErroreGestioneSoste, opzioni?: { cause?: unknown }) {
+  constructor(
+    codice: CodiceErroreGestioneSoste,
+    opzioni?: { cause?: unknown; tempoDisponibile?: number },
+  ) {
     super(MESSAGGI[codice], opzioni);
     this.name = "ErroreGestioneSoste";
     this.codice = codice;
+    if (opzioni?.tempoDisponibile !== undefined) {
+      this.tempoDisponibile = opzioni.tempoDisponibile;
+    }
   }
 }

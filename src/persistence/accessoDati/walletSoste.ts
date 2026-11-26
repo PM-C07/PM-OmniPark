@@ -230,6 +230,23 @@ export async function trovaSosta(es: Esecutore, id: number): Promise<Sosta | nul
   return r.rows[0] ? sostaDa(r.rows[0]) : null;
 }
 
+/**
+ * Come trovaSosta, ma blocca la riga della sosta fino alla fine della transazione (SD_SOSTA_2):
+ * due prolungamenti della stessa sosta si eseguono uno dopo l'altro, e il secondo legge la
+ * scadenza già aggiornata. Va chiamata solo dentro eseguiInTransazione.
+ */
+export async function trovaSostaPerAggiornamento(
+  client: PoolClient,
+  id: number,
+): Promise<Sosta | null> {
+  const r = await interroga<RigaSosta>(
+    client,
+    `${SELEZIONE_SOSTA} WHERE so.id = $1 FOR UPDATE OF so`,
+    [id],
+  );
+  return r.rows[0] ? sostaDa(r.rows[0]) : null;
+}
+
 export async function sostaAttivaPerVeicolo(
   es: Esecutore,
   veicoloId: number,
@@ -347,12 +364,37 @@ export async function sosteDaScadere(es: Esecutore, istante: Date): Promise<numb
   return r.rows.map((riga) => Number(riga.id));
 }
 
-/** ATTIVA → SCADUTA; false se la sosta non esiste o non è attiva. */
+/**
+ * ATTIVA → SCADUTA senza condizione sull'orario di scadenza; false se la sosta non esiste o non è
+ * attiva. Solo per preparare i dati nei test: l'allineamento temporale usa
+ * impostaSostaScadutaSeRaggiunta, che non fa scadere una sosta appena prolungata.
+ */
 export async function impostaSostaScaduta(es: Esecutore, sostaId: number): Promise<boolean> {
   const r = await interroga(
     es,
     "UPDATE sosta SET stato = 'SCADUTA' WHERE id = $1 AND stato = 'ATTIVA'",
     [sostaId],
+  );
+  return (r.rowCount ?? 0) > 0;
+}
+
+/**
+ * ATTIVA → SCADUTA solo se l'orario di scadenza è ancora ≤ istante (at(orario di scadenza),
+ * SCD_2); false altrimenti, anche se la sosta non esiste o non è attiva. Se un prolungamento ha
+ * spostato la scadenza dopo la lettura delle soste da scadere, la riga non cambia: in READ
+ * COMMITTED l'UPDATE aspetta il blocco del prolungamento e rivaluta la condizione sulla versione
+ * confermata.
+ */
+export async function impostaSostaScadutaSeRaggiunta(
+  es: Esecutore,
+  sostaId: number,
+  istante: Date,
+): Promise<boolean> {
+  const r = await interroga(
+    es,
+    `UPDATE sosta SET stato = 'SCADUTA'
+     WHERE id = $1 AND stato = 'ATTIVA' AND orario_di_scadenza <= $2`,
+    [sostaId, istante],
   );
   return (r.rowCount ?? 0) > 0;
 }
