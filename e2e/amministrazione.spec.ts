@@ -53,7 +53,9 @@ test("TS-09 · RF_AUTH_4 · accesso dell'Amministratore → panoramica degli ent
   await test.step("UC_AUTH_4 3.a1 · uscita → /admin non è più raggiungibile", async () => {
     await page.goto("/admin");
     await page.getByRole("button", { name: "Esci" }).click();
-    await expect(page).toHaveURL(/\/accesso$/);
+    // Dopo «Esci» si arriva su /accesso, oppure su /accesso?da=%2Fadmin se un 401 delle richieste
+    // ancora in corso nella pagina vince la corsa con il redirect dell'uscita: entrambi corretti.
+    await expect(page).toHaveURL(/\/accesso(\?da=%2Fadmin)?$/);
     await page.goto("/admin");
     await expect(page).toHaveURL(/\/accesso\?da=%2Fadmin$/);
   });
@@ -89,10 +91,10 @@ test("TS-13 · RF_ADM_2 · creazione, modifica e disattivazione di un Ausiliario
       await page.goto("/admin/ausiliari");
       await page.getByRole("button", { name: "Nuovo Ausiliario" }).click();
       await page.getByLabel("Nome", { exact: true }).fill(nuovo.nome);
-      await page.getByLabel("Cognome").fill(nuovo.cognome);
-      await page.getByLabel("Email").fill(nuovo.email);
+      await page.getByLabel("Cognome", { exact: true }).fill(nuovo.cognome);
+      await page.getByLabel("Email", { exact: true }).fill(nuovo.email);
       await page.getByLabel("Password iniziale").fill(nuovo.password);
-      await page.getByLabel("Ente").selectOption({ label: "Comune di Baronissi" });
+      await page.getByLabel("Ente", { exact: true }).selectOption({ label: "Comune di Baronissi" });
       await page.getByRole("button", { name: "Salva" }).click();
       await expect(messaggio).toContainText("creato");
       await expect(riga).toContainText("Attivo");
@@ -105,7 +107,7 @@ test("TS-13 · RF_ADM_2 · creazione, modifica e disattivazione di un Ausiliario
 
     await test.step("UC_ADM_2 · modifica del cognome", async () => {
       await riga.getByRole("button", { name: /^Modifica / }).click();
-      await page.getByLabel("Cognome").fill(`${nuovo.cognome} Modificato`);
+      await page.getByLabel("Cognome", { exact: true }).fill(`${nuovo.cognome} Modificato`);
       await page.getByRole("button", { name: "Salva" }).click();
       await expect(messaggio).toContainText("aggiornato");
       await expect(riga).toContainText(`${nuovo.cognome} Modificato`);
@@ -129,14 +131,27 @@ test("TS-13 · RF_ADM_2 · creazione, modifica e disattivazione di un Ausiliario
 
     await test.step("VD_19 · sessione dell'Ausiliario chiusa e nuovo accesso negato", async () => {
       expect((await paginaAusiliario.request.get("/api/auth/io")).status()).toBe(401);
-      await paginaAusiliario.goto("/accesso");
-      const risposta = paginaAusiliario.waitForResponse((r) =>
-        r.url().endsWith("/api/auth/accesso"),
-      );
-      await compilaAccesso(paginaAusiliario, nuovo.email, nuovo.password);
-      const r = await risposta;
-      expect(r.status()).toBe(403);
-      expect(await codiceErrore(r)).toBe("ACCOUNT_DISATTIVATO");
+      // Il ritorno automatico all'accesso dopo il 401 del polling non si verifica qui: è coperto
+      // dai test dell'interfaccia di OMP-57. Si chiude la pagina aperta, così il nuovo accesso
+      // non si sovrappone a quel redirect.
+      await ausiliario.close();
+      const nuovoContesto = await browser.newContext();
+      try {
+        const pagina = await nuovoContesto.newPage();
+        await bloccaSfondo(pagina);
+        await pagina.goto("/accesso");
+        const risposta = pagina.waitForResponse((r) => r.url().endsWith("/api/auth/accesso"));
+        await compilaAccesso(pagina, nuovo.email, nuovo.password);
+        const r = await risposta;
+        expect(r.status()).toBe(403);
+        expect(await codiceErrore(r)).toBe("ACCOUNT_DISATTIVATO");
+        await expect(pagina.getByRole("alert").filter({ hasText: "Errore" })).toContainText(
+          "L'account è stato disattivato.",
+        );
+        await expect(pagina).toHaveURL(/\/accesso$/);
+      } finally {
+        await nuovoContesto.close();
+      }
     });
   } finally {
     await ausiliario.close();

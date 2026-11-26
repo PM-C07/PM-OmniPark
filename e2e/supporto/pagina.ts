@@ -1,5 +1,5 @@
 // Localizzatori e azioni comuni sulle pagine dei test di sistema.
-import type { Locator, Page } from "@playwright/test";
+import { expect, type Locator, type Page } from "@playwright/test";
 import {
   elementoDelloStallo,
   type StalloDellaMappa,
@@ -43,9 +43,25 @@ export async function attendiAggiornamenti(page: Page, n: number) {
 
 /** Compila e invia il form di accesso della pagina già aperta. */
 export async function compilaAccesso(page: Page, email: string, password: string) {
-  await page.getByLabel("Email").fill(email);
-  await page.getByLabel("Password").fill(password);
-  await page.getByRole("button", { name: "Accedi" }).click();
+  // Dopo un redirect (per esempio a /accesso?da=…) la pagina può non avere ancora collegato React
+  // ai campi: i valori ci sono nel DOM ma il modulo li vede vuoti e la validazione blocca l'invio.
+  // Si ripetono compilazione e clic finché la richiesta di accesso parte davvero. Nessuna attesa
+  // fissa: i timeout limitano solo il singolo tentativo. Chi attende la risposta crea la sua
+  // promessa prima di chiamare questa funzione.
+  const campoEmail = page.getByLabel("Email", { exact: true });
+  const campoPassword = page.getByLabel("Password", { exact: true });
+  await expect(async () => {
+    await campoEmail.fill(email);
+    await campoPassword.fill(password);
+    await expect(campoEmail).toHaveValue(email, { timeout: 1000 });
+    await expect(campoPassword).toHaveValue(password, { timeout: 1000 });
+    const inviata = page.waitForRequest(
+      (r) => r.url().endsWith("/api/auth/accesso") && r.method() === "POST",
+      { timeout: 2000 },
+    );
+    await page.getByRole("button", { name: "Accedi" }).click();
+    await inviata;
+  }).toPass();
 }
 
 /** Accesso dalla schermata /accesso, come un utente. */
