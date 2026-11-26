@@ -18,13 +18,31 @@ import {
   type Operazione,
   type UtenteAutorizzato,
 } from "./autorizzazione.ts";
+import {
+  aggiornaAusiliario,
+  ausiliariPerEnte,
+  creaAusiliario,
+  disattivaAusiliario,
+  type AusiliarioConEnte,
+  type DatiAusiliario,
+  type DatiNuovoAusiliario,
+} from "./gestioneAusiliari.ts";
 import { aggiungiTarga, rimuoviTarga, targhe } from "./targhe.ts";
 
 export { DURATA_SESSIONE_MS } from "./autenticazione.ts";
 export { ErroreUtentiAccessi, type CodiceErroreUtentiAccessi } from "./errori.ts";
 /** Forma normalizzata della targa (maiuscole, senza spazi), per gli altri sottosistemi. */
 export { normalizzaTarga } from "./targa.ts";
-export type { Ausiliario, Operazione, Ruolo, SessioneAperta, UtenteAutorizzato };
+export type {
+  Ausiliario,
+  AusiliarioConEnte,
+  DatiAusiliario,
+  DatiNuovoAusiliario,
+  Operazione,
+  Ruolo,
+  SessioneAperta,
+  UtenteAutorizzato,
+};
 
 export type FacadeUtentiAccessi = {
   registraAutomobilista(email: string, password: string, targa: string): Promise<SessioneAperta>;
@@ -44,6 +62,11 @@ export type FacadeUtentiAccessi = {
   ausiliariDellEntePreposto(ente: number): Promise<Ausiliario[]>;
   /** Ausiliario con ente e stato dell'account; null se l'id non è di un Ausiliario (OMP-46). */
   trovaAusiliario(ausiliario: number): Promise<Ausiliario | null>;
+  // Gestione degli account degli Ausiliari (UC_ADM_2, SD_ADM_2, OMP-62)
+  ausiliariPerEnte(): Promise<AusiliarioConEnte[]>;
+  creaAusiliario(amministratore: number, dati: DatiNuovoAusiliario): Promise<AusiliarioConEnte>;
+  aggiornaAusiliario(ausiliario: number, dati: DatiAusiliario): Promise<AusiliarioConEnte>;
+  disattivaAusiliario(ausiliario: number): Promise<AusiliarioConEnte>;
 };
 
 export function creaFacadeUtentiAccessi(
@@ -66,5 +89,9 @@ export function creaFacadeUtentiAccessi(
     utenteDellaSessione: (sessione) => utenteDellaSessione(contesto, sessione),
     ausiliariDellEntePreposto: (ente) => ausiliariDellEntePreposto(contesto, ente),
     trovaAusiliario: (ausiliario) => trovaAusiliarioDelTraffico(contesto, ausiliario),
+    ausiliariPerEnte: () => ausiliariPerEnte(contesto),
+    creaAusiliario: (amministratore, dati) => creaAusiliario(contesto, amministratore, dati),
+    aggiornaAusiliario: (ausiliario, dati) => aggiornaAusiliario(contesto, ausiliario, dati),
+    disattivaAusiliario: (ausiliario) => disattivaAusiliario(contesto, ausiliario),
   };
 }

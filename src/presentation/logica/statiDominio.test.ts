@@ -64,4 +64,22 @@ describe("descriviStato", () => {
       tono: "grigio",
     });
   });
+
+  it("RF_ADM_2 · TF-STA-UI-13 · account ATTIVO → Attivo, verde", () => {
+    expect(descriviStato("account", "ATTIVO")).toEqual({ testo: "Attivo", tono: "verde" });
+  });
+
+  it("RF_ADM_2 · TF-STA-UI-14 · account DISATTIVATO → Disattivato, grigio", () => {
+    expect(descriviStato("account", "DISATTIVATO")).toEqual({
+      testo: "Disattivato",
+      tono: "grigio",
+    });
+  });
+
+  it("NRF_USA_1 · TF-STA-UI-15 · account con stato APERTA non previsto → Stato non riconosciuto, grigio", () => {
+    expect(descriviStato("account", "APERTA")).toEqual({
+      testo: "Stato non riconosciuto",
+      tono: "grigio",
+    });
+  });
 });

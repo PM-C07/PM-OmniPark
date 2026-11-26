@@ -11,6 +11,7 @@ import {
   aggiornaAusiliario,
   associaVeicolo,
   ausiliari,
+  bloccaAusiliario,
   creaAusiliario,
   creaAutomobilista,
   creaSessione,
@@ -463,5 +464,23 @@ describe("OMP-34 · TCS persistenza · utenti, enti e veicoli", () => {
   it("RF_ADM_2 · TF-UEV-46 · ausiliario 4 già DISATTIVATO → true, resta DISATTIVATO", async () => {
     expect(await disattivaAusiliario(client, 4)).toBe(true);
     expect((await trovaAusiliario(client, 4))?.statoDellAccount).toBe("DISATTIVATO");
+  });
+
+  // bloccaAusiliario (OMP-62, TF-UEV-47…50)
+
+  it("VD_19 · TF-UEV-47 · ausiliario 2 attivo → ATTIVO", async () => {
+    expect(await bloccaAusiliario(client, 2)).toBe("ATTIVO");
+  });
+
+  it("VD_19 · TF-UEV-48 · ausiliario 4 disattivato → DISATTIVATO", async () => {
+    expect(await bloccaAusiliario(client, 4)).toBe("DISATTIVATO");
+  });
+
+  it("VD_19 · TF-UEV-49 · id 8 di un automobilista → null", async () => {
+    expect(await bloccaAusiliario(client, 8)).toBeNull();
+  });
+
+  it("VD_19 · TF-UEV-50 · id inesistente → null", async () => {
+    expect(await bloccaAusiliario(client, ID_INESISTENTE)).toBeNull();
   });
 });

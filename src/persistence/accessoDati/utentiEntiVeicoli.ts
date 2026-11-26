@@ -338,6 +338,23 @@ export async function aggiornaAusiliario(
   return (r.rowCount ?? 0) > 0;
 }
 
+/**
+ * Stato dell'account dell'ausiliario, con la riga bloccata fino alla fine della transazione
+ * (OMP-62, VD_19): disattivazione e modifica controllano le prese in carico senza corse.
+ * null se l'id non è di un ausiliario.
+ */
+export async function bloccaAusiliario(
+  es: Esecutore,
+  id: number,
+): Promise<StatoDellAccount | null> {
+  const r = await interroga<{ stato_dell_account: StatoDellAccount }>(
+    es,
+    "SELECT stato_dell_account FROM ausiliario_del_traffico WHERE id = $1 FOR UPDATE",
+    [id],
+  );
+  return r.rows[0]?.stato_dell_account ?? null;
+}
+
 /** Porta l'account a DISATTIVATO; false se l'ausiliario non esiste. */
 export async function disattivaAusiliario(es: Esecutore, id: number): Promise<boolean> {
   const r = await interroga(

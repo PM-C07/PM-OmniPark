@@ -1,6 +1,6 @@
 # TCS — Persistenza: utenti, enti e veicoli
 
-- **Task:** OMP-34 (issue #5). Metodo: category partition.
+- **Task:** OMP-34 (issue #5); `bloccaAusiliario` (TF-UEV-47…50) aggiunta con OMP-62 (issue #39). Metodo: category partition.
 - **Oggetto:** le funzioni di accesso di `src/persistence/accessoDati/utentiEntiVeicoli.ts`.
 - **Fonti dell'esito atteso:** sequence diagram e casi d'uso indicati per ogni funzione (inventario del piano approvato); vincoli dello schema; `docs/rad/requisiti.md`; `docs/rad/vincoli_dominio.md` §2; codici di errore di `docs/test/cp_persistenza_base.md`.
 - **File di test:** `src/persistence/accessoDati/utentiEntiVeicoli.db.test.ts` (eseguito da `npm run test:db`).
@@ -37,6 +37,7 @@ trovaAusiliario(es, id: number): Promise<{ id; email; nome; cognome; enteId; sta
 creaAusiliario(es, dati: { email; hashPassword; nome; cognome; enteId; amministratoreId }): Promise<number>;
 aggiornaAusiliario(es, id: number, dati: { email; nome; cognome; enteId }): Promise<boolean>;   // false se l'ausiliario non esiste
 disattivaAusiliario(es, id: number): Promise<boolean>;                                // false se l'ausiliario non esiste
+bloccaAusiliario(es, id: number): Promise<StatoDellAccount | null>;                   // OMP-62: SELECT … FOR UPDATE; null se l'id non è di un ausiliario
 ```
 
 Ordinamento degli elenchi (sempre con l'id come ultimo criterio di spareggio): `targheDelProfilo` per targa, poi id del veicolo; `enti` per nome, poi id; `ausiliari` per nome dell'ente, cognome, nome, poi id.
@@ -103,8 +104,9 @@ Per ogni funzione si scelgono, dove applicabili, le categorie dell'issue: elemen
 | `creaAusiliario`           | dati validi · email già registrata [error] · ente inesistente [error] · nome di soli spazi [error] |
 | `aggiornaAusiliario`       | esistente · inesistente · email di un altro utente [error]                                         |
 | `disattivaAusiliario`      | attivo · inesistente                                                                               |
+| `bloccaAusiliario`         | attivo · disattivato · id di un utente con un altro ruolo · inesistente                            |
 
-## 5. Test frame (46)
+## 5. Test frame (50)
 
 | Frame     | Funzione e scelte                                                                                                                                    | Esito atteso                                                                                                                                                                      | Riferimento |
 | :-------- | :--------------------------------------------------------------------------------------------------------------------------------------------------- | :-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | :---------- |
@@ -154,6 +156,10 @@ Per ogni funzione si scelgono, dove applicabili, le categorie dell'issue: elemen
 | TF-UEV-44 | `disattivaAusiliario(2)`                                                                                                                             | `true`; `trovaAusiliario(2).statoDellAccount` è `DISATTIVATO`                                                                                                                     | RF_ADM_2    |
 | TF-UEV-45 | `disattivaAusiliario(999999)`                                                                                                                        | `false`                                                                                                                                                                           | RF_ADM_2    |
 | TF-UEV-46 | `disattivaAusiliario(4)` (già `DISATTIVATO`)                                                                                                         | `true` (l'ausiliario esiste); `trovaAusiliario(4).statoDellAccount` resta `DISATTIVATO`                                                                                           | RF_ADM_2    |
+| TF-UEV-47 | `bloccaAusiliario(2)`                                                                                                                                | `"ATTIVO"`                                                                                                                                                                        | VD_19       |
+| TF-UEV-48 | `bloccaAusiliario(4)`                                                                                                                                | `"DISATTIVATO"`                                                                                                                                                                   | VD_19       |
+| TF-UEV-49 | `bloccaAusiliario(8)` (un automobilista)                                                                                                             | `null`                                                                                                                                                                            | VD_19       |
+| TF-UEV-50 | `bloccaAusiliario(999999)`                                                                                                                           | `null`                                                                                                                                                                            | VD_19       |
 
 Note sui riferimenti:
 
@@ -162,12 +168,13 @@ Note sui riferimenti:
 - TF-UEV-29…31: il campo si chiama `segnalazioniNonChiuse` perché RF_ADM_1 parla di «segnalazioni aperte», ma `UC_ADM_1` (Regole di dominio) precisa che nel riepilogo sono tutte quelle non chiuse, `Aperta` e `Presa in carico` (anche `vincoli_dominio.md` §1).
 - TF-UEV-46: come le altre funzioni di aggiornamento, `disattivaAusiliario` restituisce `false` solo se l'ausiliario non esiste; disattivare un ausiliario già disattivato non è un errore.
 - TF-UEV-34…36: `trovaAusiliario` fornisce l'ente dell'ausiliario per la segregazione (NRF_SIC_1, SD_OP_1 2.1).
+- TF-UEV-47…50: VD_19 (OMP-62). `bloccaAusiliario` legge lo stato dell'account e blocca la riga fino alla fine della transazione del chiamante (`FOR UPDATE`), così disattivazione e modifica controllano le prese in carico senza corse. Nei test la transazione è quella del test: il blocco si verifica solo come lettura dello stato.
 
 ## 6. Regole lasciate ai sottosistemi
 
-| Regola                                                                                                                         | Dove                                                |
-| :----------------------------------------------------------------------------------------------------------------------------- | :-------------------------------------------------- |
-| il profilo conserva almeno una targa; una targa con sosta attiva non si rimuove                                                | Utenti e accessi (`UC_AUTH_5` 3.a2)                 |
-| un ausiliario con segnalazioni prese in carico non si disattiva; alla disattivazione si chiamano anche `eliminaSessioniUtente` | Amministrazione (`UC_ADM_2` 3.a2, VD_19)            |
-| verifica della password e validità formale della targa                                                                         | Utenti e accessi (`UC_AUTH_4`, `UC_AUTH_5` passo 4) |
-| creazione atomica di automobilista, veicolo e wallet alla registrazione: il chiamante usa `eseguiInTransazione`                | Utenti e accessi (`UC_AUTH_1` 3)                    |
+| Regola                                                                                                                         | Dove                                                                         |
+| :----------------------------------------------------------------------------------------------------------------------------- | :--------------------------------------------------------------------------- |
+| il profilo conserva almeno una targa; una targa con sosta attiva non si rimuove                                                | Utenti e accessi (`UC_AUTH_5` 3.a2)                                          |
+| un ausiliario con segnalazioni prese in carico non si disattiva; alla disattivazione si chiamano anche `eliminaSessioniUtente` | Utenti e accessi (`UC_ADM_2` 3.a2, VD_19; OMP-62, `cp_gestioneAusiliari.md`) |
+| verifica della password e validità formale della targa                                                                         | Utenti e accessi (`UC_AUTH_4`, `UC_AUTH_5` passo 4)                          |
+| creazione atomica di automobilista, veicolo e wallet alla registrazione: il chiamante usa `eseguiInTransazione`                | Utenti e accessi (`UC_AUTH_1` 3)                                             |

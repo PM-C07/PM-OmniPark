@@ -11,6 +11,7 @@ import {
 
 // Controlli di integrità del dataset 0002_dati_esempio.sql (OMP-33). Non sono frame di una TCS:
 // verificano che i dati di esempio siano quelli documentati e che il reset li riproduca identici.
+// DS-08 (OMP-62) verifica la migrazione 0003_password_amministratore.sql.
 
 const FORMATO_HASH = /^\$scrypt\$ln=(\d+),r=(\d+),p=(\d+)\$([A-Za-z0-9+/]+)\$([A-Za-z0-9+/]+)$/;
 
@@ -196,6 +197,36 @@ describe("OMP-33 · dati di esempio", () => {
         expect(verificaPassword("Demo-Automobilista-2026", hash_password)).toBe(true);
       }
     }
+  });
+
+  it("OMP-62 · DS-08 · password dell'Amministratore reimpostata dalla migrazione 0003 → hash della 0003, solo per l'utente 1", async () => {
+    const sql0003 = await readFile(
+      new URL("./migrations/0003_password_amministratore.sql", import.meta.url),
+      "utf8",
+    );
+    const hashNella0003 = [...sql0003.matchAll(/hash_password\s*=\s*'([^']+)'/g)].map((m) => m[1]);
+    expect(hashNella0003).toHaveLength(1);
+    const hash0003 = hashNella0003[0];
+    expect(FORMATO_HASH.exec(hash0003)?.slice(1, 4)).toEqual(["15", "8", "3"]);
+
+    const sql0002 = await readFile(
+      new URL("./migrations/0002_dati_esempio.sql", import.meta.url),
+      "utf8",
+    );
+    const originale = /\(1, 'marco\.esposito@omnipark\.example',\s*'([^']+)'/.exec(sql0002);
+    expect(originale).not.toBeNull();
+    expect(originale?.[1]).not.toBe(hash0003);
+
+    const amministratore = await client.query<{ hash_password: string }>(
+      "SELECT hash_password FROM utente WHERE id = 1",
+    );
+    expect(amministratore.rows).toEqual([{ hash_password: hash0003 }]);
+
+    const altri = await client.query<{ id: string }>(
+      "SELECT id::text FROM utente WHERE id <> 1 AND hash_password = $1",
+      [hash0003],
+    );
+    expect(altri.rows).toEqual([]);
   });
 });
 
