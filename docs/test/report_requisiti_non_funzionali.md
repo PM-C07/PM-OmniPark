@@ -3,6 +3,8 @@
 Misura dei requisiti non funzionali che sono criteri di successo del RAD: NRF_PER_3, NRF_USA_2, NRF_AFF_2 e NRF_SUP_3. Task OMP-60 (issue #32, COD-19). I casi di test che producono le misure TS-11 e TS-12 sono in `docs/test/test_di_sistema.md` §6; i riepiloghi scritti in automatico dagli script sono in `docs/misure.md`.
 
 > Misure eseguite il 24 e il 25/11/2026. Tutte e quattro le soglie sono superate.
+>
+> NRF_USA_2: flusso invariato, misure del 24–25/11 valide; prova di riavvio spostata a COD-28.
 
 ## 1. Riepilogo
 

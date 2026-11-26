@@ -4,7 +4,13 @@ import type { APIRequestContext, PlaywrightWorkerArgs, TestInfo } from "@playwri
 import type { StalloDellaMappa } from "../../src/presentation/logica/mappaStalli.ts";
 import { variabileObbligatoria } from "./ambiente.ts";
 import { registraAutomobilista, stalliDellaZona, type Automobilista } from "./api.ts";
-import { emailDiProva, passwordDiProva, primoStalloSenzaSosta, targaDiProva } from "./dati.ts";
+import {
+  emailDiProva,
+  passwordDiProva,
+  primoStalloSenzaSosta,
+  STALLI_PER_LE_SOSTE,
+  targaDiProva,
+} from "./dati.ts";
 import { inviaRilevazioni } from "./simulatori.ts";
 
 export const AUSILIARI = {
@@ -46,16 +52,20 @@ export async function nuovoAutomobilista(
   return utente;
 }
 
-/** Primo stallo candidato senza sosta, portato a Occupato con il simulatore dei sensori. */
+/**
+ * Primo stallo candidato senza sosta, portato a Occupato con il simulatore dei sensori. Candidati
+ * predefiniti: gli stalli delle soste 17…21; TS-14 passa gli stalli riservati (OMP-61).
+ */
 export async function preparaStalloPerLaSosta(
   request: APIRequestContext,
   url: string,
   fileScenario: string,
+  candidati: readonly number[] = STALLI_PER_LE_SOSTE,
 ): Promise<StalloDellaMappa> {
-  const stallo = primoStalloSenzaSosta(await stalliDellaZona(request));
+  const stallo = primoStalloSenzaSosta(await stalliDellaZona(request), candidati);
   if (!stallo) {
     throw new Error(
-      "Nessuno stallo candidato (17…21) senza sosta in corso: le soste delle esecuzioni precedenti scadono entro 60 minuti, riprova più tardi.",
+      `Nessuno stallo candidato (${candidati.join(", ")}) senza sosta in corso: le soste delle esecuzioni precedenti scadono entro 60 minuti, riprova più tardi.`,
     );
   }
   const [riga] = await inviaRilevazioni(url, [{ stallo: stallo.id, presenza: true }], fileScenario);

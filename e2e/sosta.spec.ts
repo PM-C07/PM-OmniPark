@@ -1,12 +1,17 @@
 // Test di sistema della sosta (docs/test/test_di_sistema.md §4 e §5): TS-01, TS-04 e TS-07 in
-// quest'ordine (TS-04 e TS-07 usano la sosta di TS-01), TS-02 lento (@lenta).
+// quest'ordine (TS-04 e TS-07 usano la sosta di TS-01), TS-13 (prolungamento, OMP-61), TS-02 lento
+// (@lenta). Dalla OMP-61 TS-01 verifica anche le correzioni di DIF-02, DIF-03 e DIF-04.
 import { expect, test } from "@playwright/test";
 import type { StalloDellaMappa } from "../src/presentation/logica/mappaStalli.ts";
-import { formattaEuro } from "../src/presentation/logica/importi.ts";
+import { formattaEuro, formattaOra } from "../src/presentation/logica/importi.ts";
+import { descrizioneStallo } from "../src/presentation/logica/mappaStalli.ts";
+import { messaggioRicaricaApprovata } from "../src/presentation/logica/wallet.ts";
 import {
   accedi,
+  avviaSosta,
   chiudiSegnalazione,
   ricarica,
+  saldo,
   segnalazioniNonChiuse,
   sosteInCorso,
   type Automobilista,
@@ -84,10 +89,17 @@ test("TS-01 · RF_SOSTA_1 · registrazione, ricarica dalla scheda, avvio e pagam
   const conferma = scheda.getByRole("button", { name: /^Conferma e paga \(/ });
   let importo = 0;
 
-  await test.step("RF_STALLI_1 · selezione dello stallo nell'elenco → scheda", async () => {
+  await test.step("DIF-02 · RF_STALLI_1 · tocco al centro del marker → scheda dello stallo toccato", async () => {
     await page.goto("/mappa");
     await expect(rigaStallo(page, stallo)).toContainText("Occupato");
-    await rigaStallo(page, stallo).click();
+    // Il centro del marker non è coperto da un marker vicino (in OMP-58 lo era: DIF-02).
+    const coperto = await marker(page, stallo).evaluate((elemento) => {
+      const r = elemento.getBoundingClientRect();
+      const sopra = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2);
+      return !(sopra && elemento.contains(sopra));
+    });
+    expect(coperto, "marker dello stallo coperto al centro").toBe(false);
+    await marker(page, stallo).click();
     await expect(
       scheda.getByRole("heading", { level: 2, name: `Stallo n. ${stallo.numero}` }),
     ).toBeVisible();
@@ -111,9 +123,12 @@ test("TS-01 · RF_SOSTA_1 · registrazione, ricarica dalla scheda, avvio e pagam
     const ricaricaInviata = page.waitForResponse((r) => r.url().endsWith("/api/wallet/ricarica"));
     await scheda.getByRole("button", { name: "Conferma la ricarica" }).click();
     expect((await ricaricaInviata).status()).toBe(200);
-    // Con il credito sufficiente il riquadro della ricarica (e il suo messaggio) esce dalla scheda
-    // e il focus torna su «Conferma e paga» (SchedaStallo, OMP-58; DIF-03 per il saldo non mostrato).
+    // Con il credito sufficiente la proposta esce dalla scheda, ma la conferma della ricarica e il
+    // nuovo saldo restano visibili (UC_WALLET_1 passo 4, DIF-03); il focus torna su «Conferma e paga».
     await expect(scheda.getByText("Credito insufficiente.")).toBeHidden();
+    await expect(
+      scheda.getByText(messaggioRicaricaApprovata(RICARICA_DALLA_SCHEDA, RICARICA_DALLA_SCHEDA)),
+    ).toBeVisible();
     await expect(conferma).toBeEnabled();
     await expect(conferma).toBeFocused();
     const wallet = await page.request.get("/api/wallet");
@@ -128,6 +143,8 @@ test("TS-01 · RF_SOSTA_1 · registrazione, ricarica dalla scheda, avvio e pagam
     await expect(sosta).toContainText(utente.targa);
     await expect(sosta).toContainText("Attiva");
     await expect(sosta.getByText(/^Sosta avviata: scade alle \d{2}:\d{2}\.$/)).toBeVisible();
+    // DIF-04: lo stallo nella zona della mappa si indica con numero e area, non con l'id.
+    await expect(sosta).toContainText(descrizioneStallo(stallo.id, new Map([[stallo.id, stallo]])));
   });
 
   await test.step("RF_SOSTA_6 · stallo Non disponibile sulla mappa senza ricaricare", async () => {
@@ -136,6 +153,13 @@ test("TS-01 · RF_SOSTA_1 · registrazione, ricarica dalla scheda, avvio e pagam
       etichettaMarker(stallo, "NON_DISPONIBILE"),
     );
     await expect(rigaStallo(page, stallo)).toContainText("Non disponibile");
+  });
+
+  await test.step("DIF-04 · ricaricamento della pagina → «La mia sosta» con numero e area", async () => {
+    await page.reload();
+    const sosta = laMiaSosta(page);
+    await expect(sosta).toContainText(utente.targa);
+    await expect(sosta).toContainText(descrizioneStallo(stallo.id, new Map([[stallo.id, stallo]])));
   });
 
   await test.step("RF_WALLET_2 · saldo diminuito dell'importo addebitato", async () => {
@@ -231,6 +255,69 @@ test("TS-07 · RF_ANPR_1 · lettura con sosta attiva e lettura duplicata → nes
     }
     await paolo.dispose();
   }
+});
+
+test("TS-13 · RF_SOSTA_2 · prolungamento di 15 minuti dalla sosta in corso → scadenza posticipata, importo aggiuntivo addebitato", async ({
+  page,
+}, testInfo) => {
+  test.skip(!nellaFasciaAPagamento(new Date()), MOTIVO_FUORI_FASCIA);
+  const url = urlDelTest(testInfo);
+  const utente = await nuovoAutomobilista(page.request, idEsecuzione, "ts13");
+  await ricarica(page.request, RICARICA_DALLA_SCHEDA);
+  const stallo = await preparaStalloPerLaSosta(
+    page.request,
+    url,
+    testInfo.outputPath("ts13-presenza.json"),
+  );
+  const avviata = await avviaSosta(page.request, {
+    stallo: stallo.id,
+    targa: utente.targa,
+    durata: 15,
+  });
+  const scadenzaIniziale = Date.parse(avviata.orarioDiScadenza);
+  const nuovaScadenza = scadenzaIniziale + 15 * 60_000;
+  const scadenzaLetta = async () => {
+    const letta = (await sosteInCorso(page.request)).find((s) => s.id === avviata.sosta);
+    expect(letta, "sosta in GET /api/soste").toBeDefined();
+    return { stato: letta?.stato, scadenza: Date.parse(letta?.orarioDiScadenza ?? "") };
+  };
+
+  await bloccaSfondo(page);
+  await page.goto("/mappa");
+  const sosta = laMiaSosta(page);
+  await expect(sosta).toContainText("Attiva");
+  const pannello = sosta.getByRole("form", { name: "Prolungamento della sosta" });
+  const conferma = pannello.getByRole("button", { name: /^Conferma e paga \(/ });
+  let importo = 0;
+
+  await test.step("UC_SOSTA_2 4.a1 · «Prolunga», poi «Annulla» → scadenza invariata", async () => {
+    await sosta.getByRole("button", { name: "Prolunga" }).click();
+    await expect(pannello).toBeVisible();
+    await pannello.getByRole("button", { name: "Annulla" }).click();
+    await expect(pannello).toBeHidden();
+    expect((await scadenzaLetta()).scadenza).toBe(scadenzaIniziale);
+  });
+
+  await test.step("UC_SOSTA_2 passi 1–3 · 15 minuti → importo aggiuntivo e nuova scadenza", async () => {
+    await sosta.getByRole("button", { name: "Prolunga" }).click();
+    await pannello.getByLabel("Tempo aggiuntivo").selectOption("15");
+    const ora = formattaOra(new Date(nuovaScadenza));
+    await expect(
+      pannello.getByText(new RegExp(`^Importo aggiuntivo .+, nuova scadenza alle ${ora}\\.$`)),
+    ).toBeVisible();
+    await expect(conferma).toBeEnabled();
+    importo = centesimiDa((await conferma.textContent()) ?? "");
+    expect(importo).toBeGreaterThan(0);
+  });
+
+  await test.step("UC_SOSTA_2 passi 4–6 · RF_WALLET_2 · conferma → scadenza posticipata e addebito", async () => {
+    await conferma.click();
+    const ora = formattaOra(new Date(nuovaScadenza));
+    await expect(sosta.getByText(`Sosta prolungata: scade alle ${ora}.`)).toBeVisible();
+    await expect(sosta).toContainText(`Scadenza alle ${ora}`);
+    expect(await scadenzaLetta()).toEqual({ stato: "ATTIVA", scadenza: nuovaScadenza });
+    expect(await saldo(page.request)).toBe(RICARICA_DALLA_SCHEDA - avviata.importo - importo);
+  });
 });
 
 test(

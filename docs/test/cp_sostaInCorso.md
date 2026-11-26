@@ -8,7 +8,7 @@ Requisiti: RF_SOSTA_7 (la sosta passa a Scaduta all'orario di fine), RF_SOSTA_1 
 
 ## 1. Tracciabilità
 
-Ogni frame riporta un solo riferimento, scelto in quest'ordine: un requisito dell'Elenco (`RF_…`, `NRF_…`) se il suo testo copre davvero il comportamento; altrimenti il vincolo di dominio `VD_<n>`; altrimenti `ISSUE_29` per le scelte dell'issue #29 e del piano approvato.
+Ogni frame riporta un solo riferimento, scelto in quest'ordine: un requisito dell'Elenco (`RF_…`, `NRF_…`) se il suo testo copre davvero il comportamento; altrimenti il vincolo di dominio `VD_<n>`; altrimenti `ISSUE_29` o `ISSUE_33` per le scelte delle issue #29 e #33 e dei piani approvati di OMP-58 e OMP-61.
 
 Nome del test: `<riferimento> · <frame> · <descrizione> → <esito>`, per esempio `RF_SOSTA_7 · TF-SIC-05 · scadenza raggiunta → Scaduta`.
 
