@@ -11,6 +11,7 @@ export type SostaInCorso = {
   stalloId: number;
   orarioDiAvvio: string;
   orarioDiScadenza: string;
+  pagamento: string;
 };
 export type SegnalazioneApi = {
   id: number;
@@ -67,6 +68,19 @@ export async function ricarica(request: APIRequestContext, importo: number): Pro
   return (dati as { saldo: number }).saldo;
 }
 
+/** Avvio di una sosta senza permesso dalle API (POST /api/soste in JSON), per preparare i dati. */
+export async function avviaSosta(
+  request: APIRequestContext,
+  dati: { stallo: number; targa: string; durata: number },
+): Promise<{ sosta: number; orarioDiScadenza: string; importo: number }> {
+  const risposta = await richiedi(
+    await request.post("/api/soste", { data: dati }),
+    [201],
+    "Avvio della sosta di prova",
+  );
+  return risposta as { sosta: number; orarioDiScadenza: string; importo: number };
+}
+
 /** Stalli della zona iniziale della mappa (GET /api/stalli). */
 export async function stalliDellaZona(request: APIRequestContext): Promise<StalloDellaMappa[]> {
   const dati = await richiedi(
@@ -75,6 +89,11 @@ export async function stalliDellaZona(request: APIRequestContext): Promise<Stall
     "Lettura degli stalli",
   );
   return (dati as { stalli: StalloDellaMappa[] }).stalli;
+}
+
+export async function saldo(request: APIRequestContext): Promise<number> {
+  const dati = await richiedi(await request.get("/api/wallet"), [200], "Lettura del saldo");
+  return (dati as { saldo: number }).saldo;
 }
 
 export async function sosteInCorso(request: APIRequestContext): Promise<SostaInCorso[]> {

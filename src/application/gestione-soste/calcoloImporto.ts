@@ -30,7 +30,12 @@ export function importoDellaSosta(
   if (tipoDiStallo === "DISABILI") {
     return { importo: 0, pagamento: "GRATUITA" };
   }
-  return { importo: Math.floor((costoOrario * durata + 30) / 60), pagamento: "PAGATA" };
+  return { importo: importoATariffa(costoOrario, durata), pagamento: "PAGATA" };
+}
+
+/** Costo orario × minuti / 60, arrotondato al centesimo con la metà verso l'alto, in interi. */
+export function importoATariffa(costoOrario: number, durata: number): number {
+  return Math.floor((costoOrario * durata + 30) / 60);
 }
 
 /** Minuti interi tra la durata minima e la durata massima della tariffa, estremi inclusi. */

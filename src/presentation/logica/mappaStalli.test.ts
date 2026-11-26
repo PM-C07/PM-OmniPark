@@ -1,12 +1,14 @@
 import { describe, expect, it } from "vitest";
 import {
   applicaModifiche,
+  descrizioneStallo,
   elementoDelloStallo,
+  ricordaStalli,
   zonaDallaVista,
   type StalloDellaMappa,
 } from "./mappaStalli.ts";
 
-// Specifica: docs/test/cp_mappaInterfaccia.md (TF-MAPUI-01…18)
+// Specifica: docs/test/cp_mappaInterfaccia.md (TF-MAPUI-01…25)
 
 const T1 = "2026-11-20T09:00:00.000Z";
 const T2 = "2026-11-20T09:00:05.000Z";
@@ -23,6 +25,15 @@ function S(id: number, stato: string, ultimaModifica: string): StalloDellaMappa 
     areaDiSosta: { id: 5, nome: "Piazza Aubry" },
     tariffa: { id: 1, costoOrario: 150 },
   };
+}
+
+// Lo stallo 19, n. 6 di Piazza Aubry (dalla OMP-61).
+function S6(): StalloDellaMappa {
+  return { ...S(19, "OCCUPATO", T1), numero: 6 };
+}
+
+function N(...stalli: StalloDellaMappa[]): Map<number, StalloDellaMappa> {
+  return new Map(stalli.map((stallo) => [stallo.id, stallo]));
 }
 
 describe("cp_mappaInterfaccia", () => {
@@ -163,5 +174,43 @@ describe("cp_mappaInterfaccia", () => {
       simboloStato: "?",
       etichetta: "Stallo n. 19, Piazza Aubry, a pagamento, Stato non riconosciuto",
     });
+  });
+
+  it("ISSUE_33 · TF-MAPUI-19 · nessuno stallo già visto, riga nuova → mappa con il solo stallo 19", () => {
+    expect(ricordaStalli(new Map(), [S6()])).toEqual(N(S6()));
+  });
+
+  it("ISSUE_33 · TF-MAPUI-20 · fotografia di un'altra zona senza lo stallo → lo stallo 19 resta noto", () => {
+    const noti = N(S6());
+    const risultato = ricordaStalli(noti, [S(1, "LIBERO", T1)]);
+    expect([...risultato.keys()].sort((a, b) => a - b)).toEqual([1, 19]);
+    expect(risultato.get(19)).toEqual(S6());
+  });
+
+  it("ISSUE_33 · TF-MAPUI-21 · riga più recente dello stesso stallo → sostituita", () => {
+    const noti = N(S6());
+    const risultato = ricordaStalli(noti, [
+      { ...S6(), stato: "NON_DISPONIBILE", ultimaModifica: T2 },
+    ]);
+    expect([...risultato.keys()]).toEqual([19]);
+    expect(risultato.get(19)).toMatchObject({ stato: "NON_DISPONIBILE", ultimaModifica: T2 });
+  });
+
+  it("ISSUE_33 · TF-MAPUI-22 · nessuna riga → stessa mappa", () => {
+    const noti = N(S6());
+    expect(ricordaStalli(noti, [])).toBe(noti);
+  });
+
+  it('RF_SOSTA_1 · TF-MAPUI-23 · stallo noto → "Stallo n. 6, Piazza Aubry"', () => {
+    expect(descrizioneStallo(19, N(S6()))).toBe("Stallo n. 6, Piazza Aubry");
+  });
+
+  it('ISSUE_33 · TF-MAPUI-24 · stallo mai visto → "Stallo 19"', () => {
+    expect(descrizioneStallo(19, new Map())).toBe("Stallo 19");
+  });
+
+  it('RF_SOSTA_1 · TF-MAPUI-25 · stallo noto da una zona precedente → "Stallo n. 6, Piazza Aubry"', () => {
+    const noti = ricordaStalli(ricordaStalli(new Map(), [S6()]), [S(1, "LIBERO", T1)]);
+    expect(descrizioneStallo(19, noti)).toBe("Stallo n. 6, Piazza Aubry");
   });
 });

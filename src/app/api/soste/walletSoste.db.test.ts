@@ -32,7 +32,8 @@ import { POST as ricarica } from "../wallet/ricarica/route.ts";
 import { GET as saldoWallet } from "../wallet/route.ts";
 import { GET as sosteDellAutomobilista, POST as avviaSosta } from "./route.ts";
 
-// Test frame TF-API-WS-01…31 di docs/test/cp_apiWalletSoste.md (OMP-48).
+// Test frame TF-API-WS-01…43 di docs/test/cp_apiWalletSoste.md (OMP-48; con la OMP-61
+// TF-API-WS-20…23 aggiornati e TF-API-WS-32…43 aggiunti).
 
 const BASE = "http://localhost";
 const NOME_COOKIE = "omnipark_sessione";
@@ -46,9 +47,26 @@ const SCADENZA_PASSATA = new Date("2026-01-01T00:00:00+01:00");
 const DATA_RILEVAZIONE = new Date("2026-11-20T09:00:00+01:00");
 const UN_ORA_MS = 60 * 60_000;
 
-// Permesso completo (§3).
+// Foto di prova (§3, da cp_avvioSosta.md §3), generate in memoria.
+function fotoConFirma(firma: number[], n: number): Buffer {
+  const foto = Buffer.alloc(n, 0x00);
+  Buffer.from(firma).copy(foto);
+  return foto;
+}
+
+function JPEG(n: number): Buffer {
+  return fotoConFirma([0xff, 0xd8, 0xff, 0xe0], n);
+}
+
+function PNG(n: number): Buffer {
+  return fotoConFirma([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a], n);
+}
+
+const GIF = fotoConFirma([0x47, 0x49, 0x46, 0x38, 0x39, 0x61], 1024);
+
+// Permesso completo (multipart, §3).
 const DICHIARAZIONE = "Dichiaro di esporre il permesso previsto per lo stallo";
-const FOTO_BASE64 = Buffer.alloc(1024, 0xff).toString("base64");
+const PERMESSO_COMPLETO = { dichiarazioneDiPermesso: DICHIARAZIONE, fotoDelPermesso: JPEG(1024) };
 
 type SostaInElenco = {
   id: number;
@@ -101,6 +119,62 @@ function avvia(corpo: unknown, cookie?: string): Promise<Response> {
 
 function elencoSoste(cookie?: string): Promise<Response> {
   return sosteDellAutomobilista(richiesta("/api/soste", "GET", { cookie }));
+}
+
+/** POST con il cookie, le intestazioni aggiunte e un corpo già pronto: FormData o testo. */
+function richiestaConCorpo(
+  percorso: string,
+  opzioni: { cookie?: string; corpo: FormData | string; intestazioni?: Record<string, string> },
+): Request {
+  const headers: Record<string, string> = { ...opzioni.intestazioni };
+  if (opzioni.cookie !== undefined) {
+    headers.cookie = `${NOME_COOKIE}=${opzioni.cookie}`;
+  }
+  return new Request(`${BASE}${percorso}`, { method: "POST", headers, body: opzioni.corpo });
+}
+
+/** Campi del multipart: testo, oppure foto (Buffer) inviata come file. */
+type CampiDiAvvio = {
+  stallo?: string;
+  targa?: string;
+  durata?: string;
+  dichiarazioneDiPermesso?: string;
+  fotoDelPermesso?: Buffer | string;
+};
+
+/** Richiesta multipart (§3): la foto è il file `permesso.jpg` di tipo `image/jpeg`. */
+function moduloDiAvvio(campi: CampiDiAvvio): FormData {
+  const modulo = new FormData();
+  for (const [nome, valore] of Object.entries(campi)) {
+    if (valore === undefined) {
+      continue;
+    }
+    if (typeof valore === "string") {
+      modulo.append(nome, valore);
+    } else {
+      const file = new File([new Uint8Array(valore)], "permesso.jpg", { type: "image/jpeg" });
+      modulo.append(nome, file);
+    }
+  }
+  return modulo;
+}
+
+function avviaMultipart(campi: CampiDiAvvio, cookie?: string): Promise<Response> {
+  return avviaSosta(richiestaConCorpo("/api/soste", { cookie, corpo: moduloDiAvvio(campi) }));
+}
+
+function avviaConCorpoTestuale(
+  corpo: string,
+  contentType: string,
+  cookie?: string,
+): Promise<Response> {
+  return avviaSosta(
+    richiestaConCorpo("/api/soste", {
+      cookie,
+      corpo,
+      intestazioni: { "content-type": contentType },
+    }),
+  );
 }
 
 // ---- Esiti ----
@@ -268,6 +342,10 @@ describe("OMP-48 · cp_apiWalletSoste", () => {
 
     marco = await cookieDiAccesso(MARCO_ROSSI, PASSWORD_AUTOMOBILISTA);
     paolo = await cookieDiAccesso(PAOLO_FERRI, PASSWORD_AUSILIARIO);
+
+    // Stalli 24 (disabili) e 25 (rosa) a OCCUPATO una sola volta (§3, TF-API-WS-33…38).
+    await portaAOccupato(24);
+    await portaAOccupato(25);
   });
 
   afterAll(async () => {
@@ -497,18 +575,12 @@ describe("OMP-48 · cp_apiWalletSoste", () => {
     await verificaNessunEffetto(id, 2, prima);
   });
 
-  it("VD_10 · TF-API-WS-20 · avvio sullo stallo 14 DISABILI con permesso completo e saldo 0 → 201 importo 0 GRATUITA, permesso salvato e saldo 0", async () => {
+  it("RF_SOSTA_5 · TF-API-WS-20 · avvio multipart sullo stallo 14 DISABILI con permesso completo e saldo 0 → 201 importo 0 GRATUITA, dichiarazione e foto JPEG(1024) salvate, saldo 0", async () => {
     const { id, cookie } = await automobilistaConSaldo("20", 0);
     await portaAOccupato(14);
 
-    const risposta = await avvia(
-      {
-        stallo: 14,
-        targa: "WS020XX",
-        durata: 60,
-        dichiarazioneDiPermesso: DICHIARAZIONE,
-        fotoDelPermesso: FOTO_BASE64,
-      },
+    const risposta = await avviaMultipart(
+      { stallo: "14", targa: "WS020XX", durata: "60", ...PERMESSO_COMPLETO },
       cookie,
     );
 
@@ -521,38 +593,32 @@ describe("OMP-48 · cp_apiWalletSoste", () => {
     expect(sosta).not.toBeNull();
     expect(sosta!.dichiarazioneDiPermesso).toBe(DICHIARAZIONE);
     expect(sosta!.fotoDelPermesso).not.toBeNull();
-    expect(sosta!.fotoDelPermesso!.length).toBe(1024);
+    expect(Buffer.compare(sosta!.fotoDelPermesso!, JPEG(1024))).toBe(0);
     expect(await saldoDi(id)).toBe(0);
   });
 
-  it("VD_8 · TF-API-WS-21 · avvio sullo stallo 15 ROSA con la sola foto → 422 PERMESSO_NON_VALIDO, nessun effetto", async () => {
+  it("RF_SOSTA_5 · TF-API-WS-21 · avvio multipart sullo stallo 15 ROSA con il solo file della foto → 422 PERMESSO_MANCANTE, nessun effetto", async () => {
     const { id, cookie } = await automobilistaConSaldo("21", 1000);
     const prima = await fotografa(id, 15);
 
     await verificaErrore(
-      await avvia(
-        { stallo: 15, targa: "WS021XX", durata: 60, fotoDelPermesso: FOTO_BASE64 },
+      await avviaMultipart(
+        { stallo: "15", targa: "WS021XX", durata: "60", fotoDelPermesso: JPEG(1024) },
         cookie,
       ),
       422,
-      "PERMESSO_NON_VALIDO",
+      "PERMESSO_MANCANTE",
     );
     await verificaNessunEffetto(id, 15, prima);
   });
 
-  it("VD_8 · TF-API-WS-22 · avvio sullo stallo 19 ordinario con permesso completo → 422 PERMESSO_NON_PREVISTO, nessun effetto", async () => {
+  it("VD_8 · TF-API-WS-22 · avvio multipart sullo stallo 19 ordinario con permesso completo → 422 PERMESSO_NON_PREVISTO, nessun effetto", async () => {
     const { id, cookie } = await automobilistaConSaldo("22", 1000);
     const prima = await fotografa(id, 19);
 
     await verificaErrore(
-      await avvia(
-        {
-          stallo: 19,
-          targa: "WS022XX",
-          durata: 60,
-          dichiarazioneDiPermesso: DICHIARAZIONE,
-          fotoDelPermesso: FOTO_BASE64,
-        },
+      await avviaMultipart(
+        { stallo: "19", targa: "WS022XX", durata: "60", ...PERMESSO_COMPLETO },
         cookie,
       ),
       422,
@@ -561,7 +627,7 @@ describe("OMP-48 · cp_apiWalletSoste", () => {
     await verificaNessunEffetto(id, 19, prima);
   });
 
-  it('ISSUE_27 · TF-API-WS-23 · avvio con fotoDelPermesso "%%%" non base64 → 422 RICHIESTA_NON_VALIDA, nessun effetto', async () => {
+  it("ISSUE_33 · TF-API-WS-23 · avvio JSON con fotoDelPermesso in base64 valido di JPEG(1024) → 422 RICHIESTA_NON_VALIDA, nessun effetto", async () => {
     const { id, cookie } = await automobilistaConSaldo("23", 1000);
     const prima = await fotografa(id, 20);
 
@@ -572,7 +638,7 @@ describe("OMP-48 · cp_apiWalletSoste", () => {
           targa: "WS023XX",
           durata: 60,
           dichiarazioneDiPermesso: DICHIARAZIONE,
-          fotoDelPermesso: "%%%",
+          fotoDelPermesso: JPEG(1024).toString("base64"),
         },
         cookie,
       ),
@@ -665,5 +731,223 @@ describe("OMP-48 · cp_apiWalletSoste", () => {
 
   it("NRF_SIC_1 · TF-API-WS-31 · soste con la sessione di Paolo Ferri → 403 RUOLO_NON_AMMESSO", async () => {
     await verificaErrore(await elencoSoste(paolo), 403, "RUOLO_NON_AMMESSO");
+  });
+
+  // ---- Avvio con il permesso e lettura del corpo: POST /api/soste (OMP-61) ----
+
+  it("RF_SOSTA_5 · TF-API-WS-32 · avvio multipart sullo stallo 4 ROSA con dichiarazione e PNG(1024) → 201 importo 100 PAGATA, dichiarazione e foto PNG(1024) salvate, saldo 900 e stallo NON_DISPONIBILE", async () => {
+    const { cookie } = await automobilistaConSaldo("32", 1000);
+
+    const risposta = await avviaMultipart(
+      {
+        stallo: "4",
+        targa: "WS032XX",
+        durata: "60",
+        dichiarazioneDiPermesso: DICHIARAZIONE,
+        fotoDelPermesso: PNG(1024),
+      },
+      cookie,
+    );
+
+    expect(risposta.status).toBe(201);
+    const corpo = (await risposta.json()) as SostaAvviata;
+    expect(corpo.importo).toBe(100);
+    expect(corpo.pagamento).toBe("PAGATA");
+
+    const sosta = await trovaSosta(poolDiTest(), corpo.sosta);
+    expect(sosta).not.toBeNull();
+    expect(sosta!.dichiarazioneDiPermesso).toBe(DICHIARAZIONE);
+    expect(sosta!.fotoDelPermesso).not.toBeNull();
+    expect(Buffer.compare(sosta!.fotoDelPermesso!, PNG(1024))).toBe(0);
+
+    const rispostaSaldo = await chiediSaldo(cookie);
+    expect(rispostaSaldo.status).toBe(200);
+    expect(await rispostaSaldo.json()).toEqual({ saldo: 900 });
+    expect((await trovaStallo(poolDiTest(), 4))?.stato).toBe("NON_DISPONIBILE");
+  });
+
+  it("RF_SOSTA_5 · TF-API-WS-33 · avvio JSON sullo stallo 25 ROSA senza permesso → 422 PERMESSO_MANCANTE, nessun effetto", async () => {
+    const { id, cookie } = await automobilistaConSaldo("33", 1000);
+    const prima = await fotografa(id, 25);
+
+    await verificaErrore(
+      await avvia({ stallo: 25, targa: "WS033XX", durata: 60 }, cookie),
+      422,
+      "PERMESSO_MANCANTE",
+    );
+    await verificaNessunEffetto(id, 25, prima);
+  });
+
+  it("ISSUE_33 · TF-API-WS-34 · avvio multipart sullo stallo 24 con GIF dichiarato come permesso.jpg image/jpeg → 422 PERMESSO_NON_VALIDO, nessun effetto", async () => {
+    const { id, cookie } = await automobilistaConSaldo("34", 1000);
+    const prima = await fotografa(id, 24);
+
+    await verificaErrore(
+      await avviaMultipart(
+        {
+          stallo: "24",
+          targa: "WS034XX",
+          durata: "60",
+          dichiarazioneDiPermesso: DICHIARAZIONE,
+          fotoDelPermesso: GIF,
+        },
+        cookie,
+      ),
+      422,
+      "PERMESSO_NON_VALIDO",
+    );
+    await verificaNessunEffetto(id, 24, prima);
+  });
+
+  it("ISSUE_33 · TF-API-WS-35 · avvio multipart sullo stallo 24 con JPEG(2097153) oltre 2 MB → 422 PERMESSO_NON_VALIDO, nessun effetto", async () => {
+    const { id, cookie } = await automobilistaConSaldo("35", 1000);
+    const prima = await fotografa(id, 24);
+
+    await verificaErrore(
+      await avviaMultipart(
+        {
+          stallo: "24",
+          targa: "WS035XX",
+          durata: "60",
+          dichiarazioneDiPermesso: DICHIARAZIONE,
+          fotoDelPermesso: JPEG(2097153),
+        },
+        cookie,
+      ),
+      422,
+      "PERMESSO_NON_VALIDO",
+    );
+    await verificaNessunEffetto(id, 24, prima);
+  });
+
+  it("ISSUE_33 · TF-API-WS-36 · avvio multipart sullo stallo 24 con content-length 5000000 oltre il limite → 422 PERMESSO_NON_VALIDO, nessun effetto", async () => {
+    const { id, cookie } = await automobilistaConSaldo("36", 1000);
+    const prima = await fotografa(id, 24);
+    const richiestaOltreIlLimite = richiestaConCorpo("/api/soste", {
+      cookie,
+      corpo: moduloDiAvvio({ stallo: "24", targa: "WS036XX", durata: "60", ...PERMESSO_COMPLETO }),
+      intestazioni: { "content-length": "5000000" },
+    });
+    // Preparazione del frame: l'intestazione deve arrivare alla route (§6).
+    expect(richiestaOltreIlLimite.headers.get("content-length")).toBe("5000000");
+
+    await verificaErrore(await avviaSosta(richiestaOltreIlLimite), 422, "PERMESSO_NON_VALIDO");
+    await verificaNessunEffetto(id, 24, prima);
+  });
+
+  it("ISSUE_33 · TF-API-WS-37 · avvio multipart sullo stallo 24 con fotoDelPermesso come campo di testo base64 → 422 RICHIESTA_NON_VALIDA, nessun effetto", async () => {
+    const { id, cookie } = await automobilistaConSaldo("37", 1000);
+    const prima = await fotografa(id, 24);
+
+    await verificaErrore(
+      await avviaMultipart(
+        {
+          stallo: "24",
+          targa: "WS037XX",
+          durata: "60",
+          dichiarazioneDiPermesso: DICHIARAZIONE,
+          fotoDelPermesso: JPEG(1024).toString("base64"),
+        },
+        cookie,
+      ),
+      422,
+      "RICHIESTA_NON_VALIDA",
+    );
+    await verificaNessunEffetto(id, 24, prima);
+  });
+
+  it("RF_SOSTA_5 · TF-API-WS-38 · avvio multipart sullo stallo 24 con dichiarazione e file della foto di 0 byte → 422 PERMESSO_MANCANTE, nessun effetto", async () => {
+    const { id, cookie } = await automobilistaConSaldo("38", 1000);
+    const prima = await fotografa(id, 24);
+
+    await verificaErrore(
+      await avviaMultipart(
+        {
+          stallo: "24",
+          targa: "WS038XX",
+          durata: "60",
+          dichiarazioneDiPermesso: DICHIARAZIONE,
+          fotoDelPermesso: Buffer.alloc(0),
+        },
+        cookie,
+      ),
+      422,
+      "PERMESSO_MANCANTE",
+    );
+    await verificaNessunEffetto(id, 24, prima);
+  });
+
+  it('ISSUE_33 · TF-API-WS-39 · avvio multipart sullo stallo 22 con durata "60 min" → 422 RICHIESTA_NON_VALIDA, nessun effetto', async () => {
+    const { id, cookie } = await automobilistaConSaldo("39", 1000);
+    const prima = await fotografa(id, 22);
+
+    await verificaErrore(
+      await avviaMultipart({ stallo: "22", targa: "WS039XX", durata: "60 min" }, cookie),
+      422,
+      "RICHIESTA_NON_VALIDA",
+    );
+    await verificaNessunEffetto(id, 22, prima);
+  });
+
+  it("ISSUE_33 · TF-API-WS-40 · avvio con content-type text/plain e corpo JSON → 422 RICHIESTA_NON_VALIDA, nessun effetto", async () => {
+    const { id, cookie } = await automobilistaConSaldo("40", 1000);
+    const prima = await fotografa(id, 22);
+
+    await verificaErrore(
+      await avviaConCorpoTestuale(
+        '{"stallo":22,"targa":"WS040XX","durata":60}',
+        "text/plain",
+        cookie,
+      ),
+      422,
+      "RICHIESTA_NON_VALIDA",
+    );
+    await verificaNessunEffetto(id, 22, prima);
+  });
+
+  it("ISSUE_33 · TF-API-WS-41 · avvio con content-type multipart e corpo che non è un multipart → 422 RICHIESTA_NON_VALIDA, nessun effetto", async () => {
+    const { id, cookie } = await automobilistaConSaldo("41", 1000);
+    const prima = await fotografa(id, 22);
+
+    await verificaErrore(
+      await avviaConCorpoTestuale(
+        "non è un multipart",
+        "multipart/form-data; boundary=confine",
+        cookie,
+      ),
+      422,
+      "RICHIESTA_NON_VALIDA",
+    );
+    await verificaNessunEffetto(id, 22, prima);
+  });
+
+  it("ISSUE_33 · TF-API-WS-42 · avvio multipart sullo stallo 29 a pagamento senza permesso → 201 importo 80 PAGATA, dichiarazione e foto null, saldo 920 e stallo NON_DISPONIBILE", async () => {
+    const { cookie } = await automobilistaConSaldo("42", 1000);
+
+    const risposta = await avviaMultipart({ stallo: "29", targa: "WS042XX", durata: "60" }, cookie);
+
+    expect(risposta.status).toBe(201);
+    const corpo = (await risposta.json()) as SostaAvviata;
+    expect(corpo.importo).toBe(80);
+    expect(corpo.pagamento).toBe("PAGATA");
+
+    const sosta = await trovaSosta(poolDiTest(), corpo.sosta);
+    expect(sosta).not.toBeNull();
+    expect(sosta!.dichiarazioneDiPermesso).toBeNull();
+    expect(sosta!.fotoDelPermesso).toBeNull();
+
+    const rispostaSaldo = await chiediSaldo(cookie);
+    expect(rispostaSaldo.status).toBe(200);
+    expect(await rispostaSaldo.json()).toEqual({ saldo: 920 });
+    expect((await trovaStallo(poolDiTest(), 29))?.stato).toBe("NON_DISPONIBILE");
+  });
+
+  it("NRF_SIC_1 · TF-API-WS-43 · avvio multipart con permesso completo senza cookie → 401 SESSIONE_NON_VALIDA, nessuna sosta attiva sullo stallo 22", async () => {
+    await verificaErrore(
+      await avviaMultipart({ stallo: "22", targa: "WS043XX", durata: "60", ...PERMESSO_COMPLETO }),
+      401,
+      "SESSIONE_NON_VALIDA",
+    );
+    expect(await sostaAttivaSuStallo(poolDiTest(), 22)).toBeNull();
   });
 });

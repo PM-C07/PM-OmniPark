@@ -37,9 +37,10 @@ import {
   type SostaAvviata,
 } from "./facade";
 
-// Test frame TF-AVV-01…26 di docs/test/cp_avvioSosta.md (OMP-45). Le transazioni della Facade
-// vanno in commit: il database si prepara una volta e ogni frame usa stalli, automobilisti e
-// veicoli propri.
+// Test frame TF-AVV-01…26 di docs/test/cp_avvioSosta.md (OMP-45); con la OMP-61 TF-AVV-06 e 22
+// hanno cambiato esito e le foto di prova sono JPEG (§3). TF-AVV-27…41 sono in
+// avvio.permesso.db.test.ts. Le transazioni della Facade vanno in commit: il database si prepara
+// una volta e ogni frame usa stalli, automobilisti e veicoli propri.
 
 const T = new Date("2026-11-20T10:00:00+01:00");
 const orologio = { adesso: () => T };
@@ -47,8 +48,16 @@ const ISTANTE_RICARICA = new Date("2026-11-20T08:00:00+01:00");
 const ISTANTE_RILEVAZIONE = new Date("2026-11-20T09:00:00+01:00");
 const INESISTENTE = 999999;
 const DICHIARAZIONE = "Dichiaro di esporre il permesso previsto per lo stallo";
-const FOTO = Buffer.alloc(1024, 0xff);
-const FOTO_TROPPO_GRANDE = Buffer.alloc(2097153, 0xff);
+
+// JPEG(n) di §3: i byte FF D8 FF E0 seguiti da byte 00 fino a n byte in tutto.
+function jpeg(n: number): Buffer {
+  const foto = Buffer.alloc(n, 0x00);
+  Buffer.from([0xff, 0xd8, 0xff, 0xe0]).copy(foto);
+  return foto;
+}
+
+const FOTO = jpeg(1024);
+const FOTO_TROPPO_GRANDE = jpeg(2097153);
 
 function ora(hhmm: string): Date {
   return new Date(`2026-11-20T${hhmm}:00+01:00`);
@@ -360,14 +369,9 @@ describe("OMP-45 · cp_avvioSosta", () => {
     );
   });
 
-  it("VD_10 · TF-AVV-06 · stallo rosa senza permesso → OK importo 150, permesso null, saldo 850", async () => {
+  it("RF_SOSTA_5 · TF-AVV-06 · stallo rosa senza permesso → PERMESSO_MANCANTE", async () => {
     const p = await automobilista("6");
-    await avvioRiuscito(p, richiesta(p, 15, 60), {
-      importo: 150,
-      pagamento: "PAGATA",
-      scadenza: "11:00",
-      saldo: 850,
-    });
+    await avvioRifiutato(p, richiesta(p, 15, 60), "PERMESSO_MANCANTE", "OCCUPATO");
   });
 
   it("RF_SOSTA_5 · TF-AVV-07 · stallo rosa con permesso completo → OK importo 100, permesso salvato, saldo 900", async () => {
@@ -512,13 +516,13 @@ describe("OMP-45 · cp_avvioSosta", () => {
     );
   });
 
-  it("VD_8 · TF-AVV-22 · stallo rosa con la sola foto → PERMESSO_NON_VALIDO", async () => {
+  it("RF_SOSTA_5 · TF-AVV-22 · stallo rosa con la sola foto → PERMESSO_MANCANTE", async () => {
     const p = await automobilista("22");
     await portaAOccupato(25);
     await avvioRifiutato(
       p,
       richiesta(p, 25, 60, { fotoDelPermesso: FOTO }),
-      "PERMESSO_NON_VALIDO",
+      "PERMESSO_MANCANTE",
       "OCCUPATO",
     );
   });

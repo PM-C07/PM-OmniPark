@@ -1,3 +1,6 @@
+// Test frame TF-WS-01…59 di docs/test/cp_persistenza_wallet_soste.md: TF-WS-01…43 di OMP-34
+// (issue #5), TF-WS-44…49 di OMP-45 (issue #9), TF-WS-50…52 di OMP-46 (issue #10),
+// TF-WS-53…59 di OMP-61 (issue #33).
 import type { PoolClient } from "pg";
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from "vitest";
 import {
@@ -12,6 +15,7 @@ import {
   creaSosta,
   creaWallet,
   impostaSostaScaduta,
+  impostaSostaScadutaSeRaggiunta,
   movimenti,
   registraRicarica,
   sostaAttivaPerVeicolo,
@@ -24,6 +28,7 @@ import {
   sosteInCorsoDiTarga,
   terminaSosteScaduteDelloStallo,
   trovaSosta,
+  trovaSostaPerAggiornamento,
   trovaWalletDiAutomobilista,
 } from "./walletSoste";
 
@@ -727,5 +732,74 @@ describe("OMP-34 · TCS persistenza · wallet, movimenti e soste", () => {
 
   it("ISSUE_10 · TF-WS-52 · targa inesistente ZZ000ZZ → elenco vuoto", async () => {
     expect(await sosteInCorsoDiTarga(client, "ZZ000ZZ")).toEqual([]);
+  });
+
+  // Test frame TF-WS-53…59 (OMP-61).
+
+  // trovaSostaPerAggiornamento
+
+  it("RF_SOSTA_2 · TF-WS-53 · sosta attiva esistente → la sosta ATTIVA con targa MN234PQ sullo stallo 16", async () => {
+    const id = await creaSosta8Su16();
+    const sosta = await trovaSostaPerAggiornamento(client, id);
+    expect(sosta).toMatchObject({
+      id,
+      automobilistaId: 8,
+      veicoloId: 3,
+      targa: "MN234PQ",
+      stalloId: 16,
+      stato: "ATTIVA",
+      pagamento: "PAGATA",
+    });
+    expect(sosta?.orarioDiAvvio.getTime()).toBe(I.getTime());
+    expect(sosta?.orarioDiScadenza.getTime()).toBe(I_PIU_1H.getTime());
+  });
+
+  it("RF_SOSTA_2 · TF-WS-54 · sosta inesistente → null", async () => {
+    expect(await trovaSostaPerAggiornamento(client, ID_INESISTENTE)).toBeNull();
+  });
+
+  // impostaSostaScadutaSeRaggiunta
+
+  it("RF_SOSTA_7 · TF-WS-55 · istante prima della scadenza → false, resta ATTIVA con scadenza invariata", async () => {
+    const id = await creaSosta8Su16();
+    expect(
+      await impostaSostaScadutaSeRaggiunta(client, id, new Date("2026-11-20T09:59:59+01:00")),
+    ).toBe(false);
+    const sosta = await trovaSosta(client, id);
+    expect(sosta?.stato).toBe("ATTIVA");
+    expect(sosta?.orarioDiScadenza.getTime()).toBe(I_PIU_1H.getTime());
+  });
+
+  it("RF_SOSTA_7 · TF-WS-56 · istante dopo la scadenza → true, SCADUTA", async () => {
+    const id = await creaSosta8Su16();
+    expect(
+      await impostaSostaScadutaSeRaggiunta(client, id, new Date("2026-11-20T10:00:01+01:00")),
+    ).toBe(true);
+    expect((await trovaSosta(client, id))?.stato).toBe("SCADUTA");
+  });
+
+  it("RF_SOSTA_7 · TF-WS-57 · istante uguale alla scadenza → true, SCADUTA", async () => {
+    const id = await creaSosta8Su16();
+    expect(
+      await impostaSostaScadutaSeRaggiunta(client, id, new Date("2026-11-20T10:00:00+01:00")),
+    ).toBe(true);
+    expect((await trovaSosta(client, id))?.stato).toBe("SCADUTA");
+  });
+
+  it("RF_SOSTA_7 · TF-WS-58 · sosta 2 terminata → false, resta TERMINATA", async () => {
+    expect(
+      await impostaSostaScadutaSeRaggiunta(client, 2, new Date("2026-12-31T00:00:00+01:00")),
+    ).toBe(false);
+    expect((await trovaSosta(client, 2))?.stato).toBe("TERMINATA");
+  });
+
+  it("RF_SOSTA_7 · TF-WS-59 · sosta inesistente → false", async () => {
+    expect(
+      await impostaSostaScadutaSeRaggiunta(
+        client,
+        ID_INESISTENTE,
+        new Date("2026-12-31T00:00:00+01:00"),
+      ),
+    ).toBe(false);
   });
 });

@@ -7,3 +7,4 @@ e2e-risultati
 out
 build
 package-lock.json
+.claude/settings.local.json

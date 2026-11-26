@@ -106,6 +106,33 @@ export function applicaModifiche(
   return cambiato ? [...perId.values()].sort((a, b) => a.id - b.id) : stalli;
 }
 
+/**
+ * Stalli già visti durante l'apertura della pagina, per id (DIF-04, OMP-61): ogni riga, di qualsiasi
+ * zona, sostituisce o aggiunge; nessuno stallo si toglie al cambio di zona. Senza righe, stessa mappa.
+ */
+export function ricordaStalli(
+  noti: ReadonlyMap<number, StalloDellaMappa>,
+  righe: readonly StalloDellaMappa[],
+): ReadonlyMap<number, StalloDellaMappa> {
+  if (righe.length === 0) {
+    return noti;
+  }
+  const aggiornati = new Map(noti);
+  for (const riga of righe) {
+    aggiornati.set(riga.id, riga);
+  }
+  return aggiornati;
+}
+
+/** «Stallo n. 6, Piazza Aubry» per uno stallo già visto; «Stallo 19» per uno mai visto (DIF-04). */
+export function descrizioneStallo(
+  stalloId: number,
+  noti: ReadonlyMap<number, StalloDellaMappa>,
+): string {
+  const noto = noti.get(stalloId);
+  return noto ? `Stallo n. ${noto.numero}, ${noto.areaDiSosta.nome}` : `Stallo ${stalloId}`;
+}
+
 const SIMBOLO_STATO: Readonly<Record<string, string>> = {
   LIBERO: "✓",
   OCCUPATO: "●",

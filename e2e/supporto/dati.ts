@@ -38,6 +38,8 @@ export const STALLI_PER_LE_SOSTE: readonly number[] = [17, 18, 19, 20, 21];
 export const STALLI_PER_LE_VARIAZIONI: readonly number[] = [1, 3, 16];
 /** Stalli delle letture ANPR (Via Raffaele Viviani). */
 export const STALLI_PER_LE_LETTURE = { a: 7, b: 8, c: 9 } as const;
+/** Stalli riservati delle soste con permesso (TS-14, Piazza Aubry n. 1 e 2). */
+export const STALLI_RISERVATI = { disabili: 14, rosa: 15 } as const;
 
 /** Primo stallo candidato senza una sosta in corso; null se sono tutti Non disponibili. */
 export function primoStalloSenzaSosta<S extends { id: number; stato: string }>(

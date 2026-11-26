@@ -8,7 +8,7 @@ import { ottieniPool } from "../../persistence/db.ts";
 import { ErroreDominio } from "../../persistence/accessoDati/errori.ts";
 import { eseguiInTransazione } from "../../persistence/accessoDati/transazione.ts";
 import {
-  impostaSostaScaduta,
+  impostaSostaScadutaSeRaggiunta,
   sosteDaScadere,
   trovaSosta,
 } from "../../persistence/accessoDati/walletSoste.ts";
@@ -44,8 +44,9 @@ export async function scadenzaRaggiunta(
   sosta: number,
 ): Promise<EsitoScadenza> {
   return eseguiInTransazione(async (client) => {
-    // Un'altra transazione l'ha già fatta scadere: niente ripristino dello stallo.
-    if (!(await impostaSostaScaduta(client, sosta))) {
+    // Un'altra transazione l'ha già fatta scadere, o un prolungamento ne ha spostato la scadenza
+    // dopo l'istante dell'orologio: niente ripristino dello stallo.
+    if (!(await impostaSostaScadutaSeRaggiunta(client, sosta, contesto.orologio.adesso()))) {
       return "GIA_ALLINEATA";
     }
     const scaduta = await trovaSosta(client, sosta);

@@ -3,7 +3,9 @@
 // (UC_SOSTA_1, SD_SOSTA_1) in tre interazioni (NRF_USA_2): 1) selezione dello stallo, che apre
 // questa scheda; 2) «Avvia sosta», con targa e durata già proposte e importo già calcolato dal
 // server; 3) «Conferma e paga». Con il credito insufficiente la ricarica si fa qui, senza perdere
-// targa e durata (np_01: Ricarica → «torna alla conferma»).
+// targa e durata (np_01: Ricarica → «torna alla conferma»), e dopo la ricarica restano visibili la
+// conferma e il nuovo saldo (UC_WALLET_1 passo 4, DIF-03). Sugli stalli riservati il modulo ha il
+// passaggio della dichiarazione e della foto del permesso (UC_SOSTA_5, OMP-61).
 import { useEffect, useRef, useState, type FormEvent, type ReactNode } from "react";
 import { Avviso } from "./Avviso.tsx";
 import { BadgeStato } from "./BadgeStato.tsx";
@@ -16,10 +18,15 @@ import {
   etichettaConferma,
   etichettaDurata,
   opzioniDurata,
+  richiestaDiAvvio,
+  type PermessoDiAvvio,
 } from "./logica/avvioSosta.ts";
 import { formattaEuro, formattaOra } from "./logica/importi.ts";
 import { descriviTipo, type StalloDellaMappa } from "./logica/mappaStalli.ts";
+import { richiedePermesso } from "./logica/permesso.ts";
 import { chiamaApi, type EsitoRisposta } from "./logica/risposteApi.ts";
+import { messaggioRicaricaApprovata, riquadroRicarica } from "./logica/wallet.ts";
+import { PermessoStallo } from "./PermessoStallo.tsx";
 import { Ricarica } from "./Ricarica.tsx";
 
 type Tariffa = {
@@ -30,7 +37,7 @@ type Tariffa = {
 };
 type Importo = { importo: number; pagamento: string; orarioDiScadenza: string };
 export type SostaAvviata = { sosta: number; orarioDiScadenza: string; importo: number };
-type CampoErrore = "targa" | "durata" | "credito" | "generale";
+type CampoErrore = "targa" | "durata" | "credito" | "permesso" | "generale";
 
 function CampoSelezione({
   id,
@@ -112,6 +119,13 @@ export function SchedaStallo({
   const [calcolato, setCalcolato] = useState<{ durata: number; importo: Importo } | null>(null);
   const [errori, setErrori] = useState<Partial<Record<CampoErrore, string>>>({});
   const [invio, setInvio] = useState(false);
+  // Permesso completo (dichiarazione spuntata e foto valida) sugli stalli riservati, altrimenti null.
+  const [permesso, setPermesso] = useState<PermessoDiAvvio | null>(null);
+  // Ricarica approvata in questo avvio: il messaggio e il nuovo saldo restano visibili (DIF-03).
+  const [ricaricaApprovata, setRicaricaApprovata] = useState<{
+    importo: number;
+    saldo: number;
+  } | null>(null);
   const titolo = useRef<HTMLHeadingElement>(null);
   const titoloModulo = useRef<HTMLHeadingElement>(null);
   const sessione = useRef(onSessioneScaduta);
@@ -192,7 +206,12 @@ export function SchedaStallo({
   const durate = tariffa ? opzioniDurata(tariffa.durataMassima) : [];
   const creditoScarso =
     saldo !== null && importo !== null && !creditoSufficiente(saldo, importo.importo);
-  const proponiRicarica = creditoScarso || errori.credito !== undefined;
+  const riquadro = riquadroRicarica({
+    creditoScarso,
+    erroreCredito: errori.credito !== undefined,
+    ricaricaApprovata: ricaricaApprovata !== null,
+  });
+  const conPermesso = richiedePermesso(stallo.tipoDiStallo);
 
   // Interazione 2: modulo già compilato con la prima targa e la durata proposta.
   function avviaSosta() {
@@ -200,6 +219,8 @@ export function SchedaStallo({
       return;
     }
     setErrori({});
+    setPermesso(null);
+    setRicaricaApprovata(null);
     setTarga(targhe[0] ?? "");
     setDurata(durataPredefinita(tariffa.durataMassima));
     setModulo(true);
@@ -209,18 +230,19 @@ export function SchedaStallo({
   // Interazione 3: conferma e pagamento (POST /api/soste).
   async function conferma(evento: FormEvent<HTMLFormElement>) {
     evento.preventDefault();
-    if (!importo || durata === null) {
+    if (!importo || durata === null || (conPermesso && !permesso)) {
       return;
     }
     setErrori({});
     setInvio(true);
     const esito = await chiamaApi(
       "/api/soste",
-      {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({ stallo: stallo.id, targa, durata }),
-      },
+      richiestaDiAvvio({
+        stallo: stallo.id,
+        targa,
+        durata,
+        permesso: conPermesso && permesso ? permesso : undefined,
+      }),
       CAMPI_AVVIO_SOSTA,
     );
     setInvio(false);
@@ -233,8 +255,9 @@ export function SchedaStallo({
     }
   }
 
-  function ricaricata(nuovoSaldo: number) {
+  function ricaricata(nuovoSaldo: number, importoRicaricato: number) {
     setSaldo(nuovoSaldo);
+    setRicaricaApprovata({ importo: importoRicaricato, saldo: nuovoSaldo });
     setErrori((attuali) => senza(attuali, "credito"));
     requestAnimationFrame(() => document.getElementById("avvio-conferma")?.focus());
   }
@@ -338,6 +361,14 @@ export function SchedaStallo({
               </option>
             ))}
           </CampoSelezione>
+          {conPermesso ? (
+            <PermessoStallo
+              tipoDiStallo={stallo.tipoDiStallo}
+              errore={errori.permesso}
+              disabilitato={invio}
+              onCambio={setPermesso}
+            />
+          ) : null}
           <p className="text-base text-zinc-900" aria-live="polite">
             {importo
               ? `Importo ${formattaEuro(importo.importo)}, scadenza alle ${formattaOra(importo.orarioDiScadenza)}.`
@@ -345,7 +376,7 @@ export function SchedaStallo({
                 ? "Calcolo dell'importo…"
                 : ""}
           </p>
-          {proponiRicarica ? (
+          {riquadro === "proposta" ? (
             <div className="flex flex-col gap-3 rounded-md border-l-4 border-orange-700 bg-orange-50 p-3">
               <p className="text-base text-orange-950" role="alert">
                 <strong>Credito insufficiente.</strong>{" "}
@@ -360,13 +391,18 @@ export function SchedaStallo({
               />
             </div>
           ) : null}
+          {riquadro === "approvata" && ricaricaApprovata ? (
+            <Avviso tipo="successo">
+              {messaggioRicaricaApprovata(ricaricaApprovata.importo, ricaricaApprovata.saldo)}
+            </Avviso>
+          ) : null}
           <div className="flex flex-wrap gap-2">
             <Bottone
               id="avvio-conferma"
               type="submit"
               inCorso={invio}
               testoInCorso="Pagamento in corso…"
-              disabled={!importo || calcolo || creditoScarso}
+              disabled={!importo || calcolo || creditoScarso || (conPermesso && !permesso)}
             >
               {importo ? etichettaConferma(importo.importo) : "Calcolo dell'importo…"}
             </Bottone>

@@ -1,6 +1,7 @@
-// Servizio Avvio (UC_SOSTA_1, SD_SOSTA_1, RF_SOSTA_1, RF_SOSTA_6, RF_WALLET_2).
+// Servizio Avvio (UC_SOSTA_1, SD_SOSTA_1, RF_SOSTA_1, RF_SOSTA_5, RF_SOSTA_6, RF_WALLET_2).
 // Controlli nell'ordine dell'issue #9, poi un'unica transazione: sosta, addebito, stallo Non
 // disponibile. Le corse tra controlli e transazione le chiude il database e annullano tutto.
+// Dalla OMP-61 (CR_01) il permesso è obbligatorio sugli stalli per disabili e rosa.
 import { ErroreDominio } from "../../persistence/accessoDati/errori.ts";
 import { eseguiInTransazione } from "../../persistence/accessoDati/transazione.ts";
 import {
@@ -23,6 +24,12 @@ import { ErroreGestioneSoste } from "./errori.ts";
 
 /** Limite della foto del permesso, uguale al vincolo sosta_foto_dimensione dello schema. */
 const FOTO_MASSIMA = 2 * 1024 * 1024;
+
+/** Firme dei formati ammessi per la foto del permesso (issue #33): JPEG e PNG. */
+const FIRME_FOTO: readonly (readonly number[])[] = [
+  [0xff, 0xd8, 0xff],
+  [0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a],
+];
 
 export type RichiestaDiAvvio = {
   automobilista: number;
@@ -51,33 +58,35 @@ function fotoPresente(foto: unknown): foto is Buffer {
   return Buffer.isBuffer(foto) && foto.length > 0;
 }
 
+/** JPEG o PNG riconosciuti dai primi byte del contenuto, non dal nome del file. */
+function formatoAmmesso(foto: Buffer): boolean {
+  return FIRME_FOTO.some(
+    (firma) => foto.length >= firma.length && firma.every((byte, i) => foto[i] === byte),
+  );
+}
+
 /**
- * Permesso secondo il tipo di stallo, senza verifica di autenticità (COD-20): obbligatorio sugli
- * stalli per disabili, facoltativo ma completo sugli stalli rosa, non previsto sugli altri (VD_8).
+ * Permesso secondo il tipo di stallo (cp_avvioSosta.md §2, CR_01), senza verifica di autenticità
+ * (UC_SOSTA_5, la verifica sul posto è dell'Ausiliario): non previsto sugli stalli a pagamento
+ * (VD_8), obbligatorio su disabili e rosa con dichiarazione e foto JPEG o PNG di al massimo 2 MB.
  */
 function verificaPermesso(tipoDiStallo: TipoDiStallo, richiesta: RichiestaDiAvvio): Permesso {
   const { dichiarazioneDiPermesso: dichiarazione, fotoDelPermesso: foto } = richiesta;
-  const arrivato =
-    (dichiarazione !== undefined && dichiarazione !== null) ||
-    (foto !== undefined && foto !== null);
 
   if (tipoDiStallo === "ORDINARIO_A_PAGAMENTO") {
+    const arrivato =
+      (dichiarazione !== undefined && dichiarazione !== null) ||
+      (foto !== undefined && foto !== null);
     if (arrivato) {
       throw new ErroreGestioneSoste("PERMESSO_NON_PREVISTO");
     }
     return {};
   }
-  if (tipoDiStallo === "DISABILI") {
-    if (!dichiarazioneValida(dichiarazione) || !fotoPresente(foto)) {
-      throw new ErroreGestioneSoste("PERMESSO_MANCANTE");
-    }
-  } else if (!arrivato) {
-    // ROSA: facoltativo fino alla COD-20.
-    return {};
-  } else if (!dichiarazioneValida(dichiarazione) || !fotoPresente(foto)) {
-    throw new ErroreGestioneSoste("PERMESSO_NON_VALIDO");
+  // DISABILI e ROSA (UC_SOSTA_5 2.a1).
+  if (!dichiarazioneValida(dichiarazione) || !fotoPresente(foto)) {
+    throw new ErroreGestioneSoste("PERMESSO_MANCANTE");
   }
-  if (foto.length > FOTO_MASSIMA) {
+  if (foto.length > FOTO_MASSIMA || !formatoAmmesso(foto)) {
     throw new ErroreGestioneSoste("PERMESSO_NON_VALIDO");
   }
   return { dichiarazioneDiPermesso: dichiarazione, fotoDelPermesso: foto };

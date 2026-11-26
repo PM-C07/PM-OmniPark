@@ -7,6 +7,7 @@ import {
   etichettaConferma,
   etichettaDurata,
   opzioniDurata,
+  richiestaDiAvvio,
 } from "./avvioSosta.ts";
 import { interpretaRisposta } from "./risposteApi.ts";
 
@@ -15,8 +16,12 @@ const MOTIVO_LIBERO =
 const MOTIVO_NON_DISPONIBILE = "Sullo stallo c'è già una sosta in corso.";
 const MOTIVO_SCONOSCIUTO = "Lo stato dello stallo non è affidabile: la sosta non si può avviare.";
 const MOTIVO_GENERICO = "La sosta non si può avviare su questo stallo.";
-const MOTIVO_DISABILI =
-  "Per gli stalli riservati alle persone con disabilità servono la dichiarazione e la foto del permesso: l'avvio da qui arriverà con un prossimo aggiornamento.";
+
+const BYTE_J = [0xff, 0xd8, 0xff, 0xe0];
+const BYTE_P = [0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a];
+const J = new Blob([new Uint8Array(BYTE_J)], { type: "image/jpeg" });
+const P = new Blob([new Uint8Array(BYTE_P)], { type: "image/png" });
+const D = "Dichiaro di esporre sul veicolo il permesso rosa.";
 
 function erroreApi(codice: string, messaggio: string) {
   return { errore: { codice, messaggio } };
@@ -27,15 +32,12 @@ describe("logica dell'avvio della sosta nell'interfaccia", () => {
     expect(disponibilitaAvvio("OCCUPATO", "ORDINARIO_A_PAGAMENTO")).toEqual({ disponibile: true });
   });
 
-  it("ISSUE_29 · TF-AVVUI-02 · stallo Occupato rosa → disponibile", () => {
+  it("RF_SOSTA_5 · TF-AVVUI-02 · stallo Occupato rosa → disponibile", () => {
     expect(disponibilitaAvvio("OCCUPATO", "ROSA")).toEqual({ disponibile: true });
   });
 
-  it("RF_SOSTA_5 · TF-AVVUI-03 · stallo Occupato per disabili → non disponibile con il motivo", () => {
-    expect(disponibilitaAvvio("OCCUPATO", "DISABILI")).toEqual({
-      disponibile: false,
-      motivo: MOTIVO_DISABILI,
-    });
+  it("RF_SOSTA_5 · TF-AVVUI-03 · stallo Occupato per disabili → disponibile", () => {
+    expect(disponibilitaAvvio("OCCUPATO", "DISABILI")).toEqual({ disponibile: true });
   });
 
   it("RF_SOSTA_1 · TF-AVVUI-04 · stallo Libero → non disponibile con il motivo", () => {
@@ -192,5 +194,79 @@ describe("logica dell'avvio della sosta nell'interfaccia", () => {
     expect(
       interpretaRisposta(401, erroreApi("SESSIONE_NON_VALIDA", msg), CAMPI_AVVIO_SOSTA),
     ).toEqual({ esito: "sessioneScaduta" });
+  });
+
+  it('ISSUE_33 · TF-AVVUI-31 · importo zero (sosta gratuita) → "Conferma (senza addebito)"', () => {
+    expect(etichettaConferma(0)).toEqual("Conferma (senza addebito)");
+  });
+
+  it("RF_SOSTA_5 · TF-AVVUI-32 · PERMESSO_MANCANTE → errore sul campo permesso", () => {
+    const msg = "Su questo stallo servono la dichiarazione e la foto del permesso.";
+    expect(interpretaRisposta(422, erroreApi("PERMESSO_MANCANTE", msg), CAMPI_AVVIO_SOSTA)).toEqual(
+      { esito: "errore", campo: "permesso", messaggio: msg },
+    );
+  });
+
+  it("RF_SOSTA_5 · TF-AVVUI-33 · PERMESSO_NON_VALIDO → errore sul campo permesso", () => {
+    const msg = "La foto del permesso deve essere un'immagine JPEG o PNG di al massimo 2 MB.";
+    expect(
+      interpretaRisposta(422, erroreApi("PERMESSO_NON_VALIDO", msg), CAMPI_AVVIO_SOSTA),
+    ).toEqual({ esito: "errore", campo: "permesso", messaggio: msg });
+  });
+
+  it("VD_8 · TF-AVVUI-34 · PERMESSO_NON_PREVISTO → errore sul campo generale", () => {
+    const msg = "Su questo stallo il permesso non è previsto.";
+    expect(
+      interpretaRisposta(422, erroreApi("PERMESSO_NON_PREVISTO", msg), CAMPI_AVVIO_SOSTA),
+    ).toEqual({ esito: "errore", campo: "generale", messaggio: msg });
+  });
+
+  it("RF_SOSTA_1 · TF-AVVUI-35 · senza permesso → POST con corpo JSON", () => {
+    const richiesta = richiestaDiAvvio({ stallo: 19, targa: "AB123CD", durata: 60 });
+    expect(richiesta.method).toBe("POST");
+    expect(new Headers(richiesta.headers).get("content-type")).toBe("application/json");
+    expect(richiesta.body).toBe('{"stallo":19,"targa":"AB123CD","durata":60}');
+  });
+
+  it("RF_SOSTA_5 · TF-AVVUI-36 · con permesso e foto JPEG → POST multipart con permesso.jpg", async () => {
+    const richiesta = richiestaDiAvvio({
+      stallo: 15,
+      targa: "AB123CD",
+      durata: 60,
+      permesso: { dichiarazione: D, foto: J },
+    });
+    expect(richiesta.method).toBe("POST");
+    expect(new Headers(richiesta.headers).has("content-type")).toBe(false);
+    expect(richiesta.body).toBeInstanceOf(FormData);
+    const corpo = richiesta.body as FormData;
+    expect(corpo.get("stallo")).toBe("15");
+    expect(corpo.get("targa")).toBe("AB123CD");
+    expect(corpo.get("durata")).toBe("60");
+    expect(corpo.get("dichiarazioneDiPermesso")).toBe(D);
+    const foto = corpo.get("fotoDelPermesso");
+    expect(foto).toBeInstanceOf(File);
+    expect((foto as File).name).toBe("permesso.jpg");
+    expect([...new Uint8Array(await (foto as File).arrayBuffer())]).toEqual(BYTE_J);
+  });
+
+  it("RF_SOSTA_5 · TF-AVVUI-37 · con permesso e foto PNG → POST multipart con permesso.png", async () => {
+    const richiesta = richiestaDiAvvio({
+      stallo: 14,
+      targa: "AB123CD",
+      durata: 60,
+      permesso: { dichiarazione: D, foto: P },
+    });
+    expect(richiesta.method).toBe("POST");
+    expect(new Headers(richiesta.headers).has("content-type")).toBe(false);
+    expect(richiesta.body).toBeInstanceOf(FormData);
+    const corpo = richiesta.body as FormData;
+    expect(corpo.get("stallo")).toBe("14");
+    expect(corpo.get("targa")).toBe("AB123CD");
+    expect(corpo.get("durata")).toBe("60");
+    expect(corpo.get("dichiarazioneDiPermesso")).toBe(D);
+    const foto = corpo.get("fotoDelPermesso");
+    expect(foto).toBeInstanceOf(File);
+    expect((foto as File).name).toBe("permesso.png");
+    expect([...new Uint8Array(await (foto as File).arrayBuffer())]).toEqual(BYTE_P);
   });
 });

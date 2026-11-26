@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { scartoOrologio, statoMostrato, tempoRimanente } from "./sostaInCorso.ts";
+import { confermaVisibile, scartoOrologio, statoMostrato, tempoRimanente } from "./sostaInCorso.ts";
 
 const S = Date.parse("2026-11-20T10:42:00.000Z");
 const A = Date.parse("2026-11-20T09:00:00.000Z");
@@ -95,5 +95,59 @@ describe("sosta in corso nell'interfaccia (cp_sostaInCorso)", () => {
 
   it("ISSUE_29 · TF-SIC-15 · intestazione Date non leggibile → 0", () => {
     expect(scartoOrologio("ieri", A, A + 1_000)).toBe(0);
+  });
+
+  it("ISSUE_33 · TF-SIC-16 · nessuna conferma → messaggio non visibile", () => {
+    expect(
+      confermaVisibile(
+        null,
+        [{ id: 41, stato: "ATTIVA", orarioDiScadenza: "2026-11-20T10:42:00.000Z" }],
+        A,
+      ),
+    ).toBe(false);
+  });
+
+  it("RF_SOSTA_1 · TF-SIC-17 · sosta confermata ATTIVA con tempo rimanente → messaggio visibile", () => {
+    expect(
+      confermaVisibile(
+        41,
+        [{ id: 41, stato: "ATTIVA", orarioDiScadenza: "2026-11-20T10:42:00.000Z" }],
+        A,
+      ),
+    ).toBe(true);
+  });
+
+  it("RF_SOSTA_7 · TF-SIC-18 · sosta confermata ATTIVA con il timer a zero → messaggio non visibile", () => {
+    expect(
+      confermaVisibile(
+        41,
+        [{ id: 41, stato: "ATTIVA", orarioDiScadenza: "2026-11-20T10:42:00.000Z" }],
+        S,
+      ),
+    ).toBe(false);
+  });
+
+  it("RF_SOSTA_7 · TF-SIC-19 · sosta confermata SCADUTA dal server → messaggio non visibile", () => {
+    expect(
+      confermaVisibile(
+        41,
+        [{ id: 41, stato: "SCADUTA", orarioDiScadenza: "2026-11-20T10:42:00.000Z" }],
+        A,
+      ),
+    ).toBe(false);
+  });
+
+  it("ISSUE_33 · TF-SIC-20 · sosta confermata non ancora letta → messaggio visibile", () => {
+    expect(confermaVisibile(41, [], A)).toBe(true);
+  });
+
+  it("ISSUE_33 · TF-SIC-21 · conferma di una sosta diversa da quelle lette → messaggio visibile", () => {
+    expect(
+      confermaVisibile(
+        41,
+        [{ id: 40, stato: "ATTIVA", orarioDiScadenza: "2026-11-20T10:42:00.000Z" }],
+        A,
+      ),
+    ).toBe(true);
   });
 });
