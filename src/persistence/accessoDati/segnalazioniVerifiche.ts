@@ -177,33 +177,43 @@ export async function segnalazioniModificateDopo(
   return { segnalazioni, cursore };
 }
 
+/** Permesso da verificare (RF_OP_2): sosta, stallo e dichiarazione; la foto si legge a parte. */
+export type PermessoDaVerificare = {
+  sostaId: number;
+  stalloId: number;
+  /** OMP-63 */
+  numeroStallo: number;
+  tipoDiStallo: TipoDiStallo;
+  latitudine: number;
+  longitudine: number;
+  targa: string;
+  /** OMP-63: UC_OP_1 3.a1, la dichiarazione mostrata all'Ausiliario. */
+  dichiarazioneDiPermesso: string;
+};
+
 /**
  * Permessi da verificare (RF_OP_2): soste ATTIVA con dichiarazione e foto in stalli DISABILI o ROSA
- * dell'ente, senza verifica; per id della sosta.
+ * dell'ente, senza verifica; per id della sosta. Con `adesso` (OMP-63) sono escluse le soste con
+ * scadenza raggiunta, già Scadute per at(orario di scadenza) di SCD_2 anche se non ancora allineate.
  */
 export async function permessiDaVerificare(
   es: Esecutore,
   enteId: number,
-): Promise<
-  {
-    sostaId: number;
-    stalloId: number;
-    tipoDiStallo: TipoDiStallo;
-    latitudine: number;
-    longitudine: number;
-    targa: string;
-  }[]
-> {
+  adesso?: Date,
+): Promise<PermessoDaVerificare[]> {
   const r = await interroga<{
     sosta_id: string;
     stallo_id: string;
+    numero: number;
     tipo_di_stallo: TipoDiStallo;
     latitudine: number;
     longitudine: number;
     targa: string;
+    dichiarazione_di_permesso: string;
   }>(
     es,
-    `SELECT so.id AS sosta_id, s.id AS stallo_id, s.tipo_di_stallo, s.latitudine, s.longitudine, v.targa
+    `SELECT so.id AS sosta_id, s.id AS stallo_id, s.numero, s.tipo_di_stallo, s.latitudine,
+            s.longitudine, v.targa, so.dichiarazione_di_permesso
      FROM sosta AS so
      JOIN stallo AS s ON s.id = so.stallo_id
      JOIN area_di_sosta AS a ON a.id = s.area_di_sosta_id
@@ -212,17 +222,20 @@ export async function permessiDaVerificare(
        AND so.stato = 'ATTIVA'
        AND s.tipo_di_stallo IN ('DISABILI', 'ROSA')
        AND so.dichiarazione_di_permesso IS NOT NULL
+       AND ($2::timestamptz IS NULL OR so.orario_di_scadenza > $2)
        AND NOT EXISTS (SELECT 1 FROM verifica_del_permesso AS vp WHERE vp.sosta_id = so.id)
      ORDER BY so.id`,
-    [enteId],
+    [enteId, adesso ?? null],
   );
   return r.rows.map((riga) => ({
     sostaId: Number(riga.sosta_id),
     stalloId: Number(riga.stallo_id),
+    numeroStallo: Number(riga.numero),
     tipoDiStallo: riga.tipo_di_stallo,
     latitudine: riga.latitudine,
     longitudine: riga.longitudine,
     targa: riga.targa,
+    dichiarazioneDiPermesso: riga.dichiarazione_di_permesso,
   }));
 }
 

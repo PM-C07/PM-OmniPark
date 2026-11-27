@@ -16,6 +16,13 @@ import type { ContestoSegnalazioni } from "./contesto.ts";
 import { contaSegnalazioniAperte } from "./conteggio.ts";
 import { prendiInCarico } from "./presaInCarico.ts";
 import { statoDelPagamento, type StatoDelPagamento } from "./statoDelPagamento.ts";
+import {
+  fotoDelPermesso,
+  permessiDaVerificare,
+  registraEsitoVerifica,
+  type EsitoVerifica,
+  type PermessoDaVerificare,
+} from "./verificaPermesso.ts";
 import { elaboraLettura, type EsitoRiscontro, type Lettura } from "./riscontro.ts";
 import {
   fotografiaSegnalazioni,
@@ -28,8 +35,10 @@ export { ErroreSegnalazioni, type CodiceErroreSegnalazioni } from "./errori.ts";
 export type {
   Esito,
   EsitoRiscontro,
+  EsitoVerifica,
   Lettura,
   Motivo,
+  PermessoDaVerificare,
   SegnalazioneMappa,
   StatoDelPagamento,
   StatoSegnalazione,
@@ -62,6 +71,17 @@ export type FacadeSegnalazioni = {
   // Presa in carico (UC_OP_2) e stato del pagamento (UC_OP_3), OMP-63
   prendiInCarico(ausiliario: number, segnalazione: number): Promise<SegnalazioneMappa>;
   statoDelPagamento(ausiliario: number, segnalazione: number): Promise<StatoDelPagamento>;
+  // Verifica del permesso (UC_OP_1 3.a1, UC_OP_5, SD_OP_5), OMP-63 parte B
+  permessiDaVerificare(ausiliario: number): Promise<PermessoDaVerificare[]>;
+  fotoDelPermesso(
+    ausiliario: number,
+    sosta: number,
+  ): Promise<{ dati: Buffer; tipo: "image/jpeg" | "image/png" }>;
+  registraEsitoVerifica(
+    ausiliario: number,
+    sosta: number,
+    esito: EsitoVerifica,
+  ): Promise<{ verifica: number; segnalazione: number | null }>;
 };
 
 /**
@@ -99,5 +119,9 @@ export function creaFacadeSegnalazioni(dipendenze: {
       prendiInCarico(contesto, ausiliario, segnalazione),
     statoDelPagamento: (ausiliario, segnalazione) =>
       statoDelPagamento(contesto, ausiliario, segnalazione),
+    permessiDaVerificare: (ausiliario) => permessiDaVerificare(contesto, ausiliario),
+    fotoDelPermesso: (ausiliario, sosta) => fotoDelPermesso(contesto, ausiliario, sosta),
+    registraEsitoVerifica: (ausiliario, sosta, esito) =>
+      registraEsitoVerifica(contesto, ausiliario, sosta, esito),
   };
 }

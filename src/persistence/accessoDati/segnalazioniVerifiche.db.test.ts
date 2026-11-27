@@ -26,7 +26,8 @@ import {
   type SegnalazioneMappa,
 } from "./segnalazioniVerifiche";
 
-// Test frame TF-SV-01…50 di docs/test/cp_persistenza_segnalazioni_verifiche.md (OMP-34).
+// Test frame TF-SV-01…54 di docs/test/cp_persistenza_segnalazioni_verifiche.md (OMP-34; TF-SV-51…54
+// aggiunti e TF-SV-20, 22, 32, 37 cambiati con la OMP-63).
 
 const ID_INESISTENTE = 999999;
 const ISTANTE_DATASET = new Date("2026-11-15T08:00:00+01:00");
@@ -288,14 +289,17 @@ describe("OMP-34 · TCS persistenza · segnalazioni, letture delle targhe e veri
       pagamento: "PAGATA",
       conPermesso: false,
     });
+    // Cambiato con la OMP-63: in più numeroStallo e dichiarazioneDiPermesso (UC_OP_1 3.a1).
     expect(await permessiDaVerificare(client, 1)).toEqual([
       {
         sostaId: conPermesso,
         stalloId: 15,
+        numeroStallo: 2,
         tipoDiStallo: "ROSA",
         latitudine: 40.68829,
         longitudine: 14.52214,
         targa: "EF456GH",
+        dichiarazioneDiPermesso: DICHIARAZIONE,
       },
     ]);
   });
@@ -321,11 +325,14 @@ describe("OMP-34 · TCS persistenza · segnalazioni, letture delle targhe e veri
     expect(await permessiDaVerificare(client, 1)).toEqual([]);
     const ente2 = await permessiDaVerificare(client, 2);
     expect(ente2).toHaveLength(1);
+    // Cambiato con la OMP-63: in più numeroStallo e dichiarazioneDiPermesso.
     expect(ente2[0]).toMatchObject({
       sostaId,
       stalloId: 24,
+      numeroStallo: 3,
       tipoDiStallo: "DISABILI",
       targa: "IJ789KL",
+      dichiarazioneDiPermesso: DICHIARAZIONE,
     });
   });
 
@@ -647,5 +654,34 @@ describe("OMP-34 · TCS persistenza · segnalazioni, letture delle targhe e veri
       expect(["ORDINARIO_A_PAGAMENTO", "DISABILI", "ROSA"]).toContain(s.tipoDiStallo);
     }
     expect(elenco.find((s) => s.id === 11)?.tipoDiStallo).toBe("ORDINARIO_A_PAGAMENTO");
+  });
+
+  // permessiDaVerificare con adesso (OMP-63, TF-SV-54)
+
+  it("RF_OP_2 · TF-SV-54 · con adesso la sosta con scadenza raggiunta è esclusa, senza adesso le due soste per id", async () => {
+    const sul15 = await sostaConPermessoSul15();
+    const inserita = await client.query<{ id: string }>(
+      `INSERT INTO sosta (automobilista_id, veicolo_id, stallo_id, stato, orario_di_avvio,
+                          orario_di_scadenza, pagamento, dichiarazione_di_permesso, foto_del_permesso)
+       VALUES ($1, $2, $3, 'ATTIVA', $4, $5, $6, $7, $8) RETURNING id`,
+      [
+        9,
+        4,
+        14,
+        I,
+        new Date("2026-11-20T09:30:00+01:00"),
+        "GRATUITA",
+        DICHIARAZIONE,
+        fotoCompleta(),
+      ],
+    );
+    const sul14 = Number(inserita.rows[0].id);
+
+    const conAdesso = await permessiDaVerificare(client, 1, new Date("2026-11-20T09:30:00+01:00"));
+    expect(conAdesso.map((p) => p.sostaId)).toEqual([sul15]);
+    expect(conAdesso[0].stalloId).toBe(15);
+
+    const senzaAdesso = await permessiDaVerificare(client, 1);
+    expect(senzaAdesso.map((p) => p.sostaId)).toEqual([sul15, sul14].sort((x, y) => x - y));
   });
 });

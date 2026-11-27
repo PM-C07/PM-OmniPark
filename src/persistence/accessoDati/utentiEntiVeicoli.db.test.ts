@@ -29,7 +29,8 @@ import {
   trovaUtentePerEmail,
 } from "./utentiEntiVeicoli";
 
-// Test frame TF-UEV-01…46 di docs/test/cp_persistenza_utenti_enti_veicoli.md (OMP-34).
+// Test frame TF-UEV-01…53 di docs/test/cp_persistenza_utenti_enti_veicoli.md (OMP-34; TF-UEV-47…50
+// aggiunti con la OMP-62, TF-UEV-51…53 con la OMP-63).
 
 const ID_INESISTENTE = 999999;
 const HASH = "hash-di-prova";

@@ -27,6 +27,7 @@ import {
 } from "./logica/mappaSegnalazioni.ts";
 import { VISTA_INIZIALE } from "./logica/mappaStalli.ts";
 import { chiamaApi } from "./logica/risposteApi.ts";
+import { PermessiDaVerificare } from "./PermessiDaVerificare.tsx";
 import { SchedaSegnalazione } from "./SchedaSegnalazione.tsx";
 import { useAggiornamentoPeriodico } from "./useAggiornamentoPeriodico.ts";
 import { vaiAllAccesso } from "./vaiAllAccesso.ts";
@@ -89,7 +90,8 @@ export function MappaSegnalazioni() {
   });
   const { caricamento, nonAggiornati } = richiediSegnalazioni;
 
-  // mostraSegnalazioniEPermessi: solo le segnalazioni (i permessi da verificare sono fuori ambito).
+  // mostraSegnalazioniEPermessi: le segnalazioni sulla mappa; i permessi da verificare (OMP-63) in una
+  // voce d'elenco sotto la mappa, senza marker (PermessiDaVerificare).
   const elementi = useMemo(() => segnalazioni.map(elementoDellaSegnalazione), [segnalazioni]);
   const perId = useMemo(() => new Map(segnalazioni.map((s) => [s.id, s])), [segnalazioni]);
 
@@ -228,6 +230,7 @@ export function MappaSegnalazioni() {
           )
         }
       />
+      <PermessiDaVerificare onSessioneScaduta={sessioneScaduta} />
     </div>
   );
 }

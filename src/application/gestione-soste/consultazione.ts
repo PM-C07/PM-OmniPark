@@ -2,14 +2,18 @@
 // (SD_ADM_1 4.2), soste in corso dell'Automobilista (np_01 «le mie soste») e della targa (riscontro
 // ANPR, OMP-46). Ogni lettura parte
 // dall'allineamento temporale, così una sosta scaduta risulta Scaduta alla prima lettura.
+import type { PoolClient } from "pg";
+import type { TipoDiStallo } from "../../persistence/accessoDati/stalliTariffe.ts";
 import { riepilogoEnte } from "../../persistence/accessoDati/utentiEntiVeicoli.ts";
 import {
   sostaInCorsoSuStallo,
   sosteInCorsoDiAutomobilista,
   sosteInCorsoDiTarga,
   sostaPerTargaSuStallo,
+  trovaSostaConStalloPerAggiornamento,
   type Sosta,
 } from "../../persistence/accessoDati/walletSoste.ts";
+import { formatoDellaFoto, type FormatoDellaFoto } from "./avvio.ts";
 import { normalizzaTarga } from "../utenti-accessi/facade.ts";
 import type { ContestoGestioneSoste } from "./contesto.ts";
 import { ErroreGestioneSoste } from "./errori.ts";
@@ -71,5 +75,35 @@ export async function sostaDellaTargaSulloStallo(
   await contesto.allineamento.allinea();
   return idValido(stallo) && typeof targa === "string"
     ? sostaPerTargaSuStallo(contesto.pool, normalizzaTarga(targa), stallo)
+    : null;
+}
+
+/** Sosta con stallo, ente e tipo della foto del permesso (OMP-63, verifica del permesso). */
+export type SostaConPermesso = Sosta & {
+  tipoDiStallo: TipoDiStallo;
+  enteId: number;
+  /** Dai primi byte della foto (formatoDellaFoto dell'avvio); null senza foto. */
+  tipoDellaFoto: FormatoDellaFoto | null;
+};
+
+/**
+ * La sosta con tipo di stallo, ente e tipo della foto, con la riga bloccata fino alla fine della
+ * transazione del chiamante (OMP-63, UC_OP_5, SD_OP_5 2.1–2.3): la verifica del permesso controlla
+ * stato e permesso senza corse. null se la sosta non esiste. Senza allineamento: chi la usa
+ * confronta la scadenza con l'istante corrente (at(orario di scadenza) di SCD_2).
+ */
+export async function sostaConPermesso(
+  sosta: number,
+  esecutore: PoolClient,
+): Promise<SostaConPermesso | null> {
+  if (!idValido(sosta)) {
+    return null;
+  }
+  const trovata = await trovaSostaConStalloPerAggiornamento(esecutore, sosta);
+  return trovata
+    ? {
+        ...trovata,
+        tipoDellaFoto: trovata.fotoDelPermesso ? formatoDellaFoto(trovata.fotoDelPermesso) : null,
+      }
     : null;
 }
