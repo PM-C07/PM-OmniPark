@@ -1,14 +1,14 @@
 # cp_rilevazioni
 
-Specifica dei casi di test (category partition) del servizio Rilevazioni del sottosistema Gestione stalli, operazione `registraRilevazione(rilevazione)` della Facade.
-Requisiti: RF_IOT_1 (acquisizione dei dati dei sensori), RF_SOSTA_6 (stallo Non disponibile durante la sosta, parte). Task OMP-43 (issue #7).
+Specifica dei casi di test (category partition) del servizio Rilevazioni del sottosistema Gestione stalli, operazioni `registraRilevazione(rilevazione)` e, dalla COD-23, `marcaSconosciuti(adesso)` della Facade.
+Requisiti: RF_IOT_1 (acquisizione dei dati dei sensori), RF_SOSTA_6 (stallo Non disponibile durante la sosta, parte), RF_IOT_2 (stato Sconosciuto dopo 60 secondi senza rilevazioni, §7). Task OMP-43 (issue #7); §7 da OMP-64 (COD-23, issue #44).
 
 - **Fonti dell'esito atteso:** `UC_IOT_1`, `SD_IOT_1`, statechart `SCD_1` e `docs/rad/statechart/sincronizzazione_eventi.md` §1, `docs/rad/vincoli_dominio.md` §2 (VD_6, VD_11, VD_20), piano approvato di OMP-43 (tabella delle transizioni, decisioni A–C).
-- **File di test:** `src/application/gestione-stalli/rilevazioni.db.test.ts` (eseguito da `npm run test:db`); TF-RIL-25 e 26, aggiunti da COD-14 (OMP-47), sono in `src/application/gestione-stalli/rilevazioni.dataFutura.db.test.ts`.
+- **File di test:** `src/application/gestione-stalli/rilevazioni.db.test.ts` (eseguito da `npm run test:db`); TF-RIL-25 e 26, aggiunti da COD-14 (OMP-47), sono in `src/application/gestione-stalli/rilevazioni.dataFutura.db.test.ts`; TF-RIL-27…35 (§7, COD-23) in `src/application/gestione-stalli/rilevazioni.sconosciuto.db.test.ts`.
 
 ## 1. Tracciabilità
 
-Ogni frame riporta un solo riferimento, scelto in quest'ordine: un requisito dell'Elenco (`RF_…`, `NRF_…`) se il suo testo copre davvero il comportamento; altrimenti il vincolo di dominio `VD_<n>`; altrimenti `ISSUE_7` per le scelte di progetto dell'issue #7 e del piano approvato (pattern Observer, rilevazione superata); `COD_14` per le scelte del piano approvato di COD-14 (rilevazione con data futura).
+Ogni frame riporta un solo riferimento, scelto in quest'ordine: un requisito dell'Elenco (`RF_…`, `NRF_…`) se il suo testo copre davvero il comportamento; altrimenti il vincolo di dominio `VD_<n>`; altrimenti `ISSUE_7` per le scelte di progetto dell'issue #7 e del piano approvato (pattern Observer, rilevazione superata); `COD_14` per le scelte del piano approvato di COD-14 (rilevazione con data futura); `COD_23` per le scelte del piano approvato di COD-23 (aggiornamento condizionato).
 
 Nome del test: `<riferimento> · <frame> · <descrizione> → <esito>`, per esempio `RF_IOT_1 · TF-RIL-04 · stallo Occupato, nessun veicolo → Libero e notifica`.
 
@@ -149,3 +149,61 @@ Note sui riferimenti:
 - TF-RIL-14 e 15: decisione B del piano (in serverless le richieste possono arrivare fuori ordine); TF-RIL-08 copre la scelta "stallo mai rilevato".
 - TF-RIL-20: VD_11 e UC_IOT_1 3.a2 (la sosta Scaduta diventa Terminata quando il veicolo lascia lo stallo), realizzato dall'osservatore nella stessa transazione.
 - TF-RIL-25 e 26: decisione 3 del piano di COD-14, senza tolleranza. Una rilevazione con data futura diventerebbe l'ultima dello stallo e farebbe rifiutare come superate tutte le rilevazioni reali successive; quella all'istante corrente è accettata.
+
+## 7. Stato Sconosciuto: `marcaSconosciuti(adesso)` (COD-23)
+
+- **Fonti dell'esito atteso:** `RF_IOT_2`, `UC_IOT_2` (passi 1–3, flusso 2.a1), `SD_IOT_2`, statechart `SCD_1` (`Libero` e `Occupato` → `Sconosciuto` `when(nessuna rilevazione da più di 60 s)`; `Sconosciuto` → `Libero` od `Occupato` alla rilevazione), `sincronizzazione_eventi.md` §2, `vincoli_dominio.md` (vincolo 15, VD_6), issue #44, piano approvato di OMP-64.
+
+### Operazione verificata
+
+```ts
+// da src/application/gestione-stalli/facade.ts
+facade.marcaSconosciuti(adesso: Date): Promise<number[]>; // id degli stalli portati a Sconosciuto, in ordine crescente
+// funzioni di persistenza usate solo nella preparazione di TF-RIL-34 (stalliTariffe.ts)
+bloccaStallo(es, id): Promise<…>;
+registraRilevazione(es, stalloId, { occupazioneRilevata, dataEOra, stato }): Promise<…>;
+```
+
+- Porta a `SCONOSCIUTO` gli stalli `LIBERO` od `OCCUPATO` la cui ultima rilevazione è **strettamente precedente** a `adesso − 60 s` («più di 60 secondi»: a 60 s esatti lo stallo non cambia). Occupazione rilevata e data dell'ultima rilevazione restano invariate; `ultimaModifica` avanza, così lo stallo torna tra le variazioni della mappa (`variazioniDopo`, NRF_PER_3).
+- Non tocca gli stalli `NON_DISPONIBILE` (sosta `Attiva`, `UC_IOT_2` 2.a1, VD_6) né quelli già `SCONOSCIUTO`, compresi i mai rilevati.
+- È un'unica istruzione condizionata: una rilevazione confermata mentre l'aggiornamento attende la riga ha la precedenza, e lo stallo resta nello stato rilevato.
+- Non notifica gli osservatori (l'ingresso in `Sconosciuto` non ha azioni in `SCD_1`). L'istante è un parametro: l'operazione non legge l'orologio.
+
+### Ambiente
+
+- File proprio, con `preparaDatabaseDiTest()` nel `beforeAll`. Facade con il solo osservatore "registro" (§3). La prima chiamata porta a `SCONOSCIUTO` anche gli stalli del dataset (ultima rilevazione del 15/11): per questo ogni frame prepara il proprio stallo con una rilevazione e verifica la sola presenza (o assenza) dello stallo nell'elenco restituito.
+- `R` = `2026-11-20 09:00:00+01` (istante di prova). Rilevazioni di preparazione con `registraRilevazione` della Facade.
+- Sosta di TF-RIL-31: `creaSosta(poolDiTest(), { automobilistaId: 7, veicoloId: 1, stalloId: 7, orarioDiAvvio: R, orarioDiScadenza: 2026-11-20 12:00:00+01, pagamento: "PAGATA" })`, poi `impostaNonDisponibile(7)`.
+
+### Categorie e scelte
+
+**Tempo dall'ultima rilevazione a `adesso`:** meno di 60 s · esattamente 60 s [single] · più di 60 s.
+
+**Stato dello stallo:** Libero · Occupato · Non disponibile con sosta `Attiva` → resta Non disponibile · già Sconosciuto [single] · mai rilevato [single].
+
+**Concorrenza:** rilevazione confermata durante l'aggiornamento [single] → vince la rilevazione.
+
+**Dopo Sconosciuto:** prima rilevazione successiva → stato rilevato.
+
+### Test frame (9)
+
+| Frame     | Preparazione                                                                                                                                                                                                                                                          | Chiamata                                                                                                | Esito atteso                                                                                                                                         | Riferimento |
+| :-------- | :-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | :------------------------------------------------------------------------------------------------------ | :--------------------------------------------------------------------------------------------------------------------------------------------------- | :---------- |
+| TF-RIL-27 | stallo 1: rilevazione presenza falsa a `R` (`LIBERO`); letta `ultimaModifica` `u0`                                                                                                                                                                                    | `marcaSconosciuti(R + 61 s)`                                                                            | l'elenco contiene 1; stallo 1 `SCONOSCIUTO`, `NESSUN_VEICOLO`, ultima rilevazione `R`; `ultimaModifica` successiva a `u0`; nessuna notifica          | RF_IOT_2    |
+| TF-RIL-28 | stallo 3: rilevazione presenza vera a `R` (`OCCUPATO`)                                                                                                                                                                                                                | `marcaSconosciuti(R + 61 s)`                                                                            | l'elenco contiene 3; stallo 3 `SCONOSCIUTO`, `VEICOLO_PRESENTE`, ultima rilevazione `R`                                                              | RF_IOT_2    |
+| TF-RIL-29 | stallo 4: rilevazione presenza vera a `R` (`OCCUPATO`); letta `ultimaModifica` `u0`                                                                                                                                                                                   | `marcaSconosciuti(R + 30 s)`                                                                            | l'elenco non contiene 4; stallo 4 `OCCUPATO`, `ultimaModifica` uguale a `u0`                                                                         | RF_IOT_2    |
+| TF-RIL-30 | stallo 2: rilevazione presenza falsa a `R` (`LIBERO`)                                                                                                                                                                                                                 | `marcaSconosciuti(R + 60 s)`                                                                            | l'elenco non contiene 2; stallo 2 `LIBERO`                                                                                                           | RF_IOT_2    |
+| TF-RIL-31 | stallo 7: rilevazione presenza vera a `R`; sosta `ATTIVA` sullo stallo 7 e `impostaNonDisponibile(7)` (Ambiente)                                                                                                                                                      | `marcaSconosciuti(R + 61 s)`                                                                            | l'elenco non contiene 7; stallo 7 `NON_DISPONIBILE`; la sosta resta `ATTIVA`                                                                         | RF_SOSTA_6  |
+| TF-RIL-32 | stallo 13 del dataset (`SCONOSCIUTO`, rilevato il 15/11 alle 07:00); letta `ultimaModifica` `u0`                                                                                                                                                                      | `marcaSconosciuti(R + 61 s)`                                                                            | l'elenco non contiene 13; stallo 13 `SCONOSCIUTO`, `ultimaModifica` uguale a `u0`                                                                    | RF_IOT_2    |
+| TF-RIL-33 | stallo 25 del dataset (`SCONOSCIUTO`, mai rilevato)                                                                                                                                                                                                                   | `marcaSconosciuti(R + 61 s)`                                                                            | l'elenco non contiene 25; stallo 25 `SCONOSCIUTO`, occupazione rilevata e data dell'ultima rilevazione `null`                                        | RF_IOT_2    |
+| TF-RIL-34 | stallo 8: rilevazione presenza vera a `R` (`OCCUPATO`); poi, con un client di `poolDiTest()`, `BEGIN`, `bloccaStallo(client, 8)` e `registraRilevazione(client, 8, { occupazioneRilevata: "NESSUN_VEICOLO", dataEOra: R + 90 s, stato: "LIBERO" })` della persistenza | `marcaSconosciuti(R + 120 s)` avviata senza attenderla; poi `COMMIT` del client e attesa della chiamata | l'elenco non contiene 8; stallo 8 `LIBERO`, `NESSUN_VEICOLO`, ultima rilevazione `R + 90 s`                                                          | COD_23      |
+| TF-RIL-35 | stallo 9: rilevazione presenza vera a `R`; `marcaSconosciuti(R + 61 s)` (stallo 9 `SCONOSCIUTO`)                                                                                                                                                                      | rilevazione presenza falsa a `R + 90 s`                                                                 | restituisce `LIBERO`; stallo 9 `LIBERO`, `NESSUN_VEICOLO`, ultima rilevazione `R + 90 s`; il registro ha ricevuto una sola notifica, `{ stallo: 9 }` | RF_IOT_2    |
+
+Note:
+
+- TF-RIL-27, 28: `SCD_1` e `UC_IOT_2` passi 2–3; l'avanzamento di `ultimaModifica` è ciò che porta la variazione sulla mappa con il polling, senza ricaricare (criterio di accettazione dell'issue).
+- TF-RIL-29, 30: «più di 60 secondi» (`sincronizzazione_eventi.md` §2, vincolo 15): a 60 s esatti lo stallo non cambia.
+- TF-RIL-31: `UC_IOT_2` 2.a1; lo stallo esce da `Non disponibile` solo alla scadenza della sosta (`cp_scadenzaEFine.md` TF-SCA-12 per il ramo verso `Sconosciuto`).
+- TF-RIL-34: l'aggiornamento attende la riga bloccata e ricontrolla la condizione sulla riga confermata (READ COMMITTED), che ha ormai una rilevazione recente. Il test non può imporre che l'aggiornamento arrivi prima del `COMMIT`; se arriva dopo, trova già la rilevazione nuova: l'esito atteso è lo stesso.
+- TF-RIL-35: `SCD_1` (`Sconosciuto` → `Libero`, azione d'ingresso `terminaSosta()`). Il ramo verso `Occupato` e lo stallo mai rilevato sono già verificati da TF-RIL-07 e 08.
+- Il richiamo da parte dell'allineamento temporale a ogni lettura è verificato in `cp_scadenzaEFine.md` TF-SCA-11.

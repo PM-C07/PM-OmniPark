@@ -1,6 +1,10 @@
 // Punto unico di composizione delle Facade per le route API e per src/proxy.ts (OMP-48, DG_10).
 // Le Facade si creano a ogni richiesta, senza stato globale: il pool nasce alla prima chiamata di
 // ottieniPool(), non all'import del modulo. Il servizio di pagamento si crea solo qui.
+import {
+  creaAllineamentoTemporale,
+  type AllineamentoTemporale,
+} from "../application/allineamento-temporale/allineamento.ts";
 import { creaFacadeAmministrazione } from "../application/amministrazione/facade.ts";
 import {
   creaFacadeGestioneSoste,
@@ -21,6 +25,8 @@ export type Sottosistemi = {
   gestioneSoste: ReturnType<typeof creaFacadeGestioneSoste>;
   segnalazioni: ReturnType<typeof creaFacadeSegnalazioni>;
   amministrazione: ReturnType<typeof creaFacadeAmministrazione>;
+  /** Allineamento temporale per le letture degli stalli (RF_IOT_2, COD-23). */
+  allineamento: AllineamentoTemporale;
 };
 
 export function componiSottosistemi(): Sottosistemi {
@@ -47,5 +53,6 @@ export function componiSottosistemi(): Sottosistemi {
       segnalazioni,
       pool,
     }),
+    allineamento: creaAllineamentoTemporale({ gestioneStalli, pool, orologio }),
   };
 }

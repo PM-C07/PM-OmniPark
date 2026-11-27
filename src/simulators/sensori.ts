@@ -1,21 +1,13 @@
 // Simulatore dei sensori IoT: parla con l'applicazione solo tramite POST /api/sensori/rilevazioni.
 // Uso: npm run sim:sensori -- --url http://localhost:3000 (--casuale | --scenario <file> | --invalide)
+// --casuale invia a giro su tutti gli stalli (COD-23), con presenza casuale, una ogni --intervallo ms;
+// --quante 0 invia senza limite fino a Ctrl+C (predefinito 20).
 // Con l'app remota, --anticipo-ms <n> invia dataOra n millisecondi prima dell'orologio locale, per
 // assorbire un orologio del PC in anticipo: il server non ha tolleranza sulle date future.
 import { appendFile, mkdir, readFile } from "node:fs/promises";
 import { join, resolve } from "node:path";
 import { parseArgs } from "node:util";
-
-type Invio = {
-  etichetta: string;
-  corpo: string;
-  token?: string | null;
-  httpAtteso?: number;
-  codiceAtteso?: string;
-  stallo?: unknown;
-  presenza?: unknown;
-  attesaMs?: number;
-};
+import { inviiAGiro, type Invio } from "./giroSensori.ts";
 
 const CARTELLA_REGISTRI = join(import.meta.dirname, "..", "..", ".simulatori");
 const FILE_STALLI = join(import.meta.dirname, "dati", "stalli.json");
@@ -49,19 +41,9 @@ function corpoRilevazione(stallo: unknown, presenza: unknown, dataOra: unknown):
   return JSON.stringify({ stallo, presenza, dataOra });
 }
 
-async function inviiCasuali(quante: number, intervalloMs: number): Promise<Invio[]> {
+async function inviiCasuali(quante: number, intervalloMs: number): Promise<Iterable<Invio>> {
   const { stalli } = JSON.parse(await readFile(FILE_STALLI, "utf8")) as { stalli: number[] };
-  return Array.from({ length: quante }, (_, indice) => {
-    const stallo = stalli[Math.floor(Math.random() * stalli.length)];
-    const presenza = Math.random() < 0.5;
-    return {
-      etichetta: `casuale-${indice + 1}`,
-      corpo: "",
-      stallo,
-      presenza,
-      attesaMs: indice === 0 ? 0 : intervalloMs,
-    };
-  });
+  return inviiAGiro(stalli, quante, intervalloMs);
 }
 
 async function inviiDaScenario(percorso: string): Promise<Invio[]> {
@@ -213,6 +195,7 @@ async function principale(): Promise<void> {
   );
 
   let inattesi = 0;
+  let inviate = 0;
   for (const voce of invii) {
     if (voce.attesaMs) {
       await new Promise((risolvi) => setTimeout(risolvi, voce.attesaMs));
@@ -224,10 +207,11 @@ async function principale(): Promise<void> {
       (voce.httpAtteso !== undefined &&
         (riga.http !== voce.httpAtteso || riga.esito !== voce.codiceAtteso));
     inattesi += fallita ? 1 : 0;
+    inviate += 1;
     console.log(`${voce.etichetta}: ${riga.http ?? "rete"} ${riga.esito}`);
   }
   console.log(
-    `Inviate ${invii.length} rilevazioni, ${inattesi} con esito inatteso. Registro: ${registro}`,
+    `Inviate ${inviate} rilevazioni, ${inattesi} con esito inatteso. Registro: ${registro}`,
   );
   process.exitCode = inattesi === 0 ? 0 : 1;
 }

@@ -331,26 +331,8 @@ export function descriviPagamento(sosta: SostaDelPagamento | null): string {
   return `Sosta ${stato}, ${pagamento}: dalle ${formattaOra(sosta.orarioDiAvvio)} alle ${formattaOra(sosta.orarioDiScadenza)}.`;
 }
 
-const DATA_ORA = new Intl.DateTimeFormat("it-IT", {
-  day: "2-digit",
-  month: "2-digit",
-  year: "numeric",
-  hour: "2-digit",
-  minute: "2-digit",
-  hourCycle: "h23",
-  timeZone: "Europe/Rome",
-});
-
-/** Istante ISO 8601 → «20/11/2026 09:00» nel fuso Europe/Rome; null → «Non disponibile». */
-export function formattaDataOra(istante: string | null): string {
-  if (istante === null) {
-    return "Non disponibile";
-  }
-  const parti = Object.fromEntries(
-    DATA_ORA.formatToParts(new Date(istante)).map((parte) => [parte.type, parte.value]),
-  );
-  return `${parti.day}/${parti.month}/${parti.year} ${parti.hour}:${parti.minute}`;
-}
+/** Dalla OMP-65 in importi.ts, usata anche dalla cronologia del wallet; riesportata qui. */
+export { formattaDataOra } from "./importi.ts";
 
 export type Chiudibilita = { chiudibile: true } | { chiudibile: false; messaggio: string };
 

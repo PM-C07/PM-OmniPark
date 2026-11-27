@@ -5,13 +5,16 @@
 // server; 3) «Conferma e paga». Con il credito insufficiente la ricarica si fa qui, senza perdere
 // targa e durata (np_01: Ricarica → «torna alla conferma»), e dopo la ricarica restano visibili la
 // conferma e il nuovo saldo (UC_WALLET_1 passo 4, DIF-03). Sugli stalli riservati il modulo ha il
-// passaggio della dichiarazione e della foto del permesso (UC_SOSTA_5, OMP-61).
+// passaggio della dichiarazione e della foto del permesso (UC_SOSTA_5, OMP-61). Prima dell'avvio la
+// scheda mostra tariffa, durata massima e, sugli stalli riservati, il permesso richiesto
+// (RF_STALLI_2, UC_STALLI_2 2.a1, COD-23).
 import { useEffect, useRef, useState, type FormEvent, type ReactNode } from "react";
 import { Avviso } from "./Avviso.tsx";
 import { BadgeStato } from "./BadgeStato.tsx";
 import { Bottone } from "./Bottone.tsx";
 import {
   CAMPI_AVVIO_SOSTA,
+  condizioniDelloStallo,
   creditoSufficiente,
   disponibilitaAvvio,
   durataPredefinita,
@@ -20,21 +23,17 @@ import {
   opzioniDurata,
   richiestaDiAvvio,
   type PermessoDiAvvio,
+  type TariffaDelloStallo,
 } from "./logica/avvioSosta.ts";
 import { formattaEuro, formattaOra } from "./logica/importi.ts";
 import { descriviTipo, type StalloDellaMappa } from "./logica/mappaStalli.ts";
 import { richiedePermesso } from "./logica/permesso.ts";
 import { chiamaApi, type EsitoRisposta } from "./logica/risposteApi.ts";
 import { messaggioRicaricaApprovata, riquadroRicarica } from "./logica/wallet.ts";
+import { NavigaVersoStallo } from "./NavigaVersoStallo.tsx";
 import { PermessoStallo } from "./PermessoStallo.tsx";
 import { Ricarica } from "./Ricarica.tsx";
 
-type Tariffa = {
-  costoOrario: number;
-  orarioInizioVigenza: string;
-  orarioFineVigenza: string;
-  durataMassima: number;
-};
 type Importo = { importo: number; pagamento: string; orarioDiScadenza: string };
 export type SostaAvviata = { sosta: number; orarioDiScadenza: string; importo: number };
 type CampoErrore = "targa" | "durata" | "credito" | "permesso" | "generale";
@@ -93,10 +92,6 @@ function senza(
   );
 }
 
-function ora(orario: string): string {
-  return orario.slice(0, 5);
-}
-
 export function SchedaStallo({
   stallo,
   onChiudi,
@@ -108,7 +103,7 @@ export function SchedaStallo({
   onSostaAvviata(sosta: SostaAvviata): void;
   onSessioneScaduta(): void;
 }) {
-  const [tariffa, setTariffa] = useState<Tariffa | null>(null);
+  const [tariffa, setTariffa] = useState<TariffaDelloStallo | null>(null);
   const [dettaglioAssente, setDettaglioAssente] = useState(false);
   const [targhe, setTarghe] = useState<string[] | null>(null);
   const [saldo, setSaldo] = useState<number | null>(null);
@@ -151,7 +146,7 @@ export function SchedaStallo({
       });
     leggi(`/api/stalli/${stallo.id}`, (esito) => {
       if (esito.esito === "successo") {
-        setTariffa((esito.dati as { tariffa: Tariffa }).tariffa);
+        setTariffa((esito.dati as { tariffa: TariffaDelloStallo }).tariffa);
       } else {
         setDettaglioAssente(true);
       }
@@ -203,6 +198,8 @@ export function SchedaStallo({
     modulo && durata !== null && importo === null && !errori.durata && !errori.generale;
   const disponibilita = disponibilitaAvvio(stallo.stato, stallo.tipoDiStallo);
   const tipo = descriviTipo(stallo.tipoDiStallo);
+  const condizioni = tariffa ? condizioniDelloStallo(stallo.tipoDiStallo, tariffa) : null;
+  const senzaDettaglio = dettaglioAssente ? "Non disponibile" : "Caricamento…";
   const durate = tariffa ? opzioniDurata(tariffa.durataMassima) : [];
   const creditoScarso =
     saldo !== null && importo !== null && !creditoSufficiente(saldo, importo.importo);
@@ -299,17 +296,20 @@ export function SchedaStallo({
           <BadgeStato tipo="stallo" stato={stallo.stato} />
         </dd>
         <dt className="font-medium">Tariffa</dt>
-        <dd>
-          {tariffa
-            ? `${formattaEuro(tariffa.costoOrario)} l'ora, dalle ${ora(tariffa.orarioInizioVigenza)} alle ${ora(tariffa.orarioFineVigenza)}, durata massima ${etichettaDurata(tariffa.durataMassima)}`
-            : dettaglioAssente
-              ? "Non disponibile"
-              : "Caricamento…"}
-        </dd>
+        <dd>{condizioni ? condizioni.tariffa : senzaDettaglio}</dd>
+        <dt className="font-medium">Durata massima</dt>
+        <dd>{condizioni ? condizioni.durataMassima : senzaDettaglio}</dd>
+        {condizioni?.permesso ? (
+          <>
+            <dt className="font-medium">Permesso</dt>
+            <dd>{condizioni.permesso}</dd>
+          </>
+        ) : null}
       </dl>
       {dettaglioAssente ? (
         <Avviso tipo="errore">I dettagli dello stallo non sono disponibili.</Avviso>
       ) : null}
+      <NavigaVersoStallo stallo={stallo} />
 
       {!disponibilita.disponibile ? (
         <p className="rounded-md border border-zinc-300 bg-zinc-50 p-3 text-base text-zinc-900">

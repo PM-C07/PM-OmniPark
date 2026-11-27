@@ -11,7 +11,7 @@ import { orologioDiSistema, type Orologio } from "../orologio.ts";
 import type { ContestoGestioneStalli, OsservatoreStalli, StalloLiberato } from "./contesto.ts";
 import { contaStalliGestiti } from "./conteggio.ts";
 import { fotografiaZona, stalliModificatiDopo, stalliNellaZona, variazioniDopo } from "./mappa.ts";
-import { registraRilevazione, type RilevazioneRicevuta } from "./rilevazioni.ts";
+import { marcaSconosciuti, registraRilevazione, type RilevazioneRicevuta } from "./rilevazioni.ts";
 import {
   impostaNonDisponibile,
   ripristinaStatoRilevato,
@@ -34,6 +34,8 @@ export type {
 export type FacadeGestioneStalli = {
   // Rilevazioni (UC_IOT_1, SD_IOT_1)
   registraRilevazione(rilevazione: RilevazioneRicevuta): Promise<StatoStallo>;
+  // Assenza di rilevazioni da più di 60 s (UC_IOT_2, SD_IOT_2, RF_IOT_2; dall'allineamento temporale)
+  marcaSconosciuti(adesso: Date): Promise<number[]>;
   // Mappa (UC_STALLI_1, SD_STALLI_1, NRF_PER_3)
   stalliNellaZona(zona: Zona): Promise<StalloZona[]>;
   stalliModificatiDopo(
@@ -46,7 +48,11 @@ export type FacadeGestioneStalli = {
   // Stato per la sosta (SD_SOSTA_1, SD_SOSTA_7, RF_SOSTA_6)
   statoETariffa(stallo: number, esecutore?: PoolClient): Promise<StatoETariffa>;
   impostaNonDisponibile(stallo: number, esecutore?: PoolClient): Promise<void>;
-  ripristinaStatoRilevato(stallo: number, esecutore?: PoolClient): Promise<StatoStallo>;
+  ripristinaStatoRilevato(
+    stallo: number,
+    esecutore?: PoolClient,
+    adesso?: Date,
+  ): Promise<StatoStallo>;
   // Conteggio (RF_ADM_1, SD_ADM_1)
   contaStalliGestiti(ente: number): Promise<number>;
 };
@@ -66,6 +72,7 @@ export function creaFacadeGestioneStalli(
   };
   return {
     registraRilevazione: (rilevazione) => registraRilevazione(contesto, rilevazione),
+    marcaSconosciuti: (adesso) => marcaSconosciuti(contesto, adesso),
     stalliNellaZona: (zona) => stalliNellaZona(contesto, zona),
     stalliModificatiDopo: (zona, istante) => stalliModificatiDopo(contesto, zona, istante),
     fotografiaZona: (zona) => fotografiaZona(contesto, zona),
@@ -73,8 +80,8 @@ export function creaFacadeGestioneStalli(
     statoETariffa: (stallo, esecutore) => statoETariffa(contesto, stallo, esecutore),
     impostaNonDisponibile: (stallo, esecutore) =>
       impostaNonDisponibile(contesto, stallo, esecutore),
-    ripristinaStatoRilevato: (stallo, esecutore) =>
-      ripristinaStatoRilevato(contesto, stallo, esecutore),
+    ripristinaStatoRilevato: (stallo, esecutore, adesso) =>
+      ripristinaStatoRilevato(contesto, stallo, esecutore, adesso),
     contaStalliGestiti: (ente) => contaStalliGestiti(contesto, ente),
   };
 }

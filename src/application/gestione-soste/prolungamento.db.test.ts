@@ -26,6 +26,7 @@ import {
   poolDiTest,
   preparaDatabaseDiTest,
 } from "../../persistence/test/databaseDiTest";
+import { rilevazioniAllIstante } from "../../persistence/test/datiDiProva";
 import { SimulatorePagamento } from "../../simulators/pagamento/simulatorePagamento";
 import {
   creaFacadeGestioneSoste,
@@ -41,7 +42,7 @@ import {
 const T = new Date("2026-11-20T10:00:00+01:00");
 const orologio = { adesso: () => T };
 const ISTANTE_RICARICA = new Date("2026-11-20T08:00:00+01:00");
-const ISTANTE_RILEVAZIONE = new Date("2026-11-20T09:00:00+01:00");
+const ISTANTE_RILEVAZIONE = T; // COD-23: entro 60 s da T (RF_IOT_2)
 const ISTANTE_ALLINEAMENTO = new Date("2026-11-20T10:45:00+01:00");
 const INESISTENTE = 999999;
 const DICHIARAZIONE = "Dichiaro di esporre il permesso previsto per lo stallo";
@@ -54,6 +55,8 @@ function ora(hhmm: string): Date {
 describe("OMP-61 · cp_prolungamento", () => {
   beforeAll(async () => {
     await preparaDatabaseDiTest();
+    // COD-23 (RF_IOT_2): rilevazioni recenti rispetto all'orologio dei test (§3).
+    await rilevazioniAllIstante(poolDiTest(), T);
   });
 
   afterAll(async () => {

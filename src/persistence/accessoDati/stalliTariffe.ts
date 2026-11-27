@@ -255,6 +255,11 @@ export async function impostaStatoStalloSe(
   return (r.rowCount ?? 0) > 0;
 }
 
+// Stalli Libero od Occupato con l'ultima rilevazione precedente al limite ($1). Non disponibile
+// (sosta Attiva) e Sconosciuto, compresi i mai rilevati, restano esclusi (RF_IOT_2, UC_IOT_2 2.a1).
+const SENZA_RILEVAZIONI_DA =
+  "stato IN ('LIBERO', 'OCCUPATO') AND data_e_ora_dell_ultima_rilevazione < $1";
+
 /** Id degli stalli LIBERO o OCCUPATO con l'ultima rilevazione precedente al limite, ordinati. */
 export async function stalliSenzaRilevazioniDa(
   es: Esecutore,
@@ -262,12 +267,27 @@ export async function stalliSenzaRilevazioniDa(
 ): Promise<number[]> {
   const r = await interroga<{ id: string }>(
     es,
-    `SELECT id FROM stallo
-     WHERE stato IN ('LIBERO', 'OCCUPATO') AND data_e_ora_dell_ultima_rilevazione < $1
-     ORDER BY id`,
+    `SELECT id FROM stallo WHERE ${SENZA_RILEVAZIONI_DA} ORDER BY id`,
     [istanteLimite],
   );
   return r.rows.map((riga) => Number(riga.id));
+}
+
+/**
+ * Porta a SCONOSCIUTO gli stalli di stalliSenzaRilevazioniDa in un'unica istruzione e ne
+ * restituisce gli id, ordinati. Una rilevazione che tiene bloccata la riga viene attesa e la
+ * condizione è rivalutata sulla riga confermata: se la rilevazione è recente, la riga resta com'è.
+ */
+export async function impostaSconosciutiSenzaRilevazioniDa(
+  es: Esecutore,
+  istanteLimite: Date,
+): Promise<number[]> {
+  const r = await interroga<{ id: string }>(
+    es,
+    `UPDATE stallo SET stato = 'SCONOSCIUTO' WHERE ${SENZA_RILEVAZIONI_DA} RETURNING id`,
+    [istanteLimite],
+  );
+  return r.rows.map((riga) => Number(riga.id)).sort((a, b) => a - b);
 }
 
 // --- Preferiti (SD_STALLI_3, SD_STALLI_5)
