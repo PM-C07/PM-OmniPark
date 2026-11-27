@@ -8,6 +8,7 @@ import {
 } from "../test/databaseDiTest";
 import { ErroreDominio, type CodiceErrore } from "./errori";
 import {
+  bloccaSegnalazione,
   chiudiSegnalazione,
   contaSegnalazioniPreseInCarico,
   creaSegnalazioneDaLettura,
@@ -25,7 +26,8 @@ import {
   type SegnalazioneMappa,
 } from "./segnalazioniVerifiche";
 
-// Test frame TF-SV-01…50 di docs/test/cp_persistenza_segnalazioni_verifiche.md (OMP-34).
+// Test frame TF-SV-01…54 di docs/test/cp_persistenza_segnalazioni_verifiche.md (OMP-34; TF-SV-51…54
+// aggiunti e TF-SV-20, 22, 32, 37 cambiati con la OMP-63).
 
 const ID_INESISTENTE = 999999;
 const ISTANTE_DATASET = new Date("2026-11-15T08:00:00+01:00");
@@ -287,14 +289,17 @@ describe("OMP-34 · TCS persistenza · segnalazioni, letture delle targhe e veri
       pagamento: "PAGATA",
       conPermesso: false,
     });
+    // Cambiato con la OMP-63: in più numeroStallo e dichiarazioneDiPermesso (UC_OP_1 3.a1).
     expect(await permessiDaVerificare(client, 1)).toEqual([
       {
         sostaId: conPermesso,
         stalloId: 15,
+        numeroStallo: 2,
         tipoDiStallo: "ROSA",
         latitudine: 40.68829,
         longitudine: 14.52214,
         targa: "EF456GH",
+        dichiarazioneDiPermesso: DICHIARAZIONE,
       },
     ]);
   });
@@ -320,11 +325,14 @@ describe("OMP-34 · TCS persistenza · segnalazioni, letture delle targhe e veri
     expect(await permessiDaVerificare(client, 1)).toEqual([]);
     const ente2 = await permessiDaVerificare(client, 2);
     expect(ente2).toHaveLength(1);
+    // Cambiato con la OMP-63: in più numeroStallo e dichiarazioneDiPermesso.
     expect(ente2[0]).toMatchObject({
       sostaId,
       stalloId: 24,
+      numeroStallo: 3,
       tipoDiStallo: "DISABILI",
       targa: "IJ789KL",
+      dichiarazioneDiPermesso: DICHIARAZIONE,
     });
   });
 
@@ -412,17 +420,16 @@ describe("OMP-34 · TCS persistenza · segnalazioni, letture delle targhe e veri
 
   // chiudiSegnalazione
 
-  it("RF_OP_6 · TF-SV-32 · chiusura diretta della segnalazione 11 APERTA → true, CHIUSA e assegnata a 2", async () => {
-    expect(await chiudiSegnalazione(client, 11, 2, "SOSTA_IRREGOLARE_ACCERTATA", I)).toBe(true);
-    const dettaglio = await dettaglioSegnalazione(client, 11);
-    expect(dettaglio).toMatchObject({
-      stato: "CHIUSA",
-      ausiliarioId: 2,
-      esito: "SOSTA_IRREGOLARE_ACCERTATA",
-      dataEOraDellaPresaInCarico: null,
+  // TF-SV-32 e 37 cambiati con la OMP-63 (RAD 0.6): si chiude solo una PRESA_IN_CARICO dello stesso
+  // ausiliario.
+  it("RF_OP_6 · TF-SV-32 · chiusura della segnalazione 11 APERTA → false, resta APERTA e non assegnata", async () => {
+    expect(await chiudiSegnalazione(client, 11, 2, "SOSTA_IRREGOLARE_ACCERTATA", I)).toBe(false);
+    expect(await dettaglioSegnalazione(client, 11)).toMatchObject({
+      stato: "APERTA",
+      ausiliarioId: null,
+      esito: null,
+      dataEOraDellaChiusura: null,
     });
-    expect(dettaglio?.assegnatario?.id).toBe(2);
-    expect(dettaglio?.dataEOraDellaChiusura?.getTime()).toBe(I.getTime());
   });
 
   it("RF_OP_6 · TF-SV-33 · chiusura della 4 da parte di chi l'ha presa (3) → true, NON_CONFERMATA", async () => {
@@ -452,9 +459,9 @@ describe("OMP-34 · TCS persistenza · segnalazioni, letture delle targhe e veri
     expect(await chiudiSegnalazione(client, ID_INESISTENTE, 2, "NON_CONFERMATA", I)).toBe(false);
   });
 
-  it("SCHEMA · TF-SV-37 · esito non ammesso ALTRO → DATI_NON_VALIDI", async () => {
+  it("SCHEMA · TF-SV-37 · esito non ammesso ALTRO sulla 4 presa da 3 → DATI_NON_VALIDI", async () => {
     await rifiutato(
-      chiudiSegnalazione(client, 11, 2, "ALTRO" as unknown as Esito, I),
+      chiudiSegnalazione(client, 4, 3, "ALTRO" as unknown as Esito, I),
       "DATI_NON_VALIDI",
     );
   });
@@ -618,5 +625,63 @@ describe("OMP-34 · TCS persistenza · segnalazioni, letture delle targhe e veri
       }),
       "STATO_SEGNALAZIONE_NON_VALIDO",
     );
+  });
+
+  // bloccaSegnalazione e campo tipoDiStallo (OMP-63, TF-SV-51…53)
+
+  it("RF_OP_3 · TF-SV-51 · bloccaSegnalazione della 11 → dettaglio della 11, APERTA, stallo 3, ente 1, ORDINARIO_A_PAGAMENTO", async () => {
+    const bloccata = await bloccaSegnalazione(client, 11);
+
+    expect(bloccata).toMatchObject({
+      id: 11,
+      stato: "APERTA",
+      stalloId: 3,
+      enteId: 1,
+      tipoDiStallo: "ORDINARIO_A_PAGAMENTO",
+    });
+    expect(bloccata).toEqual(await dettaglioSegnalazione(client, 11));
+  });
+
+  it("RF_OP_3 · TF-SV-52 · bloccaSegnalazione di un id inesistente → null", async () => {
+    expect(await bloccaSegnalazione(client, ID_INESISTENTE)).toBeNull();
+  });
+
+  it("RF_OP_1 · TF-SV-53 · segnalazioni non chiuse dell'ente 1 → ognuna con tipoDiStallo, la 11 ORDINARIO_A_PAGAMENTO", async () => {
+    const elenco = await segnalazioniNonChiuseDellEnte(client, 1);
+
+    expect(elenco.length).toBeGreaterThan(0);
+    for (const s of elenco) {
+      expect(["ORDINARIO_A_PAGAMENTO", "DISABILI", "ROSA"]).toContain(s.tipoDiStallo);
+    }
+    expect(elenco.find((s) => s.id === 11)?.tipoDiStallo).toBe("ORDINARIO_A_PAGAMENTO");
+  });
+
+  // permessiDaVerificare con adesso (OMP-63, TF-SV-54)
+
+  it("RF_OP_2 · TF-SV-54 · con adesso la sosta con scadenza raggiunta è esclusa, senza adesso le due soste per id", async () => {
+    const sul15 = await sostaConPermessoSul15();
+    const inserita = await client.query<{ id: string }>(
+      `INSERT INTO sosta (automobilista_id, veicolo_id, stallo_id, stato, orario_di_avvio,
+                          orario_di_scadenza, pagamento, dichiarazione_di_permesso, foto_del_permesso)
+       VALUES ($1, $2, $3, 'ATTIVA', $4, $5, $6, $7, $8) RETURNING id`,
+      [
+        9,
+        4,
+        14,
+        I,
+        new Date("2026-11-20T09:30:00+01:00"),
+        "GRATUITA",
+        DICHIARAZIONE,
+        fotoCompleta(),
+      ],
+    );
+    const sul14 = Number(inserita.rows[0].id);
+
+    const conAdesso = await permessiDaVerificare(client, 1, new Date("2026-11-20T09:30:00+01:00"));
+    expect(conAdesso.map((p) => p.sostaId)).toEqual([sul15]);
+    expect(conAdesso[0].stalloId).toBe(15);
+
+    const senzaAdesso = await permessiDaVerificare(client, 1);
+    expect(senzaAdesso.map((p) => p.sostaId)).toEqual([sul15, sul14].sort((x, y) => x - y));
   });
 });

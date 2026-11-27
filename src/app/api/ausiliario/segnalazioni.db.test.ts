@@ -1,10 +1,19 @@
 import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
+import { osservatoreGestioneSoste } from "../../../application/gestione-soste/facade.ts";
+import { creaFacadeGestioneStalli } from "../../../application/gestione-stalli/facade.ts";
 import { calcolaHashToken } from "../../../application/utenti-accessi/crittografia.ts";
 import {
   creaSegnalazioneDaLettura,
   dettaglioSegnalazione,
+  prendiInCarico as prendiInCaricoDiPreparazione,
 } from "../../../persistence/accessoDati/segnalazioniVerifiche.ts";
-import { creaSessione } from "../../../persistence/accessoDati/utentiEntiVeicoli.ts";
+import {
+  associaVeicolo,
+  creaAutomobilista,
+  creaSessione,
+  trovaOCreaVeicolo,
+} from "../../../persistence/accessoDati/utentiEntiVeicoli.ts";
+import { creaSosta } from "../../../persistence/accessoDati/walletSoste.ts";
 import { chiudiPool, verificaConnessione } from "../../../persistence/db.ts";
 import {
   chiudiDatabaseDiTest,
@@ -12,12 +21,18 @@ import {
   preparaDatabaseDiTest,
   verificaDatabaseDiTest,
 } from "../../../persistence/test/databaseDiTest.ts";
+import { rilevazioniAllIstante } from "../../../persistence/test/datiDiProva.ts";
 import { POST as accesso } from "../auth/accesso/route.ts";
 import { POST as chiusuraSegnalazione } from "../segnalazioni/[id]/chiusura/route.ts";
+import { GET as pagamentoSegnalazione } from "../segnalazioni/[id]/pagamento/route.ts";
+import { POST as presaInCaricoSegnalazione } from "../segnalazioni/[id]/presa-in-carico/route.ts";
 import { GET as modificheSegnalazioni } from "./segnalazioni/modifiche/route.ts";
 import { GET as fotografiaSegnalazioni } from "./segnalazioni/route.ts";
 
-// Test frame TF-API-SEG-01…31 di docs/test/cp_apiSegnalazioni.md (OMP-48).
+// Test frame TF-API-SEG-01…31 di docs/test/cp_apiSegnalazioni.md (OMP-48); TF-API-SEG-32…50
+// (OMP-63): presa in carico, stato del pagamento e chiusura dopo la presa in carico.
+// TF-API-SEG-34 e 35 riusano la segnalazione di TF-API-SEG-33; TF-API-SEG-42…44 quella di
+// TF-API-SEG-41.
 
 const BASE = "http://localhost";
 const NOME_COOKIE = "omnipark_sessione";
@@ -32,6 +47,9 @@ const SCADENZA_PASSATA = new Date("2026-01-01T00:00:00+01:00");
 const SCADENZA_FUTURA = new Date("2027-01-01T00:00:00+01:00");
 const DATA_DELLA_LETTURA = new Date("2026-11-20T09:00:00+01:00");
 const DOPO_FISSO = "2026-11-20T09:00:00+01:00";
+const DATA_DELLA_PRESA_DI_PREPARAZIONE = new Date("2026-11-20T09:30:00+01:00");
+const PAOLO_FERRI_ID = 2;
+const UN_ORA = 60 * 60 * 1000;
 
 const ISO_8601_CON_FUSO = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d+)?(Z|[+-]\d{2}:\d{2})$/;
 
@@ -46,6 +64,7 @@ const CAMPI_SEGNALAZIONE = [
   "stalloId",
   "stato",
   "targaRilevata",
+  "tipoDiStallo", // cambiato con la OMP-63 (UC_OP_1 passo 4, TF-API-SEG-01)
   "ultimaModifica",
 ];
 
@@ -61,6 +80,7 @@ type SegnalazioneRisposta = {
   dataEOraDellaLettura: string | null;
   ausiliarioId: number | null;
   ultimaModifica: string;
+  tipoDiStallo: string; // OMP-63
 };
 
 type RispostaSegnalazioni = { segnalazioni: SegnalazioneRisposta[]; cursore: string };
@@ -112,6 +132,20 @@ function chiediModifiche(
 function chiudi(id: string, corpo: unknown, cookie?: string): Promise<Response> {
   return chiusuraSegnalazione(
     richiesta(`/api/segnalazioni/${encodeURIComponent(id)}/chiusura`, "POST", { cookie, corpo }),
+    { params: Promise.resolve({ id }) },
+  );
+}
+
+function prendi(id: string, cookie?: string): Promise<Response> {
+  return presaInCaricoSegnalazione(
+    richiesta(`/api/segnalazioni/${encodeURIComponent(id)}/presa-in-carico`, "POST", { cookie }),
+    { params: Promise.resolve({ id }) },
+  );
+}
+
+function chiediPagamento(id: string, cookie?: string): Promise<Response> {
+  return pagamentoSegnalazione(
+    richiesta(`/api/segnalazioni/${encodeURIComponent(id)}/pagamento`, "GET", { cookie }),
     { params: Promise.resolve({ id }) },
   );
 }
@@ -180,6 +214,51 @@ function segnalazioneDiProva(stalloId: number, targa: string): Promise<number> {
     dataEOra: DATA_DELLA_LETTURA,
     motivo: "SOSTA_ASSENTE",
   });
+}
+
+/** Segnalazione di prova presa in carico da Paolo Ferri con la persistenza (§3, OMP-63). */
+async function segnalazionePresaDaPaolo(stalloId: number, targa: string): Promise<number> {
+  const id = await segnalazioneDiProva(stalloId, targa);
+  expect(
+    await prendiInCaricoDiPreparazione(
+      poolDiTest(),
+      id,
+      PAOLO_FERRI_ID,
+      DATA_DELLA_PRESA_DI_PREPARAZIONE,
+    ),
+  ).toBe(true);
+  return id;
+}
+
+/**
+ * Sosta di una targa (§3, TF-API-SEG-40): sosta PAGATA di SG40AA sullo stallo 17, dall'istante
+ * corrente − 1 h all'istante corrente + 2 h, poi rilevazioni all'istante corrente e stallo Non
+ * disponibile.
+ */
+async function sostaDellaTarga(): Promise<{ orarioDiAvvio: Date; orarioDiScadenza: Date }> {
+  const automobilista = await creaAutomobilista(poolDiTest(), {
+    email: "api.seg40@test.example",
+    hashPassword: "hash-di-prova",
+  });
+  const veicolo = await trovaOCreaVeicolo(poolDiTest(), "SG40AA");
+  await associaVeicolo(poolDiTest(), automobilista, veicolo);
+  const adesso = Date.now();
+  const orarioDiAvvio = new Date(adesso - UN_ORA);
+  const orarioDiScadenza = new Date(adesso + 2 * UN_ORA);
+  await creaSosta(poolDiTest(), {
+    automobilistaId: automobilista,
+    veicoloId: veicolo,
+    stalloId: 17,
+    orarioDiAvvio,
+    orarioDiScadenza,
+    pagamento: "PAGATA",
+  });
+  await rilevazioniAllIstante(poolDiTest(), new Date());
+  await creaFacadeGestioneStalli({
+    pool: poolDiTest(),
+    osservatori: [osservatoreGestioneSoste],
+  }).impostaNonDisponibile(17);
+  return { orarioDiAvvio, orarioDiScadenza };
 }
 
 /** Stato confrontato da «invariata» (§3). */
@@ -388,17 +467,20 @@ describe("OMP-48 · cp_apiSegnalazioni", () => {
 
   // ---- Chiusura: POST /api/segnalazioni/<id>/chiusura ----
 
-  it("RF_OP_6 · TF-API-SEG-19 · chiusura di una segnalazione APERTA da parte di Paolo Ferri → 200, CHIUSA, assegnata all'Ausiliario 2, SOSTA_IRREGOLARE_ACCERTATA", async () => {
+  // Cambiato con la OMP-63 (RAD 0.6): una segnalazione Aperta va prima presa in carico.
+  it("ISSUE_40 · TF-API-SEG-19 · chiusura di una segnalazione APERTA da parte di Paolo Ferri → 409 SEGNALAZIONE_NON_PRESA_IN_CARICO, invariata", async () => {
     const id = await segnalazioneDiProva(16, "SG19AA");
 
-    const risposta = await chiudi(String(id), { esito: "SOSTA_IRREGOLARE_ACCERTATA" }, paolo);
-
-    expect(risposta.status).toBe(200);
-    expect(await risposta.json()).toEqual({});
+    await verificaErrore(
+      await chiudi(String(id), { esito: "SOSTA_IRREGOLARE_ACCERTATA" }, paolo),
+      409,
+      "SEGNALAZIONE_NON_PRESA_IN_CARICO",
+    );
     const dettaglio = await dettaglioSegnalazione(poolDiTest(), id);
-    expect(dettaglio?.stato).toBe("CHIUSA");
-    expect(dettaglio?.ausiliarioId).toBe(2);
-    expect(dettaglio?.esito).toBe("SOSTA_IRREGOLARE_ACCERTATA");
+    expect(dettaglio?.stato).toBe("APERTA");
+    expect(dettaglio?.ausiliarioId).toBeNull();
+    expect(dettaglio?.esito).toBeNull();
+    expect(dettaglio?.dataEOraDellaChiusura).toBeNull();
   });
 
   it("RF_OP_6 · TF-API-SEG-20 · chiusura della 5 presa in carico dallo stesso Paolo Ferri → 200, CHIUSA, assegnata all'Ausiliario 2, NON_CONFERMATA", async () => {
@@ -514,5 +596,167 @@ describe("OMP-48 · cp_apiSegnalazioni", () => {
       "SESSIONE_NON_VALIDA",
     );
     expect(await statoDellaSegnalazione(10)).toEqual(prima);
+  });
+
+  // ---- Presa in carico: POST /api/segnalazioni/<id>/presa-in-carico (OMP-63) ----
+
+  let s33: number;
+
+  it("RF_OP_3 · TF-API-SEG-32 · presa in carico di una segnalazione APERTA sullo stallo 18 da parte di Paolo Ferri → 200 { segnalazione } PRESA_IN_CARICO, ausiliarioId 2, ORDINARIO_A_PAGAMENTO", async () => {
+    const id = await segnalazioneDiProva(18, "SG32AA");
+
+    const risposta = await prendi(String(id), paolo);
+
+    expect(risposta.status).toBe(200);
+    const corpo = (await risposta.json()) as { segnalazione: SegnalazioneRisposta };
+    expect(Object.keys(corpo)).toEqual(["segnalazione"]);
+    expect(corpo.segnalazione.id).toBe(id);
+    expect(corpo.segnalazione.stato).toBe("PRESA_IN_CARICO");
+    expect(corpo.segnalazione.ausiliarioId).toBe(PAOLO_FERRI_ID);
+    expect(corpo.segnalazione.tipoDiStallo).toBe("ORDINARIO_A_PAGAMENTO");
+    const dettaglio = await dettaglioSegnalazione(poolDiTest(), id);
+    expect(dettaglio?.stato).toBe("PRESA_IN_CARICO");
+    expect(dettaglio?.ausiliarioId).toBe(PAOLO_FERRI_ID);
+  });
+
+  it("NRF_SIC_1 · TF-API-SEG-33 · presa in carico senza cookie → 401 SESSIONE_NON_VALIDA, invariata", async () => {
+    s33 = await segnalazioneDiProva(19, "SG33AA");
+    const prima = await statoDellaSegnalazione(s33);
+
+    await verificaErrore(await prendi(String(s33)), 401, "SESSIONE_NON_VALIDA");
+    expect(await statoDellaSegnalazione(s33)).toEqual(prima);
+  });
+
+  it("NRF_SIC_1 · TF-API-SEG-34 · presa in carico con la sessione di Marco Rossi → 403 RUOLO_NON_AMMESSO, invariata", async () => {
+    const prima = await statoDellaSegnalazione(s33);
+
+    await verificaErrore(await prendi(String(s33), marco), 403, "RUOLO_NON_AMMESSO");
+    expect(await statoDellaSegnalazione(s33)).toEqual(prima);
+  });
+
+  it("NRF_SIC_1 · TF-API-SEG-35 · presa in carico di una segnalazione dell'ente 1 da parte di Anna Moretti (ente 2) → 403 ENTE_NON_AMMESSO, invariata", async () => {
+    const prima = await statoDellaSegnalazione(s33);
+
+    await verificaErrore(await prendi(String(s33), anna), 403, "ENTE_NON_AMMESSO");
+    expect(await statoDellaSegnalazione(s33)).toEqual(prima);
+  });
+
+  it("RF_OP_3 · TF-API-SEG-36 · presa in carico della segnalazione inesistente 999999 → 404 SEGNALAZIONE_INESISTENTE", async () => {
+    await verificaErrore(await prendi("999999", paolo), 404, "SEGNALAZIONE_INESISTENTE");
+  });
+
+  it("VD_17 · TF-API-SEG-37 · presa in carico della 4, presa da Sara Galli → 409 SEGNALAZIONE_PRESA_DA_ALTRI, invariata", async () => {
+    const prima = await statoDellaSegnalazione(4);
+
+    await verificaErrore(await prendi("4", paolo), 409, "SEGNALAZIONE_PRESA_DA_ALTRI");
+    expect(await statoDellaSegnalazione(4)).toEqual(prima);
+  });
+
+  it("RF_OP_3 · TF-API-SEG-38 · presa in carico della 1 già CHIUSA → 409 SEGNALAZIONE_GIA_CHIUSA, invariata", async () => {
+    const prima = await statoDellaSegnalazione(1);
+
+    await verificaErrore(await prendi("1", paolo), 409, "SEGNALAZIONE_GIA_CHIUSA");
+    expect(await statoDellaSegnalazione(1)).toEqual(prima);
+  });
+
+  it("ISSUE_40 · TF-API-SEG-39 · presa in carico con id non intero abc → 422 RICHIESTA_NON_VALIDA", async () => {
+    await verificaErrore(await prendi("abc", paolo), 422, "RICHIESTA_NON_VALIDA");
+  });
+
+  // ---- Stato del pagamento: GET /api/segnalazioni/<id>/pagamento (OMP-63) ----
+
+  let s41: number;
+
+  it("RF_OP_4 · TF-API-SEG-40 · stato del pagamento con sosta PAGATA di SG40AA sullo stallo 17 → 200 { sosta } ATTIVA, PAGATA, orari della sosta, senza dichiarazione né foto", async () => {
+    const sosta = await sostaDellaTarga();
+    const id = await segnalazionePresaDaPaolo(17, "SG40AA");
+
+    const risposta = await chiediPagamento(String(id), paolo);
+
+    expect(risposta.status).toBe(200);
+    const corpo = (await risposta.json()) as {
+      sosta: {
+        stato: string;
+        orarioDiAvvio: string;
+        orarioDiScadenza: string;
+        pagamento: string;
+      } | null;
+    };
+    expect(Object.keys(corpo)).toEqual(["sosta"]);
+    expect(corpo.sosta).not.toBeNull();
+    expect(Object.keys(corpo.sosta!).sort()).toEqual([
+      "orarioDiAvvio",
+      "orarioDiScadenza",
+      "pagamento",
+      "stato",
+    ]);
+    expect(corpo.sosta!.stato).toBe("ATTIVA");
+    expect(corpo.sosta!.pagamento).toBe("PAGATA");
+    expect(corpo.sosta!.orarioDiAvvio).toMatch(ISO_8601_CON_FUSO);
+    expect(corpo.sosta!.orarioDiScadenza).toMatch(ISO_8601_CON_FUSO);
+    expect(Date.parse(corpo.sosta!.orarioDiAvvio)).toBe(sosta.orarioDiAvvio.getTime());
+    expect(Date.parse(corpo.sosta!.orarioDiScadenza)).toBe(sosta.orarioDiScadenza.getTime());
+  });
+
+  it("RF_OP_4 · TF-API-SEG-41 · stato del pagamento senza sosta di SG41AA sullo stallo 20 → 200 { sosta: null }", async () => {
+    s41 = await segnalazionePresaDaPaolo(20, "SG41AA");
+
+    const risposta = await chiediPagamento(String(s41), paolo);
+
+    expect(risposta.status).toBe(200);
+    expect(await risposta.json()).toEqual({ sosta: null });
+  });
+
+  it("NRF_SIC_1 · TF-API-SEG-42 · stato del pagamento senza cookie → 401 SESSIONE_NON_VALIDA", async () => {
+    await verificaErrore(await chiediPagamento(String(s41)), 401, "SESSIONE_NON_VALIDA");
+  });
+
+  it("NRF_SIC_1 · TF-API-SEG-43 · stato del pagamento con la sessione di Marco Rossi → 403 RUOLO_NON_AMMESSO", async () => {
+    await verificaErrore(await chiediPagamento(String(s41), marco), 403, "RUOLO_NON_AMMESSO");
+  });
+
+  it("NRF_SIC_1 · TF-API-SEG-44 · stato del pagamento di una segnalazione dell'ente 1 da parte di Anna Moretti (ente 2) → 403 ENTE_NON_AMMESSO", async () => {
+    await verificaErrore(await chiediPagamento(String(s41), anna), 403, "ENTE_NON_AMMESSO");
+  });
+
+  it("RF_OP_4 · TF-API-SEG-45 · stato del pagamento della segnalazione inesistente 999999 → 404 SEGNALAZIONE_INESISTENTE", async () => {
+    await verificaErrore(await chiediPagamento("999999", paolo), 404, "SEGNALAZIONE_INESISTENTE");
+  });
+
+  it("ISSUE_40 · TF-API-SEG-46 · stato del pagamento della 11 APERTA → 409 SEGNALAZIONE_NON_PRESA_IN_CARICO", async () => {
+    await verificaErrore(
+      await chiediPagamento("11", paolo),
+      409,
+      "SEGNALAZIONE_NON_PRESA_IN_CARICO",
+    );
+  });
+
+  it("NRF_SIC_1 · TF-API-SEG-47 · stato del pagamento della 4, presa da Sara Galli → 409 SEGNALAZIONE_PRESA_DA_ALTRI", async () => {
+    await verificaErrore(await chiediPagamento("4", paolo), 409, "SEGNALAZIONE_PRESA_DA_ALTRI");
+  });
+
+  it("ISSUE_40 · TF-API-SEG-48 · stato del pagamento della 1 già CHIUSA → 409 SEGNALAZIONE_GIA_CHIUSA", async () => {
+    await verificaErrore(await chiediPagamento("1", paolo), 409, "SEGNALAZIONE_GIA_CHIUSA");
+  });
+
+  it("ISSUE_40 · TF-API-SEG-49 · stato del pagamento con id non intero abc → 422 RICHIESTA_NON_VALIDA", async () => {
+    await verificaErrore(await chiediPagamento("abc", paolo), 422, "RICHIESTA_NON_VALIDA");
+  });
+
+  // ---- Chiusura dopo la presa in carico (OMP-63) ----
+
+  it("RF_OP_6 · TF-API-SEG-50 · presa in carico e poi chiusura NON_CONFERMATA della segnalazione sullo stallo 3 da parte di Paolo Ferri → 200 e 200 {}, CHIUSA, assegnata all'Ausiliario 2, NON_CONFERMATA", async () => {
+    const id = await segnalazioneDiProva(3, "SG50AA");
+
+    const presa = await prendi(String(id), paolo);
+    expect(presa.status).toBe(200);
+
+    const chiusura = await chiudi(String(id), { esito: "NON_CONFERMATA" }, paolo);
+    expect(chiusura.status).toBe(200);
+    expect(await chiusura.json()).toEqual({});
+    const dettaglio = await dettaglioSegnalazione(poolDiTest(), id);
+    expect(dettaglio?.stato).toBe("CHIUSA");
+    expect(dettaglio?.ausiliarioId).toBe(PAOLO_FERRI_ID);
+    expect(dettaglio?.esito).toBe("NON_CONFERMATA");
   });
 });

@@ -355,6 +355,26 @@ export async function bloccaAusiliario(
   return r.rows[0]?.stato_dell_account ?? null;
 }
 
+/**
+ * Stato dell'account ed ente dell'ausiliario, con la riga bloccata in condivisione fino alla fine
+ * della transazione (OMP-63, vincolo per COD-22 di OMP-62): una disattivazione concorrente, che
+ * blocca la riga FOR UPDATE, aspetta o fa aspettare. null se l'id non è di un ausiliario.
+ */
+export async function bloccaAusiliarioInCondivisione(
+  es: Esecutore,
+  id: number,
+): Promise<{ statoDellAccount: StatoDellAccount; enteId: number } | null> {
+  const r = await interroga<{ stato_dell_account: StatoDellAccount; ente_preposto_id: string }>(
+    es,
+    "SELECT stato_dell_account, ente_preposto_id FROM ausiliario_del_traffico WHERE id = $1 FOR SHARE",
+    [id],
+  );
+  const riga = r.rows[0];
+  return riga
+    ? { statoDellAccount: riga.stato_dell_account, enteId: Number(riga.ente_preposto_id) }
+    : null;
+}
+
 /** Porta l'account a DISATTIVATO; false se l'ausiliario non esiste. */
 export async function disattivaAusiliario(es: Esecutore, id: number): Promise<boolean> {
   const r = await interroga(

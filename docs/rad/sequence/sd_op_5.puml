@@ -7,6 +7,7 @@ entity ":Sosta" as Sosta
 
 Aus -> UI : 1: verificaPermesso(stallo)
 UI -> Ctrl : 1.1: richiediVerifica(stallo)
+note over Ctrl, Sosta : OMP-63 (RAD 0.6): la richiesta individua la sosta dello stallo con il suo id, così l'esito\nnon può finire su una sosta diversa da quella mostrata. Prima di 2.1 si verificano l'Ausiliario\nattivo (VD_19) e lo stesso ente dello stallo (NRF_SIC_1); la sosta resta bloccata fino alla registrazione.
 Ctrl -> Stallo : 2.1: sostaInCorso()
 
 break [2.a1 La sosta non è più Attiva]

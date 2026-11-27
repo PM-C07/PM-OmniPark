@@ -7,6 +7,9 @@
 // (POST /api/segnalazioni/<id>/chiusura), «Annulla» lascia la segnalazione com'era (3.a1).
 // Dopo la risposta si torna alla mappa (np_02), tranne per gli errori da riprovare.
 // La segnalazione è una possibile sosta irregolare, non una sanzione (RD_10).
+// Da OMP-63 (RAD 0.6, np_02): tipo di stallo nel dettaglio; una segnalazione Aperta ha solo
+// «Prendi in carico» (UC_OP_2); stato del pagamento (UC_OP_3) e chiusura solo per chi l'ha presa in
+// carico. I comandi li decide azioniPer; la regola resta del server.
 import { useEffect, useRef, useState } from "react";
 import { Avviso } from "./Avviso.tsx";
 import { BadgeStato } from "./BadgeStato.tsx";
@@ -19,29 +22,45 @@ import {
   formattaDataOra,
   passoChiusura,
   rispostaAllaChiusura,
+  CAMPI_PRESA,
+  descriviPagamento,
+  rispostaAllaPresa,
   type AzioneDopoLaChiusura,
-  type Chiudibilita,
+  type Azioni,
   type Esito,
   type SegnalazioneDellaMappa,
+  type SostaDelPagamento,
   type StatoChiusura,
 } from "./logica/mappaSegnalazioni.ts";
+import { descriviTipo } from "./logica/mappaStalli.ts";
 import { chiamaApi } from "./logica/risposteApi.ts";
+
+type Pagamento =
+  | { fase: "inattivo" }
+  | { fase: "caricamento" }
+  | { fase: "pronto"; testo: string }
+  | { fase: "errore"; testo: string };
 
 export function SchedaSegnalazione({
   segnalazione,
-  chiudibilita,
+  azioni,
   onTornaAllaMappa,
   onAzioneDopoLaChiusura,
+  onPresaInCarico,
 }: {
   segnalazione: SegnalazioneDellaMappa;
-  /** statoEAssegnatario, già valutato dalla mappa con l'utente della sessione. */
-  chiudibilita: Chiudibilita;
+  /** Comandi secondo stato e assegnatario, già valutati dalla mappa con l'utente della sessione. */
+  azioni: Azioni;
   onTornaAllaMappa(): void;
   /** Rimozione, ritorno alla mappa, messaggio e sessione scaduta li gestisce la mappa. */
   onAzioneDopoLaChiusura(segnalazione: number, azione: AzioneDopoLaChiusura): void;
+  /** La mappa sostituisce la riga con quella restituita dalla presa in carico. */
+  onPresaInCarico(segnalazione: SegnalazioneDellaMappa): void;
 }) {
   const [chiusura, setChiusura] = useState<StatoChiusura>({ fase: "inattiva" });
   const [errore, setErrore] = useState<string | null>(null);
+  const [presaInCorso, setPresaInCorso] = useState(false);
+  const [pagamento, setPagamento] = useState<Pagamento>({ fase: "inattivo" });
   const titolo = useRef<HTMLHeadingElement>(null);
   const titoloConferma = useRef<HTMLHeadingElement>(null);
   const motivo = descriviMotivo(segnalazione.motivo);
@@ -96,7 +115,70 @@ export function SchedaSegnalazione({
     }
   }
 
+  // prendiInCarico (UC_OP_2): POST, poi la riga aggiornata; se non è più disponibile si torna alla
+  // mappa con il messaggio (np_02 ErrPresa → Mappa).
+  async function prendiInCarico() {
+    setErrore(null);
+    setPresaInCorso(true);
+    const risposta = rispostaAllaPresa(
+      await chiamaApi(
+        `/api/segnalazioni/${segnalazione.id}/presa-in-carico`,
+        { method: "POST" },
+        CAMPI_PRESA,
+      ),
+    );
+    setPresaInCorso(false);
+    if (risposta.tipo === "presa") {
+      onPresaInCarico(risposta.segnalazione);
+      requestAnimationFrame(() => titolo.current?.focus());
+    } else if (risposta.tipo === "sessioneScaduta") {
+      onAzioneDopoLaChiusura(segnalazione.id, {
+        rimuovi: false,
+        tornaAllaMappa: false,
+        accesso: true,
+        messaggioMappa: null,
+        messaggioScheda: null,
+      });
+    } else if (risposta.tipo === "nonDisponibile") {
+      onAzioneDopoLaChiusura(segnalazione.id, {
+        rimuovi: risposta.rimuovi,
+        tornaAllaMappa: true,
+        accesso: false,
+        messaggioMappa: { tipo: "errore", testo: risposta.messaggio },
+        messaggioScheda: null,
+      });
+    } else {
+      setErrore(risposta.messaggio);
+    }
+  }
+
+  // verificaPagamento (UC_OP_3): GET dello stato della sosta della targa sullo stallo.
+  async function verificaPagamento() {
+    setPagamento({ fase: "caricamento" });
+    const esito = await chiamaApi(
+      `/api/segnalazioni/${segnalazione.id}/pagamento`,
+      { method: "GET" },
+      {},
+    );
+    if (esito.esito === "sessioneScaduta") {
+      onAzioneDopoLaChiusura(segnalazione.id, {
+        rimuovi: false,
+        tornaAllaMappa: false,
+        accesso: true,
+        messaggioMappa: null,
+        messaggioScheda: null,
+      });
+    } else if (esito.esito === "successo") {
+      const { sosta } = esito.dati as { sosta: SostaDelPagamento | null };
+      setPagamento({ fase: "pronto", testo: descriviPagamento(sosta) });
+    } else {
+      // 2.a1: le informazioni sul pagamento non sono disponibili.
+      setPagamento({ fase: "errore", testo: esito.messaggio });
+    }
+  }
+
   const inInvio = chiusura.fase === "inInvio";
+  const tipo = segnalazione.tipoDiStallo ? descriviTipo(segnalazione.tipoDiStallo) : null;
 
   return (
     <section
@@ -123,6 +205,15 @@ export function SchedaSegnalazione({
       <dl className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-2 text-base text-zinc-900">
         <dt className="font-medium">Stallo</dt>
         <dd>n. {segnalazione.numeroStallo}</dd>
+        {tipo ? (
+          <>
+            <dt className="font-medium">Tipo</dt>
+            <dd>
+              <span aria-hidden="true">{tipo.simbolo} </span>
+              {tipo.testo}
+            </dd>
+          </>
+        ) : null}
         <dt className="font-medium">Motivo</dt>
         <dd className="flex items-center gap-2">
           <span aria-hidden="true" className="legenda-simbolo" data-tono={motivo.tono}>
@@ -143,22 +234,61 @@ export function SchedaSegnalazione({
       {errore ? <Avviso tipo="errore">{errore}</Avviso> : null}
 
       {chiusura.fase === "inattiva" ? (
-        !chiudibilita.chiudibile ? (
-          // segnalaNonChiudibile (UC_OP_4 2.a1), prima della scelta dell'esito.
+        azioni.messaggio ? (
+          // segnalaNonChiudibile (UC_OP_4 2.a1): presa in carico da un altro Ausiliario.
           <p className="rounded-md border border-zinc-300 bg-zinc-50 p-3 text-base text-zinc-900">
-            {chiudibilita.messaggio}
+            {azioni.messaggio}
           </p>
         ) : (
-          <div className="flex flex-col gap-2">
-            <p className="text-base text-zinc-900">Esito della verifica sul posto:</p>
-            <div className="flex flex-wrap gap-2">
-              <Bottone onClick={() => indicaEsito("SOSTA_IRREGOLARE_ACCERTATA")}>
-                {ESITI.SOSTA_IRREGOLARE_ACCERTATA}
-              </Bottone>
-              <Bottone variante="secondario" onClick={() => indicaEsito("NON_CONFERMATA")}>
-                {ESITI.NON_CONFERMATA}
-              </Bottone>
-            </div>
+          <div className="flex flex-col gap-3">
+            {azioni.prendiInCarico ? (
+              <div>
+                <Bottone
+                  onClick={prendiInCarico}
+                  inCorso={presaInCorso}
+                  testoInCorso="Presa in carico…"
+                >
+                  Prendi in carico
+                </Bottone>
+              </div>
+            ) : null}
+            {azioni.pagamento ? (
+              <div className="flex flex-col gap-2">
+                <div>
+                  <Bottone
+                    variante="secondario"
+                    onClick={verificaPagamento}
+                    inCorso={pagamento.fase === "caricamento"}
+                    testoInCorso="Verifica in corso…"
+                  >
+                    Verifica il pagamento
+                  </Bottone>
+                </div>
+                <div aria-live="polite">
+                  {pagamento.fase === "pronto" ? (
+                    <p className="rounded-md border border-zinc-300 bg-zinc-50 p-3 text-base text-zinc-900">
+                      {pagamento.testo}
+                    </p>
+                  ) : null}
+                  {pagamento.fase === "errore" ? (
+                    <Avviso tipo="errore">{pagamento.testo}</Avviso>
+                  ) : null}
+                </div>
+              </div>
+            ) : null}
+            {azioni.chiusura ? (
+              <div className="flex flex-col gap-2">
+                <p className="text-base text-zinc-900">Esito della verifica sul posto:</p>
+                <div className="flex flex-wrap gap-2">
+                  <Bottone onClick={() => indicaEsito("SOSTA_IRREGOLARE_ACCERTATA")}>
+                    {ESITI.SOSTA_IRREGOLARE_ACCERTATA}
+                  </Bottone>
+                  <Bottone variante="secondario" onClick={() => indicaEsito("NON_CONFERMATA")}>
+                    {ESITI.NON_CONFERMATA}
+                  </Bottone>
+                </div>
+              </div>
+            ) : null}
           </div>
         )
       ) : (

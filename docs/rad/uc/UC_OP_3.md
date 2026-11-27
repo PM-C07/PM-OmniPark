@@ -6,6 +6,7 @@
 - **Rilevanza:** Media (RF_OP_4)
 - **Frequenza stimata:** Circa 22 usi/giorno per Ausiliario del Traffico
 - **Relazioni:** Estende `UC_OP_4` nel punto di estensione `Verifica del pagamento`.
+- **Allineamento:** allineato al RAD 0.6 (OMP-63, issue #40): la verifica del pagamento riguarda solo una segnalazione `Presa in carico` dall'Ausiliario del Traffico che la richiede.
 - **Extension point:** Nessuno
 
 ## Regole di dominio e contesto
@@ -16,7 +17,7 @@
 
 ## Entry condition
 
-Questo caso d'uso inizia quando l'Ausiliario del Traffico, autenticato, richiede la verifica del pagamento per una segnalazione `Aperta` o da lui presa in carico, oppure quando estende `UC_OP_4` nel punto di estensione `Verifica del pagamento`: in questo caso la richiesta è già avvenuta, il flusso parte dal passo 2 e al termine prosegue in `UC_OP_4`.
+Questo caso d'uso inizia quando l'Ausiliario del Traffico, autenticato, richiede la verifica del pagamento per una segnalazione da lui presa in carico, oppure quando estende `UC_OP_4` nel punto di estensione `Verifica del pagamento`: in questo caso la richiesta è già avvenuta, il flusso parte dal passo 2 e al termine prosegue in `UC_OP_4`.
 
 ## Flusso di eventi (Scenario principale)
 

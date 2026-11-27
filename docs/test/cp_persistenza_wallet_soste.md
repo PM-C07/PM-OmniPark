@@ -1,6 +1,6 @@
 # TCS — Persistenza: wallet, movimenti e soste
 
-- **Task:** OMP-34 (issue #5); TF-WS-44…49 aggiunti con OMP-45 (issue #9); TF-WS-50…52 con OMP-46 (issue #10); TF-WS-53…59 con OMP-61 (issue #33). Metodo: category partition.
+- **Task:** OMP-34 (issue #5); TF-WS-44…49 aggiunti con OMP-45 (issue #9); TF-WS-50…52 con OMP-46 (issue #10); TF-WS-53…59 con OMP-61 (issue #33); TF-WS-60, 61 con OMP-63 (issue #40, parte B). Metodo: category partition.
 - **Oggetto:** le funzioni di accesso di `src/persistence/accessoDati/walletSoste.ts`. `addebita` è già verificata in `cp_persistenza_base.md` (TF-BASE-37…44).
 - **Fonti dell'esito atteso:** sequence diagram e casi d'uso indicati per ogni funzione (inventario del piano approvato); vincoli dello schema; `docs/rad/requisiti.md`; `docs/rad/vincoli_dominio.md` §2; statechart `SCD_2` e `sincronizzazione_eventi.md`; codici di errore di `docs/test/cp_persistenza_base.md`.
 - **File di test:** `src/persistence/accessoDati/walletSoste.db.test.ts` (eseguito da `npm run test:db`).
@@ -37,6 +37,7 @@ creaSosta(es, dati: { automobilistaId; veicoloId; stalloId; orarioDiAvvio; orari
   dichiarazioneDiPermesso?: string; fotoDelPermesso?: Buffer }): Promise<number>; // la sosta nasce ATTIVA
 trovaSosta(es, id: number): Promise<Sosta | null>;
 trovaSostaPerAggiornamento(client: PoolClient, id: number): Promise<Sosta | null>; // OMP-61: come trovaSosta, con la riga bloccata (FOR UPDATE) fino alla fine della transazione
+trovaSostaConStalloPerAggiornamento(client: PoolClient, id: number): Promise<SostaConStallo | null>; // OMP-63: come trovaSostaPerAggiornamento, con tipoDiStallo ed enteId dell'area dello stallo
 sostaAttivaPerVeicolo(es, veicoloId: number): Promise<Sosta | null>;
 sostaAttivaSuStallo(es, stalloId: number): Promise<Sosta | null>;
 sostaPerTargaSuStallo(es, targa: string, stalloId: number): Promise<Sosta | null>; // la più recente per orario di avvio, in qualsiasi stato
@@ -93,29 +94,30 @@ Id inesistente: `999999`.
 
 ## 4. Categorie per funzione
 
-| Funzione                         | Scelte                                                                                                                                                         |
-| :------------------------------- | :------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `creaWallet`                     | automobilista senza wallet · automobilista con wallet [error] · utente non automobilista [error]                                                               |
-| `trovaWalletDiAutomobilista`     | con movimenti · senza movimenti · automobilista inesistente                                                                                                    |
-| `registraRicarica`               | dati validi · wallet inesistente [error] · importo zero [error]                                                                                                |
-| `movimenti`                      | più risultati · un risultato · nessun risultato                                                                                                                |
-| `creaSosta`                      | senza permesso · con permesso · veicolo con sosta attiva [error] · scadenza uguale all'avvio [error] · solo dichiarazione [error] · stallo inesistente [error] |
-| `trovaSosta`                     | esistente · inesistente                                                                                                                                        |
-| `sostaAttivaPerVeicolo`          | con sosta attiva · solo soste terminate · veicolo inesistente                                                                                                  |
-| `sostaAttivaSuStallo`            | con sosta attiva · solo soste terminate · nessuna sosta                                                                                                        |
-| `sostaPerTargaSuStallo`          | più soste della targa (la più recente) · una sosta · nessuna sosta                                                                                             |
-| `sosteAttiveDiAutomobilista`     | più risultati · nessun risultato                                                                                                                               |
-| `aggiornaScadenza`               | sosta attiva · sosta terminata · inesistente · nuova scadenza non successiva all'avvio [error]                                                                 |
-| `sosteDaScadere`                 | scadenza uguale all'istante · scadenza successiva · solo soste terminate                                                                                       |
-| `impostaSostaScaduta`            | attiva · terminata · inesistente (solo preparazione dei dati nei test, dalla OMP-61)                                                                           |
-| `trovaSostaPerAggiornamento`     | esistente · inesistente                                                                                                                                        |
-| `impostaSostaScadutaSeRaggiunta` | istante prima della scadenza · uguale alla scadenza · dopo la scadenza · sosta terminata · inesistente                                                         |
-| `terminaSosteScaduteDelloStallo` | più soste scadute con permesso · solo una sosta attiva · nessuna sosta                                                                                         |
-| `sostaInCorsoSuStallo`           | attiva e scaduta · più soste scadute · solo soste terminate                                                                                                    |
-| `sosteInCorsoDiAutomobilista`    | attive, scadute e terminate · solo soste terminate · automobilista inesistente                                                                                 |
-| `sosteInCorsoDiTarga`            | attive e scadute su stalli diversi · solo soste terminate · targa inesistente                                                                                  |
+| Funzione                              | Scelte                                                                                                                                                         |
+| :------------------------------------ | :------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `creaWallet`                          | automobilista senza wallet · automobilista con wallet [error] · utente non automobilista [error]                                                               |
+| `trovaWalletDiAutomobilista`          | con movimenti · senza movimenti · automobilista inesistente                                                                                                    |
+| `registraRicarica`                    | dati validi · wallet inesistente [error] · importo zero [error]                                                                                                |
+| `movimenti`                           | più risultati · un risultato · nessun risultato                                                                                                                |
+| `creaSosta`                           | senza permesso · con permesso · veicolo con sosta attiva [error] · scadenza uguale all'avvio [error] · solo dichiarazione [error] · stallo inesistente [error] |
+| `trovaSosta`                          | esistente · inesistente                                                                                                                                        |
+| `sostaAttivaPerVeicolo`               | con sosta attiva · solo soste terminate · veicolo inesistente                                                                                                  |
+| `sostaAttivaSuStallo`                 | con sosta attiva · solo soste terminate · nessuna sosta                                                                                                        |
+| `sostaPerTargaSuStallo`               | più soste della targa (la più recente) · una sosta · nessuna sosta                                                                                             |
+| `sosteAttiveDiAutomobilista`          | più risultati · nessun risultato                                                                                                                               |
+| `aggiornaScadenza`                    | sosta attiva · sosta terminata · inesistente · nuova scadenza non successiva all'avvio [error]                                                                 |
+| `sosteDaScadere`                      | scadenza uguale all'istante · scadenza successiva · solo soste terminate                                                                                       |
+| `impostaSostaScaduta`                 | attiva · terminata · inesistente (solo preparazione dei dati nei test, dalla OMP-61)                                                                           |
+| `trovaSostaPerAggiornamento`          | esistente · inesistente                                                                                                                                        |
+| `trovaSostaConStalloPerAggiornamento` | (OMP-63) esistente, con permesso · inesistente                                                                                                                 |
+| `impostaSostaScadutaSeRaggiunta`      | istante prima della scadenza · uguale alla scadenza · dopo la scadenza · sosta terminata · inesistente                                                         |
+| `terminaSosteScaduteDelloStallo`      | più soste scadute con permesso · solo una sosta attiva · nessuna sosta                                                                                         |
+| `sostaInCorsoSuStallo`                | attiva e scaduta · più soste scadute · solo soste terminate                                                                                                    |
+| `sosteInCorsoDiAutomobilista`         | attive, scadute e terminate · solo soste terminate · automobilista inesistente                                                                                 |
+| `sosteInCorsoDiTarga`                 | attive e scadute su stalli diversi · solo soste terminate · targa inesistente                                                                                  |
 
-## 5. Test frame (59)
+## 5. Test frame (61)
 
 | Frame    | Funzione e scelte                                                                                                                               | Esito atteso                                                                                                                                               | Riferimento |
 | :------- | :---------------------------------------------------------------------------------------------------------------------------------------------- | :--------------------------------------------------------------------------------------------------------------------------------------------------------- | :---------- |
@@ -178,6 +180,8 @@ Id inesistente: `999999`.
 | TF-WS-57 | sosta `ATTIVA` (8, 3, 16, I → I+1h) creata con `creaSosta`; `impostaSostaScadutaSeRaggiunta(id, 2026-11-20 10:00:00+01)` (uguale alla scadenza) | `true`; `trovaSosta(id).stato` è `SCADUTA`                                                                                                                 | RF_SOSTA_7  |
 | TF-WS-58 | `impostaSostaScadutaSeRaggiunta(2, 2026-12-31 00:00:00+01)` (sosta terminata)                                                                   | `false`; la sosta 2 resta `TERMINATA`                                                                                                                      | RF_SOSTA_7  |
 | TF-WS-59 | `impostaSostaScadutaSeRaggiunta(999999, 2026-12-31 00:00:00+01)`                                                                                | `false`                                                                                                                                                    | RF_SOSTA_7  |
+| TF-WS-60 | (OMP-63) sosta `ATTIVA` (7, 1, 15, `PAGATA`, permesso completo, I → I+1h) creata con `creaSosta`; `trovaSostaConStalloPerAggiornamento(id)`     | la sosta: `ATTIVA`, automobilista 7, veicolo 1, targa `EF456GH`, stallo 15, dichiarazione e foto come inserite; `tipoDiStallo` `ROSA`, `enteId` 1          | RF_OP_5     |
+| TF-WS-61 | (OMP-63) `trovaSostaConStalloPerAggiornamento(999999)`                                                                                          | `null`                                                                                                                                                     | RF_OP_5     |
 
 Note sui riferimenti:
 
@@ -189,6 +193,7 @@ Note sui riferimenti:
 - TF-WS-44, 46: la sosta `Attiva` o `Scaduta` sullo stallo serve alla segnalazione ANPR (RF_ANPR_1, `SD_ANPR_1` 2.1 `sostaInCorso()`); la priorità della sosta `ATTIVA` e, tra le scadute, della scadenza più recente (TF-WS-45) è del piano approvato di OMP-45, perché sullo stesso stallo possono esserci più soste non terminate (`cp_inserimento_sosta.md` §6).
 - TF-WS-47…49: le soste in corso dell'Automobilista (`ATTIVA` e `SCADUTA`, dalla più recente) sono la scelta D2 del piano approvato di OMP-45 (`np_01_automobilista`, «Sosta in corso»).
 - TF-WS-53, 54: la lettura con blocco della riga serve al prolungamento (RF_SOSTA_2, `SD_SOSTA_2` 2.1): due prolungamenti della stessa sosta si eseguono uno dopo l'altro. Il blocco in sé lo verifica `cp_prolungamento.md` TF-PRO-14.
+- TF-WS-60, 61 (OMP-63): la verifica del permesso (RF_OP_5, `SD_OP_5` 2.1–2.3) legge la sosta con tipo di stallo ed ente e la tiene bloccata fino alla registrazione dell'esito, così due verifiche della stessa sosta si eseguono una dopo l'altra (`cp_verificaPermesso.md` VP-12). Come per TF-WS-53, il blocco in sé lo verifica il frame di concorrenza del servizio.
 - TF-WS-55…59: la scadenza scatta solo se l'orario di scadenza è raggiunto all'istante indicato (`at(orario di scadenza)`, `sincronizzazione_eventi.md` §2), così l'allineamento non fa scadere una sosta prolungata dopo la lettura delle soste da scadere (`cp_prolungamento.md` TF-PRO-15). TF-WS-57: all'istante uguale all'orario di scadenza la sosta scade, come in TF-WS-36. TF-WS-58, 59: solo le soste `ATTIVA` scadono (`SCD_2`), come TF-WS-40, 41 per `impostaSostaScaduta`. Dalla OMP-61 `impostaSostaScaduta` (TF-WS-39…41, invariati) resta senza condizione sull'orario ed è usata solo per preparare i dati nei test.
 - TF-WS-50…52: le soste in corso di una targa, su qualsiasi stallo, servono al riscontro ANPR per riconoscere la sosta attiva della targa letta su un altro stallo e la sua sosta scaduta sullo stallo letto (piano approvato di OMP-46, `cp_riscontroAnpr.md`).
 

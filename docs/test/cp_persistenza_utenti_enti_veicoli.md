@@ -1,6 +1,6 @@
 # TCS — Persistenza: utenti, enti e veicoli
 
-- **Task:** OMP-34 (issue #5); `bloccaAusiliario` (TF-UEV-47…50) aggiunta con OMP-62 (issue #39). Metodo: category partition.
+- **Task:** OMP-34 (issue #5); `bloccaAusiliario` (TF-UEV-47…50) aggiunta con OMP-62 (issue #39); `bloccaAusiliarioInCondivisione` (TF-UEV-51…53) con OMP-63 (issue #40). Metodo: category partition.
 - **Oggetto:** le funzioni di accesso di `src/persistence/accessoDati/utentiEntiVeicoli.ts`.
 - **Fonti dell'esito atteso:** sequence diagram e casi d'uso indicati per ogni funzione (inventario del piano approvato); vincoli dello schema; `docs/rad/requisiti.md`; `docs/rad/vincoli_dominio.md` §2; codici di errore di `docs/test/cp_persistenza_base.md`.
 - **File di test:** `src/persistence/accessoDati/utentiEntiVeicoli.db.test.ts` (eseguito da `npm run test:db`).
@@ -37,6 +37,7 @@ trovaAusiliario(es, id: number): Promise<{ id; email; nome; cognome; enteId; sta
 creaAusiliario(es, dati: { email; hashPassword; nome; cognome; enteId; amministratoreId }): Promise<number>;
 aggiornaAusiliario(es, id: number, dati: { email; nome; cognome; enteId }): Promise<boolean>;   // false se l'ausiliario non esiste
 disattivaAusiliario(es, id: number): Promise<boolean>;                                // false se l'ausiliario non esiste
+bloccaAusiliarioInCondivisione(es, id: number): Promise<{ statoDellAccount: StatoDellAccount; enteId: number } | null>; // OMP-63: SELECT … FOR SHARE
 bloccaAusiliario(es, id: number): Promise<StatoDellAccount | null>;                   // OMP-62: SELECT … FOR UPDATE; null se l'id non è di un ausiliario
 ```
 
@@ -85,28 +86,29 @@ Id inesistente: `999999`.
 
 Per ogni funzione si scelgono, dove applicabili, le categorie dell'issue: elemento esistente · elemento inesistente · nessun risultato · più risultati · violazione di vincolo. Le scelte [error] (violazioni) si combinano con valori altrimenti validi.
 
-| Funzione                   | Scelte                                                                                             |
-| :------------------------- | :------------------------------------------------------------------------------------------------- |
-| `trovaUtentePerEmail`      | automobilista esistente · ausiliario esistente con email in maiuscolo · inesistente                |
-| `creaAutomobilista`        | email nuova · email già registrata [error] · email non valida [error]                              |
-| `trovaOCreaVeicolo`        | targa esistente · targa nuova · targa non normalizzata [error]                                     |
-| `associaVeicolo`           | associazione nuova · già presente [error] · automobilista inesistente [error]                      |
-| `targheDelProfilo`         | più risultati · un risultato · nessun risultato                                                    |
-| `rimuoviVeicoloDalProfilo` | associazione esistente · inesistente                                                               |
-| `creaSessione`             | sessione nuova · token già presente [error] · utente inesistente [error]                           |
-| `trovaSessione`            | valida · scaduta · inesistente                                                                     |
-| `eliminaSessione`          | esistente · inesistente                                                                            |
-| `eliminaSessioniUtente`    | più sessioni · nessuna                                                                             |
-| `enti`                     | più risultati                                                                                      |
-| `riepilogoEnte`            | ente con stalli e segnalazioni · ente senza segnalazioni · ente con una sosta attiva · inesistente |
-| `ausiliari`                | più risultati                                                                                      |
-| `trovaAusiliario`          | esistente · id di un utente con un altro ruolo · inesistente                                       |
-| `creaAusiliario`           | dati validi · email già registrata [error] · ente inesistente [error] · nome di soli spazi [error] |
-| `aggiornaAusiliario`       | esistente · inesistente · email di un altro utente [error]                                         |
-| `disattivaAusiliario`      | attivo · inesistente                                                                               |
-| `bloccaAusiliario`         | attivo · disattivato · id di un utente con un altro ruolo · inesistente                            |
+| Funzione                                  | Scelte                                                                                             |
+| :---------------------------------------- | :------------------------------------------------------------------------------------------------- |
+| `trovaUtentePerEmail`                     | automobilista esistente · ausiliario esistente con email in maiuscolo · inesistente                |
+| `creaAutomobilista`                       | email nuova · email già registrata [error] · email non valida [error]                              |
+| `trovaOCreaVeicolo`                       | targa esistente · targa nuova · targa non normalizzata [error]                                     |
+| `associaVeicolo`                          | associazione nuova · già presente [error] · automobilista inesistente [error]                      |
+| `targheDelProfilo`                        | più risultati · un risultato · nessun risultato                                                    |
+| `rimuoviVeicoloDalProfilo`                | associazione esistente · inesistente                                                               |
+| `creaSessione`                            | sessione nuova · token già presente [error] · utente inesistente [error]                           |
+| `trovaSessione`                           | valida · scaduta · inesistente                                                                     |
+| `eliminaSessione`                         | esistente · inesistente                                                                            |
+| `eliminaSessioniUtente`                   | più sessioni · nessuna                                                                             |
+| `enti`                                    | più risultati                                                                                      |
+| `riepilogoEnte`                           | ente con stalli e segnalazioni · ente senza segnalazioni · ente con una sosta attiva · inesistente |
+| `ausiliari`                               | più risultati                                                                                      |
+| `trovaAusiliario`                         | esistente · id di un utente con un altro ruolo · inesistente                                       |
+| `creaAusiliario`                          | dati validi · email già registrata [error] · ente inesistente [error] · nome di soli spazi [error] |
+| `aggiornaAusiliario`                      | esistente · inesistente · email di un altro utente [error]                                         |
+| `disattivaAusiliario`                     | attivo · inesistente                                                                               |
+| `bloccaAusiliario`                        | attivo · disattivato · id di un utente con un altro ruolo · inesistente                            |
+| `bloccaAusiliarioInCondivisione` (OMP-63) | attivo · disattivato · id di un utente con un altro ruolo                                          |
 
-## 5. Test frame (50)
+## 5. Test frame (53)
 
 | Frame     | Funzione e scelte                                                                                                                                    | Esito atteso                                                                                                                                                                      | Riferimento |
 | :-------- | :--------------------------------------------------------------------------------------------------------------------------------------------------- | :-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | :---------- |
@@ -160,6 +162,9 @@ Per ogni funzione si scelgono, dove applicabili, le categorie dell'issue: elemen
 | TF-UEV-48 | `bloccaAusiliario(4)`                                                                                                                                | `"DISATTIVATO"`                                                                                                                                                                   | VD_19       |
 | TF-UEV-49 | `bloccaAusiliario(8)` (un automobilista)                                                                                                             | `null`                                                                                                                                                                            | VD_19       |
 | TF-UEV-50 | `bloccaAusiliario(999999)`                                                                                                                           | `null`                                                                                                                                                                            | VD_19       |
+| TF-UEV-51 | `bloccaAusiliarioInCondivisione(2)`                                                                                                                  | `{ statoDellAccount: \"ATTIVO\", enteId: 1 }`                                                                                                                                     | VD_19       |
+| TF-UEV-52 | `bloccaAusiliarioInCondivisione(4)`                                                                                                                  | `{ statoDellAccount: \"DISATTIVATO\", enteId: 1 }`                                                                                                                                | VD_19       |
+| TF-UEV-53 | `bloccaAusiliarioInCondivisione(8)` (un automobilista)                                                                                               | `null`                                                                                                                                                                            | VD_19       |
 
 Note sui riferimenti:
 
@@ -169,6 +174,7 @@ Note sui riferimenti:
 - TF-UEV-46: come le altre funzioni di aggiornamento, `disattivaAusiliario` restituisce `false` solo se l'ausiliario non esiste; disattivare un ausiliario già disattivato non è un errore.
 - TF-UEV-34…36: `trovaAusiliario` fornisce l'ente dell'ausiliario per la segregazione (NRF_SIC_1, SD_OP_1 2.1).
 - TF-UEV-47…50: VD_19 (OMP-62). `bloccaAusiliario` legge lo stato dell'account e blocca la riga fino alla fine della transazione del chiamante (`FOR UPDATE`), così disattivazione e modifica controllano le prese in carico senza corse. Nei test la transazione è quella del test: il blocco si verifica solo come lettura dello stato.
+- TF-UEV-51…53: VD_19 e vincolo per COD-22 di `cp_gestioneAusiliari.md` §6 (OMP-63): la presa in carico, lo stato del pagamento e la chiusura leggono la riga dell'Ausiliario `FOR SHARE` e ne verificano lo stato nella stessa transazione; come per `bloccaAusiliario`, il blocco si verifica solo come lettura.
 
 ## 6. Regole lasciate ai sottosistemi
 

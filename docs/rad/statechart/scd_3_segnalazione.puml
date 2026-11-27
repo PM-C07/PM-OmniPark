@@ -1,4 +1,6 @@
 @startuml scd_3_segnalazione
+' Allineato al RAD 0.6 (OMP-63, issue #40): la chiusura parte solo da Presa in carico;
+' tolta la transizione Aperta --> Chiusa per la chiusura.
 skinparam state {
   BackgroundColor White
   BorderColor Black
@@ -18,7 +20,6 @@ scelta --> Chiusa : [generata da una verifica del permesso non conforme]\n/ asse
 
 Aperta --> PresaInCarico : presaInCarico / assegnaAusiliario()
 PresaInCarico --> Chiusa : chiusura / registraEsito()
-Aperta --> Chiusa : chiusura / assegnaAusiliario(), registraEsito()
 
 Chiusa --> [*]
 

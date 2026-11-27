@@ -12,7 +12,7 @@ import { Avviso } from "./Avviso.tsx";
 import { BadgeStato } from "./BadgeStato.tsx";
 import {
   applicaModificheSegnalazioni,
-  chiudibilitaPer,
+  azioniPer,
   descriviMotivo,
   elementoDellaSegnalazione,
   ESITI,
@@ -27,6 +27,7 @@ import {
 } from "./logica/mappaSegnalazioni.ts";
 import { VISTA_INIZIALE } from "./logica/mappaStalli.ts";
 import { chiamaApi } from "./logica/risposteApi.ts";
+import { PermessiDaVerificare } from "./PermessiDaVerificare.tsx";
 import { SchedaSegnalazione } from "./SchedaSegnalazione.tsx";
 import { useAggiornamentoPeriodico } from "./useAggiornamentoPeriodico.ts";
 import { vaiAllAccesso } from "./vaiAllAccesso.ts";
@@ -89,7 +90,8 @@ export function MappaSegnalazioni() {
   });
   const { caricamento, nonAggiornati } = richiediSegnalazioni;
 
-  // mostraSegnalazioniEPermessi: solo le segnalazioni (i permessi da verificare sono fuori ambito).
+  // mostraSegnalazioniEPermessi: le segnalazioni sulla mappa; i permessi da verificare (OMP-63) in una
+  // voce d'elenco sotto la mappa, senza marker (PermessiDaVerificare).
   const elementi = useMemo(() => segnalazioni.map(elementoDellaSegnalazione), [segnalazioni]);
   const perId = useMemo(() => new Map(segnalazioni.map((s) => [s.id, s])), [segnalazioni]);
 
@@ -140,6 +142,12 @@ export function MappaSegnalazioni() {
     if (azione.messaggioMappa) {
       mostraMessaggio(azione.messaggioMappa);
     }
+  }
+
+  // Presa in carico riuscita (UC_OP_2): la riga si aggiorna subito con quella restituita; agli altri
+  // Ausiliari arriva con il polling delle variazioni (ultima_modifica cambiata).
+  function presaInCarico(aggiornata: SegnalazioneDellaMappa) {
+    setSegnalazioni((attuali) => applicaModificheSegnalazioni(attuali, [aggiornata]));
   }
 
   const contenutoRiga = useCallback(
@@ -208,9 +216,10 @@ export function MappaSegnalazioni() {
             <SchedaSegnalazione
               key={segnalazione.id}
               segnalazione={segnalazione}
-              chiudibilita={chiudibilitaPer(segnalazione, utente)}
+              azioni={azioniPer(segnalazione, utente)}
               onTornaAllaMappa={() => tornaAllaMappa(segnalazione.id)}
               onAzioneDopoLaChiusura={dopoLaChiusura}
+              onPresaInCarico={presaInCarico}
             />
           ) : (
             <p className="rounded-lg border border-dashed border-zinc-400 p-4 text-base text-zinc-800">
@@ -221,6 +230,7 @@ export function MappaSegnalazioni() {
           )
         }
       />
+      <PermessiDaVerificare onSessioneScaduta={sessioneScaduta} />
     </div>
   );
 }

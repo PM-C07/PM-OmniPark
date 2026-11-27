@@ -21,7 +21,8 @@ import {
   type FacadeSegnalazioni,
 } from "./facade";
 
-// Test frame TF-CHI-01…13 di docs/test/cp_chiusuraSegnalazione.md (OMP-46).
+// Test frame TF-CHI-01…13 di docs/test/cp_chiusuraSegnalazione.md (OMP-46); TF-CHI-01, 02 e 13
+// cambiati con la OMP-63 (RAD 0.6): si chiude solo una segnalazione presa in carico dallo stesso Ausiliario.
 // Le chiusure vanno in commit: ogni frame che chiude usa una segnalazione propria
 // (11, 12, 5 del dataset o una segnalazione di prova); i frame di errore usano 4, 1, 10.
 
@@ -125,24 +126,27 @@ describe("OMP-46 · cp_chiusuraSegnalazione", () => {
 
   // --- Chiusure riuscite ---
 
-  it("RF_OP_6 · TF-CHI-01 · segnalazione aperta, esito accertata → CHIUSA, assegnata all'Ausiliario 2, data di chiusura T", async () => {
-    await facade().chiudi(2, 11, "SOSTA_IRREGOLARE_ACCERTATA");
-
+  it("ISSUE_40 · TF-CHI-01 · segnalazione aperta, non presa in carico → SEGNALAZIONE_NON_PRESA_IN_CARICO, invariata", async () => {
+    await verificaErroreEInvariata(
+      11,
+      () => facade().chiudi(2, 11, "SOSTA_IRREGOLARE_ACCERTATA"),
+      "SEGNALAZIONE_NON_PRESA_IN_CARICO",
+    );
     const d = await dettaglio(11);
-    expect(d.stato).toBe("CHIUSA");
-    expect(d.ausiliarioId).toBe(2);
-    expect(d.esito).toBe("SOSTA_IRREGOLARE_ACCERTATA");
-    expect(d.dataEOraDellaChiusura?.getTime()).toBe(ADESSO.getTime());
-    expect(d.dataEOraDellaPresaInCarico).toBeNull();
+    expect(d.stato).toBe("APERTA");
+    expect(d.ausiliarioId).toBeNull();
   });
 
-  it("RF_OP_6 · TF-CHI-02 · segnalazione aperta di un altro ente, esito non confermata → CHIUSA, assegnata all'Ausiliario 5, data di chiusura T", async () => {
+  it("RF_OP_6 · TF-CHI-02 · segnalazione di un altro ente presa in carico dall'Ausiliario 5, esito non confermata → CHIUSA, presa in carico 09:30, data di chiusura T", async () => {
+    expect(await prendiInCarico(poolDiTest(), 12, 5, PRESA_IN_CARICO_DI_PROVA)).toBe(true);
+
     await facade().chiudi(5, 12, "NON_CONFERMATA");
 
     const d = await dettaglio(12);
     expect(d.stato).toBe("CHIUSA");
     expect(d.ausiliarioId).toBe(5);
     expect(d.esito).toBe("NON_CONFERMATA");
+    expect(d.dataEOraDellaPresaInCarico?.getTime()).toBe(PRESA_IN_CARICO_DI_PROVA.getTime());
     expect(d.dataEOraDellaChiusura?.getTime()).toBe(ADESSO.getTime());
   });
 
@@ -243,12 +247,12 @@ describe("OMP-46 · cp_chiusuraSegnalazione", () => {
 
   // --- Concorrenza ---
 
-  it("ISSUE_10 · TF-CHI-13 · due Ausiliari chiudono insieme la stessa segnalazione aperta → una riesce, l'altra SEGNALAZIONE_GIA_CHIUSA", async () => {
-    const s = await segnalazioneDiProva(19, "CH13AA");
+  it("ISSUE_10 · TF-CHI-13 · due chiusure insieme della stessa segnalazione presa in carico dall'Ausiliario 2 → una riesce, l'altra SEGNALAZIONE_GIA_CHIUSA", async () => {
+    const s = await segnalazioneDiProva(19, "CH13AA", 2);
     const f = facade();
     const chiamate: { ausiliario: number; esito: Esito }[] = [
       { ausiliario: 2, esito: "SOSTA_IRREGOLARE_ACCERTATA" },
-      { ausiliario: 3, esito: "NON_CONFERMATA" },
+      { ausiliario: 2, esito: "NON_CONFERMATA" },
     ];
 
     const risultati = await Promise.allSettled(

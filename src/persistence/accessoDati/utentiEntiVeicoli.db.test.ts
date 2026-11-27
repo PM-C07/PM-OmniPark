@@ -12,6 +12,7 @@ import {
   associaVeicolo,
   ausiliari,
   bloccaAusiliario,
+  bloccaAusiliarioInCondivisione,
   creaAusiliario,
   creaAutomobilista,
   creaSessione,
@@ -28,7 +29,8 @@ import {
   trovaUtentePerEmail,
 } from "./utentiEntiVeicoli";
 
-// Test frame TF-UEV-01…46 di docs/test/cp_persistenza_utenti_enti_veicoli.md (OMP-34).
+// Test frame TF-UEV-01…53 di docs/test/cp_persistenza_utenti_enti_veicoli.md (OMP-34; TF-UEV-47…50
+// aggiunti con la OMP-62, TF-UEV-51…53 con la OMP-63).
 
 const ID_INESISTENTE = 999999;
 const HASH = "hash-di-prova";
@@ -482,5 +484,25 @@ describe("OMP-34 · TCS persistenza · utenti, enti e veicoli", () => {
 
   it("VD_19 · TF-UEV-50 · id inesistente → null", async () => {
     expect(await bloccaAusiliario(client, ID_INESISTENTE)).toBeNull();
+  });
+
+  // bloccaAusiliarioInCondivisione (OMP-63, TF-UEV-51…53)
+
+  it("VD_19 · TF-UEV-51 · ausiliario 2 attivo dell'ente 1 → { ATTIVO, ente 1 }", async () => {
+    expect(await bloccaAusiliarioInCondivisione(client, 2)).toEqual({
+      statoDellAccount: "ATTIVO",
+      enteId: 1,
+    });
+  });
+
+  it("VD_19 · TF-UEV-52 · ausiliario 4 disattivato dell'ente 1 → { DISATTIVATO, ente 1 }", async () => {
+    expect(await bloccaAusiliarioInCondivisione(client, 4)).toEqual({
+      statoDellAccount: "DISATTIVATO",
+      enteId: 1,
+    });
+  });
+
+  it("VD_19 · TF-UEV-53 · id 8 di un automobilista → null", async () => {
+    expect(await bloccaAusiliarioInCondivisione(client, 8)).toBeNull();
   });
 });

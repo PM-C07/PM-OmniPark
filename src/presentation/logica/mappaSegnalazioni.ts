@@ -1,8 +1,11 @@
 // Logica della mappa delle segnalazioni (OMP-59, docs/test/cp_mappaSegnalazioni.md): motivo in
 // testo, colore e simbolo, ordinamento dalla più recente, applicazione delle variazioni del
 // polling, chiuse localmente, passi della chiusura (SD_OP_4) e risposta alla chiusura. La
-// segnalazione è una possibile sosta irregolare, mai una sanzione (RD_10).
+// segnalazione è una possibile sosta irregolare, mai una sanzione (RD_10). Da OMP-63 (RAD 0.6):
+// comandi del dettaglio secondo stato e assegnatario (azioniPer), risposta alla presa in carico e
+// testo dello stato del pagamento.
 // Nessuna dipendenza da React, da Leaflet né dai sottosistemi.
+import { formattaOra } from "./importi.ts";
 import type { ElementoMappa } from "./mappaStalli.ts";
 import type { EsitoRisposta } from "./risposteApi.ts";
 import { descriviStato, type Tono } from "./statiDominio.ts";
@@ -20,6 +23,8 @@ export type SegnalazioneDellaMappa = {
   dataEOraDellaLettura: string | null;
   ausiliarioId: number | null;
   ultimaModifica: string;
+  /** Tipo dello stallo (OMP-63); facoltativo per le righe senza il campo. */
+  tipoDiStallo?: string;
 };
 
 export type Esito = "SOSTA_IRREGOLARE_ACCERTATA" | "NON_CONFERMATA";
@@ -226,6 +231,7 @@ export function passoChiusura(
 export const CAMPI_CHIUSURA: Readonly<Record<string, string>> = {
   SEGNALAZIONE_GIA_CHIUSA: "giaChiusa",
   SEGNALAZIONE_PRESA_DA_ALTRI: "presaDaAltri",
+  SEGNALAZIONE_NON_PRESA_IN_CARICO: "nonPresa",
 };
 
 /** Risposta di POST /api/segnalazioni/<id>/chiusura (confermaChiusura, segnalaNonChiudibile). */
@@ -239,36 +245,99 @@ export function rispostaAllaChiusura(esito: EsitoRisposta): EsitoChiusura {
       if (esito.campo === "giaChiusa") {
         return { tipo: "nonChiudibile", messaggio: esito.messaggio, rimuovi: true };
       }
-      if (esito.campo === "presaDaAltri") {
+      if (esito.campo === "presaDaAltri" || esito.campo === "nonPresa") {
         return { tipo: "nonChiudibile", messaggio: esito.messaggio, rimuovi: false };
       }
       return { tipo: "errore", messaggio: esito.messaggio };
   }
 }
 
-/** Dalla OMP-65 in importi.ts, usata anche dalla cronologia del wallet; riesportata qui. */
-export { formattaDataOra } from "./importi.ts";
+// --- Presa in carico e stato del pagamento (OMP-63, RAD 0.6, np_02_ausiliario.puml)
 
-export type Chiudibilita = { chiudibile: true } | { chiudibile: false; messaggio: string };
+export type Azioni = {
+  prendiInCarico: boolean;
+  pagamento: boolean;
+  chiusura: boolean;
+  messaggio: string | null;
+};
+
+const PRESA_DA_UN_ALTRO = "Presa in carico da un altro Ausiliario.";
 
 /**
- * statoEAssegnatario prima dell'esito (UC_OP_4 passo 2 e 2.a1): non chiudibile solo se è presa in
- * carico da un altro Ausiliario noto. Senza dati certi decide il server (409 al POST).
+ * Comandi del dettaglio: una Aperta si prende in carico; stato del pagamento e chiusura solo a chi
+ * l'ha presa in carico. Con l'utente o l'assegnatario non noti decide il server.
  */
-export function chiudibilitaPer(
-  segnalazione: SegnalazioneDellaMappa,
-  utente: number | null,
-): Chiudibilita {
+export function azioniPer(segnalazione: SegnalazioneDellaMappa, utente: number | null): Azioni {
+  if (segnalazione.stato === "APERTA") {
+    return { prendiInCarico: true, pagamento: false, chiusura: false, messaggio: null };
+  }
   if (
     segnalazione.stato === "PRESA_IN_CARICO" &&
     utente !== null &&
     segnalazione.ausiliarioId !== null &&
     segnalazione.ausiliarioId !== utente
   ) {
-    return { chiudibile: false, messaggio: "Presa in carico da un altro Ausiliario." };
+    return {
+      prendiInCarico: false,
+      pagamento: false,
+      chiusura: false,
+      messaggio: PRESA_DA_UN_ALTRO,
+    };
   }
-  return { chiudibile: true };
+  return { prendiInCarico: false, pagamento: true, chiusura: true, messaggio: null };
 }
+
+export type EsitoPresa =
+  | { tipo: "presa"; segnalazione: SegnalazioneDellaMappa }
+  | { tipo: "nonDisponibile"; messaggio: string; rimuovi: boolean }
+  | { tipo: "sessioneScaduta" }
+  | { tipo: "errore"; messaggio: string };
+
+export const CAMPI_PRESA: Readonly<Record<string, string>> = {
+  SEGNALAZIONE_GIA_CHIUSA: "giaChiusa",
+  SEGNALAZIONE_PRESA_DA_ALTRI: "presaDaAltri",
+};
+
+/** Risposta di POST /api/segnalazioni/<id>/presa-in-carico (UC_OP_2 passo 3 e 2.a1). */
+export function rispostaAllaPresa(esito: EsitoRisposta): EsitoPresa {
+  switch (esito.esito) {
+    case "successo":
+      return {
+        tipo: "presa",
+        segnalazione: (esito.dati as { segnalazione: SegnalazioneDellaMappa }).segnalazione,
+      };
+    case "sessioneScaduta":
+      return { tipo: "sessioneScaduta" };
+    case "errore":
+      if (esito.campo === "giaChiusa") {
+        return { tipo: "nonDisponibile", messaggio: esito.messaggio, rimuovi: true };
+      }
+      if (esito.campo === "presaDaAltri") {
+        return { tipo: "nonDisponibile", messaggio: esito.messaggio, rimuovi: false };
+      }
+      return { tipo: "errore", messaggio: esito.messaggio };
+  }
+}
+
+export type SostaDelPagamento = {
+  stato: string;
+  orarioDiAvvio: string;
+  orarioDiScadenza: string;
+  pagamento: string;
+};
+
+/** Stato del pagamento in una frase (UC_OP_3 passo 3). */
+export function descriviPagamento(sosta: SostaDelPagamento | null): string {
+  if (sosta === null) {
+    return "Per la targa non risulta alcuna sosta su questo stallo.";
+  }
+  const stato = descriviStato("sosta", sosta.stato).testo;
+  const pagamento = sosta.pagamento === "GRATUITA" ? "gratuita" : "pagata";
+  return `Sosta ${stato}, ${pagamento}: dalle ${formattaOra(sosta.orarioDiAvvio)} alle ${formattaOra(sosta.orarioDiScadenza)}.`;
+}
+
+/** Dalla OMP-65 in importi.ts, usata anche dalla cronologia del wallet; riesportata qui. */
+export { formattaDataOra } from "./importi.ts";
 
 export type Messaggio = { tipo: "successo" | "errore"; testo: string };
 

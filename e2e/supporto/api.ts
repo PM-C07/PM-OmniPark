@@ -114,12 +114,21 @@ export async function segnalazioniNonChiuse(
   );
 }
 
-/** Chiusura di pulizia: 200, oppure 409 se la segnalazione è già chiusa. */
+/**
+ * Chiusura di pulizia. Da OMP-63 (RAD 0.6) si chiude solo una segnalazione presa in carico: prima la
+ * presa in carico (200, oppure 409 se è già chiusa o presa da altri), poi la chiusura (200, oppure
+ * 409 se è già chiusa o presa da altri).
+ */
 export async function chiudiSegnalazione(
   request: APIRequestContext,
   id: number,
   esito: "SOSTA_IRREGOLARE_ACCERTATA" | "NON_CONFERMATA" = "NON_CONFERMATA",
 ) {
+  await richiedi(
+    await request.post(`/api/segnalazioni/${id}/presa-in-carico`),
+    [200, 409],
+    `Presa in carico di pulizia della segnalazione ${id}`,
+  );
   await richiedi(
     await request.post(`/api/segnalazioni/${id}/chiusura`, { data: { esito } }),
     [200, 409],

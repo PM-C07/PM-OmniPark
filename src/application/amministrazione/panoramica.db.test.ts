@@ -6,6 +6,7 @@ import { creaFacadeWallet } from "../wallet/facade";
 import {
   chiudiSegnalazione,
   creaSegnalazioneDaLettura,
+  prendiInCarico,
 } from "../../persistence/accessoDati/segnalazioniVerifiche";
 import { trovaStallo } from "../../persistence/accessoDati/stalliTariffe";
 import {
@@ -174,6 +175,9 @@ describe("OMP-62 · cp_panoramicaEnti", () => {
       dataEOra: ora("09:00"),
       motivo: "SOSTA_ASSENTE",
     });
+    // Precondizione adeguata con la OMP-63 (RAD 0.6): si chiude solo una segnalazione presa in carico
+    // dallo stesso ausiliario (6, Giorgio Marino, ATTIVO, ente 3). L'esito del frame è invariato.
+    expect(await prendiInCarico(pool, id, 6, ora("09:20"))).toBe(true);
     expect(await chiudiSegnalazione(pool, id, 6, "NON_CONFERMATA", ora("09:30"))).toBe(true);
 
     expect(await facade().riepilogo(3)).toEqual({

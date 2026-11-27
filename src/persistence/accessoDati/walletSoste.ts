@@ -2,6 +2,7 @@
 import type { PoolClient } from "pg";
 import { ErroreDominio } from "./errori.ts";
 import { interroga, type Esecutore } from "./esecutore.ts";
+import type { TipoDiStallo } from "./stalliTariffe.ts";
 
 export type StatoSosta = "ATTIVA" | "SCADUTA" | "TERMINATA";
 export type Pagamento = "PAGATA" | "GRATUITA";
@@ -264,6 +265,39 @@ export async function trovaSostaPerAggiornamento(
     [id],
   );
   return r.rows[0] ? sostaDa(r.rows[0]) : null;
+}
+
+/** Sosta con il tipo dello stallo e l'ente dell'area (OMP-63, verifica del permesso, UC_OP_5). */
+export type SostaConStallo = Sosta & { tipoDiStallo: TipoDiStallo; enteId: number };
+
+/**
+ * Come trovaSostaPerAggiornamento, con in più tipo di stallo ed ente: la riga della sosta resta
+ * bloccata fino alla fine della transazione del chiamante (OMP-63, SD_OP_5 2.1–2.3). Va chiamata
+ * solo dentro eseguiInTransazione; null se la sosta non esiste.
+ */
+export async function trovaSostaConStalloPerAggiornamento(
+  client: PoolClient,
+  id: number,
+): Promise<SostaConStallo | null> {
+  // Le colonne di SELEZIONE_SOSTA più tipo di stallo ed ente: SELEZIONE_SOSTA ha un elenco di
+  // colonne fisso, quindi la selezione si scrive per intero.
+  const r = await interroga<RigaSosta & { tipo_di_stallo: TipoDiStallo; ente_preposto_id: string }>(
+    client,
+    `SELECT so.id, so.automobilista_id, so.veicolo_id, v.targa, so.stallo_id, so.stato,
+            so.orario_di_avvio, so.orario_di_scadenza, so.pagamento,
+            so.dichiarazione_di_permesso, so.foto_del_permesso,
+            st.tipo_di_stallo, a.ente_preposto_id
+     FROM sosta AS so
+     JOIN veicolo AS v ON v.id = so.veicolo_id
+     JOIN stallo AS st ON st.id = so.stallo_id
+     JOIN area_di_sosta AS a ON a.id = st.area_di_sosta_id
+     WHERE so.id = $1 FOR UPDATE OF so`,
+    [id],
+  );
+  const riga = r.rows[0];
+  return riga
+    ? { ...sostaDa(riga), tipoDiStallo: riga.tipo_di_stallo, enteId: Number(riga.ente_preposto_id) }
+    : null;
 }
 
 export async function sostaAttivaPerVeicolo(

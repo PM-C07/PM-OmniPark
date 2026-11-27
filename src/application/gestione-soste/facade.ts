@@ -1,5 +1,5 @@
 // Facade del sottosistema Gestione soste: l'unico punto usato dagli altri sottosistemi.
-import type { Pool } from "pg";
+import type { Pool, PoolClient } from "pg";
 import { ottieniPool } from "../../persistence/db.ts";
 import type { Pagamento, Sosta, StatoSosta } from "../../persistence/accessoDati/walletSoste.ts";
 import { creaAllineamentoTemporale } from "../allineamento-temporale/allineamento.ts";
@@ -11,9 +11,12 @@ import { avviaSosta, type RichiestaDiAvvio, type SostaAvviata } from "./avvio.ts
 import { calcolaImporto, type ImportoDellaSosta } from "./calcoloImporto.ts";
 import {
   contaSosteAttive,
+  sostaConPermesso,
+  sostaDellaTargaSulloStallo,
   sostaInCorso,
   sosteDellAutomobilista,
   sosteInCorsoDellaTarga,
+  type SostaConPermesso,
 } from "./consultazione.ts";
 import type { ContestoGestioneSoste } from "./contesto.ts";
 import { osservatoreGestioneSoste } from "./fineSosta.ts";
@@ -33,6 +36,7 @@ export type {
   RichiestaDiAvvio,
   Sosta,
   SostaAvviata,
+  SostaConPermesso,
   SostaProlungata,
   StatoSosta,
 };
@@ -59,6 +63,10 @@ export type FacadeGestioneSoste = {
   sosteDellAutomobilista(automobilista: number): Promise<Sosta[]>;
   // Soste in corso della targa, su qualsiasi stallo (riscontro ANPR, OMP-46)
   sosteInCorsoDellaTarga(targa: string): Promise<Sosta[]>;
+  // Sosta più recente della targa sullo stallo, per lo stato del pagamento (UC_OP_3, OMP-63)
+  sostaDellaTargaSulloStallo(targa: string, stallo: number): Promise<Sosta | null>;
+  // Sosta con il permesso, bloccata nella transazione del chiamante (UC_OP_5, SD_OP_5, OMP-63)
+  sostaConPermesso(sosta: number, esecutore: PoolClient): Promise<SostaConPermesso | null>;
 };
 
 /**
@@ -97,5 +105,8 @@ export function creaFacadeGestioneSoste(dipendenze: {
     contaSosteAttive: (ente) => contaSosteAttive(contesto, ente),
     sosteDellAutomobilista: (automobilista) => sosteDellAutomobilista(contesto, automobilista),
     sosteInCorsoDellaTarga: (targa) => sosteInCorsoDellaTarga(contesto, targa),
+    sostaDellaTargaSulloStallo: (targa, stallo) =>
+      sostaDellaTargaSulloStallo(contesto, targa, stallo),
+    sostaConPermesso: (sosta, esecutore) => sostaConPermesso(sosta, esecutore),
   };
 }

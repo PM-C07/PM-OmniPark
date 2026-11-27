@@ -1,6 +1,6 @@
-// Test frame TF-WS-01…59 di docs/test/cp_persistenza_wallet_soste.md: TF-WS-01…43 di OMP-34
+// Test frame TF-WS-01…61 di docs/test/cp_persistenza_wallet_soste.md: TF-WS-01…43 di OMP-34
 // (issue #5), TF-WS-44…49 di OMP-45 (issue #9), TF-WS-50…52 di OMP-46 (issue #10),
-// TF-WS-53…59 di OMP-61 (issue #33).
+// TF-WS-53…59 di OMP-61 (issue #33), TF-WS-60, 61 di OMP-63 (issue #40).
 import type { PoolClient } from "pg";
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from "vitest";
 import {
@@ -28,6 +28,7 @@ import {
   sosteInCorsoDiTarga,
   terminaSosteScaduteDelloStallo,
   trovaSosta,
+  trovaSostaConStalloPerAggiornamento,
   trovaSostaPerAggiornamento,
   trovaWalletDiAutomobilista,
 } from "./walletSoste";
@@ -801,5 +802,37 @@ describe("OMP-34 · TCS persistenza · wallet, movimenti e soste", () => {
         new Date("2026-12-31T00:00:00+01:00"),
       ),
     ).toBe(false);
+  });
+
+  // trovaSostaConStalloPerAggiornamento (OMP-63, TF-WS-60, 61)
+
+  it("RF_OP_5 · TF-WS-60 · sosta attiva con permesso sullo stallo 15 → la sosta con tipoDiStallo ROSA ed ente 1", async () => {
+    const id = await creaSosta(client, {
+      automobilistaId: 7,
+      veicoloId: 1,
+      stalloId: 15,
+      orarioDiAvvio: I,
+      orarioDiScadenza: I_PIU_1H,
+      pagamento: "PAGATA",
+      dichiarazioneDiPermesso: DICHIARAZIONE,
+      fotoDelPermesso: fotoCompleta(),
+    });
+    const sosta = await trovaSostaConStalloPerAggiornamento(client, id);
+    expect(sosta).toMatchObject({
+      id,
+      stato: "ATTIVA",
+      automobilistaId: 7,
+      veicoloId: 1,
+      targa: "EF456GH",
+      stalloId: 15,
+      dichiarazioneDiPermesso: DICHIARAZIONE,
+      tipoDiStallo: "ROSA",
+      enteId: 1,
+    });
+    expect(sosta?.fotoDelPermesso?.equals(fotoCompleta())).toBe(true);
+  });
+
+  it("RF_OP_5 · TF-WS-61 · sosta inesistente → null", async () => {
+    expect(await trovaSostaConStalloPerAggiornamento(client, ID_INESISTENTE)).toBeNull();
   });
 });

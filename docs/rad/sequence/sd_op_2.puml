@@ -6,6 +6,7 @@ entity ":Segnalazione" as Segn
 
 Aus -> UI : 1: prendiInCarico(segnalazione)
 UI -> Ctrl : 1.1: prendiInCarico(segnalazione)
+note over Ctrl, Segn : OMP-63 (RAD 0.6): prima di 2.1 si verificano l'Ausiliario attivo (VD_19) e lo stesso ente\ndella segnalazione (NRF_SIC_1). Una nuova richiesta dell'Ausiliario a cui è già assegnata\nla conferma senza modifiche: 2.a1 riguarda la presa in carico di un altro Ausiliario.
 Ctrl -> Segn : 2.1: stato()
 
 break [2.a1 Già presa in carico da un altro Ausiliario o già Chiusa]

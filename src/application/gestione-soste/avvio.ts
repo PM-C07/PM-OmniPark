@@ -25,10 +25,13 @@ import { ErroreGestioneSoste } from "./errori.ts";
 /** Limite della foto del permesso, uguale al vincolo sosta_foto_dimensione dello schema. */
 const FOTO_MASSIMA = 2 * 1024 * 1024;
 
+/** Formati ammessi per la foto del permesso, come tipo MIME. */
+export type FormatoDellaFoto = "image/jpeg" | "image/png";
+
 /** Firme dei formati ammessi per la foto del permesso (issue #33): JPEG e PNG. */
-const FIRME_FOTO: readonly (readonly number[])[] = [
-  [0xff, 0xd8, 0xff],
-  [0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a],
+const FIRME_FOTO: readonly { formato: FormatoDellaFoto; firma: readonly number[] }[] = [
+  { formato: "image/jpeg", firma: [0xff, 0xd8, 0xff] },
+  { formato: "image/png", firma: [0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a] },
 ];
 
 export type RichiestaDiAvvio = {
@@ -58,11 +61,20 @@ function fotoPresente(foto: unknown): foto is Buffer {
   return Buffer.isBuffer(foto) && foto.length > 0;
 }
 
+/**
+ * Formato della foto riconosciuto dai primi byte del contenuto, non dal nome del file: JPEG o PNG,
+ * null per gli altri. Usata anche dalla verifica del permesso per il tipo della foto (OMP-63).
+ */
+export function formatoDellaFoto(foto: Buffer): FormatoDellaFoto | null {
+  const trovato = FIRME_FOTO.find(
+    ({ firma }) => foto.length >= firma.length && firma.every((byte, i) => foto[i] === byte),
+  );
+  return trovato?.formato ?? null;
+}
+
 /** JPEG o PNG riconosciuti dai primi byte del contenuto, non dal nome del file. */
 function formatoAmmesso(foto: Buffer): boolean {
-  return FIRME_FOTO.some(
-    (firma) => foto.length >= firma.length && firma.every((byte, i) => foto[i] === byte),
-  );
+  return formatoDellaFoto(foto) !== null;
 }
 
 /**
