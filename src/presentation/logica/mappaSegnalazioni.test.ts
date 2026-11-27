@@ -2,9 +2,11 @@ import { describe, expect, it } from "vitest";
 import {
   applicaModificheSegnalazioni,
   azioneDopoLaChiusura,
+  azioniPer,
   CAMPI_CHIUSURA,
-  chiudibilitaPer,
+  CAMPI_PRESA,
   descriviMotivo,
+  descriviPagamento,
   elementoDellaSegnalazione,
   ESITI,
   formattaDataOra,
@@ -12,13 +14,14 @@ import {
   ordinaDallaPiuRecente,
   passoChiusura,
   rispostaAllaChiusura,
+  rispostaAllaPresa,
   scartaChiuseLocalmente,
   type SegnalazioneDellaMappa,
   utenteDaRisposta,
 } from "./mappaSegnalazioni.ts";
 import { erroreDiRete, interpretaRisposta } from "./risposteApi.ts";
 
-// Specifica: docs/test/cp_mappaSegnalazioni.md (TF-SEGUI-01…57)
+// Specifica: docs/test/cp_mappaSegnalazioni.md (TF-SEGUI-01…57; TF-SEGUI-58…66 con la OMP-63)
 
 const L1 = "2026-11-20T08:00:00.000Z";
 const L2 = "2026-11-20T08:10:00.000Z";
@@ -26,6 +29,7 @@ const L3 = "2026-11-20T08:20:00.000Z";
 const M1 = "2026-11-20T09:00:00.000Z";
 const M2 = "2026-11-20T09:00:05.000Z";
 
+const NONPRESA = "Prendi in carico la segnalazione prima di continuare.";
 const GIA = "La segnalazione è già chiusa.";
 const ALTRI = "La segnalazione è presa in carico da un altro Ausiliario.";
 const ESITO = "Indica l'esito: sosta irregolare accertata o non confermata.";
@@ -178,9 +182,22 @@ describe("cp_mappaSegnalazioni", () => {
       ).etichetta,
       elementoDellaSegnalazione(G(15, "SOSPESA", L1)).etichetta,
     ];
-    const chiudibilita = chiudibilitaPer(G(4, "PRESA_IN_CARICO", L1, { ausiliarioId: 3 }), 2);
-    expect(chiudibilita.chiudibile).toBe(false);
-    if (!chiudibilita.chiudibile) testi.push(chiudibilita.messaggio);
+    // Cambiato con la OMP-63: messaggio da azioniPer e testi di descriviPagamento (frame 63…66).
+    const azioni = azioniPer(G(4, "PRESA_IN_CARICO", L1, { ausiliarioId: 3 }), 2);
+    expect(azioni.messaggio).not.toBeNull();
+    if (azioni.messaggio !== null) testi.push(azioni.messaggio);
+    const sosta = {
+      stato: "ATTIVA",
+      orarioDiAvvio: "2026-11-20T08:00:00.000Z",
+      orarioDiScadenza: "2026-11-20T10:00:00.000Z",
+      pagamento: "PAGATA",
+    };
+    testi.push(
+      descriviPagamento(sosta),
+      descriviPagamento({ ...sosta, stato: "TERMINATA", pagamento: "GRATUITA" }),
+      descriviPagamento({ ...sosta, stato: "SCADUTA" }),
+      descriviPagamento(null),
+    );
     const messaggioMappa = azioneDopoLaChiusura({ tipo: "chiusa" }, 12).messaggioMappa;
     expect(messaggioMappa).not.toBeNull();
     if (messaggioMappa !== null) testi.push(messaggioMappa.testo);
@@ -447,32 +464,50 @@ describe("cp_mappaSegnalazioni", () => {
     expect(formattaDataOra(null)).toBe("Non disponibile");
   });
 
-  it("RF_OP_6 · TF-SEGUI-42 · segnalazione Aperta → chiudibile", () => {
-    expect(chiudibilitaPer(G(11, "APERTA", L1), 2)).toEqual({ chiudibile: true });
-  });
-
-  it("RF_OP_6 · TF-SEGUI-43 · presa in carico dall'utente → chiudibile", () => {
-    expect(chiudibilitaPer(G(5, "PRESA_IN_CARICO", L1, { ausiliarioId: 2 }), 2)).toEqual({
-      chiudibile: true,
+  // TF-SEGUI-42…46 cambiati con la OMP-63 (RAD 0.6, np_02_ausiliario.puml): azioniPer al posto di
+  // chiudibilitaPer.
+  it("ISSUE_40 · TF-SEGUI-42 · segnalazione Aperta → solo Prendi in carico", () => {
+    expect(azioniPer(G(11, "APERTA", L1), 2)).toEqual({
+      prendiInCarico: true,
+      pagamento: false,
+      chiusura: false,
+      messaggio: null,
     });
   });
 
-  it("RF_OP_6 · TF-SEGUI-44 · presa in carico da un altro Ausiliario → non chiudibile", () => {
-    expect(chiudibilitaPer(G(4, "PRESA_IN_CARICO", L1, { ausiliarioId: 3 }), 2)).toEqual({
-      chiudibile: false,
+  it("ISSUE_40 · TF-SEGUI-43 · presa in carico dall'utente → stato del pagamento e chiusura", () => {
+    expect(azioniPer(G(5, "PRESA_IN_CARICO", L1, { ausiliarioId: 2 }), 2)).toEqual({
+      prendiInCarico: false,
+      pagamento: true,
+      chiusura: true,
+      messaggio: null,
+    });
+  });
+
+  it("ISSUE_40 · TF-SEGUI-44 · presa in carico da un altro Ausiliario → nessun comando, con il messaggio", () => {
+    expect(azioniPer(G(4, "PRESA_IN_CARICO", L1, { ausiliarioId: 3 }), 2)).toEqual({
+      prendiInCarico: false,
+      pagamento: false,
+      chiusura: false,
       messaggio: "Presa in carico da un altro Ausiliario.",
     });
   });
 
-  it("ISSUE_30 · TF-SEGUI-45 · utente non noto → chiudibile", () => {
-    expect(chiudibilitaPer(G(4, "PRESA_IN_CARICO", L1, { ausiliarioId: 3 }), null)).toEqual({
-      chiudibile: true,
+  it("ISSUE_40 · TF-SEGUI-45 · presa in carico con utente non noto → decide il server", () => {
+    expect(azioniPer(G(4, "PRESA_IN_CARICO", L1, { ausiliarioId: 3 }), null)).toEqual({
+      prendiInCarico: false,
+      pagamento: true,
+      chiusura: true,
+      messaggio: null,
     });
   });
 
-  it("ISSUE_30 · TF-SEGUI-46 · presa in carico senza assegnatario → chiudibile", () => {
-    expect(chiudibilitaPer(G(6, "PRESA_IN_CARICO", L1, { ausiliarioId: null }), 2)).toEqual({
-      chiudibile: true,
+  it("ISSUE_40 · TF-SEGUI-46 · presa in carico senza assegnatario → decide il server", () => {
+    expect(azioniPer(G(6, "PRESA_IN_CARICO", L1, { ausiliarioId: null }), 2)).toEqual({
+      prendiInCarico: false,
+      pagamento: true,
+      chiusura: true,
+      messaggio: null,
     });
   });
 
@@ -561,5 +596,104 @@ describe("cp_mappaSegnalazioni", () => {
   it("ISSUE_30 · TF-SEGUI-57 · utente nullo → null, nessuna eccezione", () => {
     expect(() => utenteDaRisposta({ utente: null })).not.toThrow();
     expect(utenteDaRisposta({ utente: null })).toBeNull();
+  });
+
+  // ---- OMP-63: chiusura non presa in carico, presa in carico, stato del pagamento ----
+
+  it("ISSUE_40 · TF-SEGUI-58 · chiusura di una segnalazione non presa in carico → nonChiudibile senza rimozione", () => {
+    expect(
+      rispostaAllaChiusura(
+        interpretaRisposta(
+          409,
+          { errore: { codice: "SEGNALAZIONE_NON_PRESA_IN_CARICO", messaggio: NONPRESA } },
+          CAMPI_CHIUSURA,
+        ),
+      ),
+    ).toEqual({ tipo: "nonChiudibile", messaggio: NONPRESA, rimuovi: false });
+  });
+
+  it("RF_OP_3 · TF-SEGUI-59 · presa in carico riuscita → presa con la segnalazione della risposta", () => {
+    expect(
+      rispostaAllaPresa(
+        interpretaRisposta(
+          200,
+          { segnalazione: G(11, "PRESA_IN_CARICO", L1, { ausiliarioId: 2 }) },
+          CAMPI_PRESA,
+        ),
+      ),
+    ).toEqual({ tipo: "presa", segnalazione: G(11, "PRESA_IN_CARICO", L1, { ausiliarioId: 2 }) });
+  });
+
+  it("RF_OP_3 · TF-SEGUI-60 · presa in carico di una segnalazione presa da altri → nonDisponibile senza rimozione", () => {
+    expect(
+      rispostaAllaPresa(
+        interpretaRisposta(
+          409,
+          { errore: { codice: "SEGNALAZIONE_PRESA_DA_ALTRI", messaggio: ALTRI } },
+          CAMPI_PRESA,
+        ),
+      ),
+    ).toEqual({ tipo: "nonDisponibile", messaggio: ALTRI, rimuovi: false });
+  });
+
+  it("RF_OP_3 · TF-SEGUI-61 · presa in carico di una segnalazione già chiusa → nonDisponibile con rimozione", () => {
+    expect(
+      rispostaAllaPresa(
+        interpretaRisposta(
+          409,
+          { errore: { codice: "SEGNALAZIONE_GIA_CHIUSA", messaggio: GIA } },
+          CAMPI_PRESA,
+        ),
+      ),
+    ).toEqual({ tipo: "nonDisponibile", messaggio: GIA, rimuovi: true });
+  });
+
+  it("NRF_SIC_1 · TF-SEGUI-62 · presa in carico con 401 → sessioneScaduta", () => {
+    expect(
+      rispostaAllaPresa(
+        interpretaRisposta(
+          401,
+          { errore: { codice: "SESSIONE_NON_VALIDA", messaggio: "Sessione scaduta." } },
+          CAMPI_PRESA,
+        ),
+      ),
+    ).toEqual({ tipo: "sessioneScaduta" });
+  });
+
+  it("RF_OP_4 · TF-SEGUI-63 · sosta Attiva pagata → Sosta Attiva, pagata: dalle 09:00 alle 11:00.", () => {
+    expect(
+      descriviPagamento({
+        stato: "ATTIVA",
+        orarioDiAvvio: "2026-11-20T08:00:00.000Z",
+        orarioDiScadenza: "2026-11-20T10:00:00.000Z",
+        pagamento: "PAGATA",
+      }),
+    ).toBe("Sosta Attiva, pagata: dalle 09:00 alle 11:00.");
+  });
+
+  it("RF_OP_4 · TF-SEGUI-64 · sosta Terminata gratuita → Sosta Terminata, gratuita: dalle 09:00 alle 11:00.", () => {
+    expect(
+      descriviPagamento({
+        stato: "TERMINATA",
+        orarioDiAvvio: "2026-11-20T08:00:00.000Z",
+        orarioDiScadenza: "2026-11-20T10:00:00.000Z",
+        pagamento: "GRATUITA",
+      }),
+    ).toBe("Sosta Terminata, gratuita: dalle 09:00 alle 11:00.");
+  });
+
+  it("RF_OP_4 · TF-SEGUI-65 · sosta Scaduta pagata → Sosta Scaduta, pagata: dalle 09:00 alle 11:00.", () => {
+    expect(
+      descriviPagamento({
+        stato: "SCADUTA",
+        orarioDiAvvio: "2026-11-20T08:00:00.000Z",
+        orarioDiScadenza: "2026-11-20T10:00:00.000Z",
+        pagamento: "PAGATA",
+      }),
+    ).toBe("Sosta Scaduta, pagata: dalle 09:00 alle 11:00.");
+  });
+
+  it("RF_OP_4 · TF-SEGUI-66 · nessuna sosta → Per la targa non risulta alcuna sosta su questo stallo.", () => {
+    expect(descriviPagamento(null)).toBe("Per la targa non risulta alcuna sosta su questo stallo.");
   });
 });

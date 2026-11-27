@@ -1,6 +1,6 @@
 // Test di sistema delle segnalazioni (docs/test/test_di_sistema.md §5): TS-06, dalla lettura ANPR
 // alla chiusura con esito dell'Ausiliario dell'ente competente; da OMP-63 (RAD 0.6) la chiusura
-// segue la presa in carico. TS-16 (OMP-63): presa in carico vista da un secondo Ausiliario dello
+// segue la presa in carico. TS-17 (OMP-63): presa in carico vista da un secondo Ausiliario dello
 // stesso ente, stato del pagamento e chiusura.
 import { expect, test } from "@playwright/test";
 import { accedi, chiudiSegnalazione, segnalazioniNonChiuse } from "./supporto/api.ts";
@@ -63,7 +63,9 @@ test("TS-06 · RF_ANPR_1 · lettura senza sosta → segnalazione nell'ente 1, ch
     });
 
     await test.step("UC_OP_2 · «Prendi in carico» → Presa in carico, poi gli esiti", async () => {
-      await expect(scheda.getByRole("button", { name: "Sosta irregolare accertata" })).toHaveCount(0);
+      await expect(scheda.getByRole("button", { name: "Sosta irregolare accertata" })).toHaveCount(
+        0,
+      );
       await scheda.getByRole("button", { name: "Prendi in carico" }).click();
       await expect(scheda).toContainText("Presa in carico");
       await expect(rigaElenco).toContainText("Presa in carico");
@@ -108,7 +110,7 @@ test("TS-06 · RF_ANPR_1 · lettura senza sosta → segnalazione nell'ente 1, ch
   }
 });
 
-test("TS-16 · RF_OP_3 · presa in carico vista da Sara Galli, stato del pagamento e chiusura di Paolo Ferri", async ({
+test("TS-17 · RF_OP_3 · presa in carico vista da Sara Galli, stato del pagamento e chiusura di Paolo Ferri", async ({
   page,
   browser,
   playwright,
@@ -150,7 +152,9 @@ test("TS-16 · RF_OP_3 · presa in carico vista da Sara Galli, stato del pagamen
       await riga(page).click();
       await scheda(page).getByRole("button", { name: "Prendi in carico" }).click();
       await expect(scheda(page)).toContainText("Presa in carico");
-      await expect(scheda(page).getByRole("button", { name: "Verifica il pagamento" })).toBeVisible();
+      await expect(
+        scheda(page).getByRole("button", { name: "Verifica il pagamento" }),
+      ).toBeVisible();
     });
 
     await test.step("UC_OP_2 · Sara Galli vede la presa in carico senza ricaricare, senza comandi", async () => {

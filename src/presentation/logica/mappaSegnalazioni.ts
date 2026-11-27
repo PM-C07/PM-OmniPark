@@ -277,7 +277,12 @@ export function azioniPer(segnalazione: SegnalazioneDellaMappa, utente: number |
     segnalazione.ausiliarioId !== null &&
     segnalazione.ausiliarioId !== utente
   ) {
-    return { prendiInCarico: false, pagamento: false, chiusura: false, messaggio: PRESA_DA_UN_ALTRO };
+    return {
+      prendiInCarico: false,
+      pagamento: false,
+      chiusura: false,
+      messaggio: PRESA_DA_UN_ALTRO,
+    };
   }
   return { prendiInCarico: false, pagamento: true, chiusura: true, messaggio: null };
 }
@@ -333,27 +338,6 @@ export function descriviPagamento(sosta: SostaDelPagamento | null): string {
 
 /** Dalla OMP-65 in importi.ts, usata anche dalla cronologia del wallet; riesportata qui. */
 export { formattaDataOra } from "./importi.ts";
-
-export type Chiudibilita = { chiudibile: true } | { chiudibile: false; messaggio: string };
-
-/**
- * statoEAssegnatario prima dell'esito (UC_OP_4 passo 2 e 2.a1): non chiudibile solo se è presa in
- * carico da un altro Ausiliario noto. Senza dati certi decide il server (409 al POST).
- */
-export function chiudibilitaPer(
-  segnalazione: SegnalazioneDellaMappa,
-  utente: number | null,
-): Chiudibilita {
-  if (
-    segnalazione.stato === "PRESA_IN_CARICO" &&
-    utente !== null &&
-    segnalazione.ausiliarioId !== null &&
-    segnalazione.ausiliarioId !== utente
-  ) {
-    return { chiudibile: false, messaggio: "Presa in carico da un altro Ausiliario." };
-  }
-  return { chiudibile: true };
-}
 
 export type Messaggio = { tipo: "successo" | "errore"; testo: string };
 

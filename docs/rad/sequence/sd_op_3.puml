@@ -9,6 +9,7 @@ entity ":Sosta" as Sosta
 Aus -> UI : 1: verificaPagamento(segnalazione)
 UI -> Ctrl : 1.1: verificaPagamento(segnalazione)
 note over Ctrl, Segn : da UC_OP_4 (punto «Verifica del pagamento») il flusso parte da 2.1 e al termine torna a SD_OP_4
+note over Ctrl, Segn : OMP-63 (RAD 0.6, entry condition di UC_OP_3): la segnalazione è Presa in carico\ndall'Ausiliario che richiede la verifica, dello stesso ente (NRF_SIC_1)
 Ctrl -> Segn : 2.1: targaEStallo()
 Ctrl -> Stallo : 2.2: sostaPer(targa)
 
@@ -18,7 +19,7 @@ end
 
 alt [esiste una sosta per la targa sullo stallo]
   Ctrl -> Sosta : 3.1: statoEOrari()
-  Ctrl -> UI : 3.2: mostraStatoSosta(stato, avvio, scadenza)
+  Ctrl -> UI : 3.2: mostraStatoSosta(stato, avvio, scadenza, pagamento)
 else [nessuna sosta]
   Ctrl -> UI : 3.2: mostraNessunaSosta()
 end

@@ -272,8 +272,9 @@ export async function prendiInCarico(
 }
 
 /**
- * Chiude la segnalazione con esito e data se è APERTA (la assegna a chi chiude) o PRESA_IN_CARICO
- * dallo stesso ausiliario; false altrimenti.
+ * Chiude la segnalazione con esito e data solo se è PRESA_IN_CARICO dallo stesso ausiliario (OMP-63,
+ * RAD 0.6: UC_OP_4, SCD_3); l'assegnatario non cambia. false altrimenti (APERTA, presa da un altro,
+ * CHIUSA o inesistente).
  */
 export async function chiudiSegnalazione(
   es: Esecutore,
@@ -285,9 +286,8 @@ export async function chiudiSegnalazione(
   const r = await interroga(
     es,
     `UPDATE segnalazione
-     SET stato = 'CHIUSA', ausiliario_del_traffico_id = $2, esito = $3, data_e_ora_della_chiusura = $4
-     WHERE id = $1
-       AND (stato = 'APERTA' OR (stato = 'PRESA_IN_CARICO' AND ausiliario_del_traffico_id = $2))`,
+     SET stato = 'CHIUSA', esito = $3, data_e_ora_della_chiusura = $4
+     WHERE id = $1 AND stato = 'PRESA_IN_CARICO' AND ausiliario_del_traffico_id = $2`,
     [id, ausiliarioId, esito, dataEOra],
   );
   return (r.rowCount ?? 0) > 0;

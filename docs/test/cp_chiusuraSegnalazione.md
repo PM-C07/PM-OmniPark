@@ -112,15 +112,15 @@ Totale 13: 2 chiusure riuscite dal dataset (TF-CHI-02 dopo la presa in carico pr
 
 Note sui riferimenti:
 
-- TF-CHI-01: decisione D0 di OMP-63 (RAD 0.6, `UC_OP_4` Regole di dominio e 2.a1): una segnalazione `Aperta` va prima presa in carico. Fino a OMP-62 il frame verificava la chiusura diretta di una `Aperta`.
-- TF-CHI-02: RF_OP_6 e `UC_OP_4` passo 4, con la presa in carico preparata (OMP-63); copre l'esito `NON_CONFERMATA`, TF-CHI-03 e 12 coprono gli altri casi riusciti.
+- TF-CHI-01 (cambiato con la OMP-63): decisione D0 di OMP-63 (RAD 0.6, `UC_OP_4` Regole di dominio e 2.a1): una segnalazione `Aperta` va prima presa in carico. Fino a OMP-62 il frame verificava la chiusura diretta di una `Aperta`.
+- TF-CHI-02 (cambiato con la OMP-63): RF_OP_6 e `UC_OP_4` passo 4, con la presa in carico preparata (OMP-63); copre l'esito `NON_CONFERMATA`, TF-CHI-03 e 12 coprono gli altri casi riusciti.
 - TF-CHI-03, 12: `UC_OP_4` (una segnalazione `Presa in carico` può essere chiusa dall'Ausiliario assegnatario); TF-CHI-12 usa una presa in carico recente, TF-CHI-03 quella del dataset.
 - TF-CHI-04: VD_17 e `UC_OP_2` (presa in carico esclusiva), `UC_OP_4` 2.a1.
 - TF-CHI-05: `UC_OP_4` 2.a1 (già `Chiusa`) e criterio di accettazione dell'issue («una segnalazione chiusa non può essere chiusa di nuovo»).
 - TF-CHI-07, 08: NRF_SIC_1 e VD_18. TF-CHI-08 verifica che il controllo dell'ente preceda quello dello stato (piano approvato): a un Ausiliario di un altro ente non si rivela che la segnalazione è chiusa.
 - TF-CHI-09, 10: `UC_OP_4` 3.a2 (esito non indicato o non previsto).
 - TF-CHI-11: VD_19 e `UC_ADM_2` (un Ausiliario disattivato non opera).
-- TF-CHI-13: piano approvato (OMP-46), aggiornato con OMP-63: la riga della segnalazione è bloccata, quindi la seconda chiusura aspetta la prima e trova la segnalazione `CHIUSA`. Il test non può imporre quale delle due arrivi per prima: entrambi gli ordini danno l'esito atteso. Fino a OMP-62 erano due Ausiliari su una segnalazione `Aperta`.
+- TF-CHI-13 (cambiato con la OMP-63): piano approvato (OMP-46), aggiornato con OMP-63: la riga della segnalazione è bloccata, quindi la seconda chiusura aspetta la prima e trova la segnalazione `CHIUSA`. Il test non può imporre quale delle due arrivi per prima: entrambi gli ordini danno l'esito atteso. Fino a OMP-62 erano due Ausiliari su una segnalazione `Aperta`.
 
 ## 6. Note
 

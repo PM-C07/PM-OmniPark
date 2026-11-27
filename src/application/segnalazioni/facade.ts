@@ -95,7 +95,8 @@ export function creaFacadeSegnalazioni(dipendenze: {
       variazioniDopo(contesto, ausiliario, ente, cursore),
     chiudi: (ausiliario, segnalazione, esito) => chiudi(contesto, ausiliario, segnalazione, esito),
     contaSegnalazioniAperte: (ente) => contaSegnalazioniAperte(contesto, ente),
-    prendiInCarico: (ausiliario, segnalazione) => prendiInCarico(contesto, ausiliario, segnalazione),
+    prendiInCarico: (ausiliario, segnalazione) =>
+      prendiInCarico(contesto, ausiliario, segnalazione),
     statoDelPagamento: (ausiliario, segnalazione) =>
       statoDelPagamento(contesto, ausiliario, segnalazione),
   };

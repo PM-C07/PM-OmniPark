@@ -1,4 +1,6 @@
 @startuml sd_op_4
+' Allineato al RAD 0.6 (OMP-63, issue #40): si chiude solo una segnalazione Presa in carico dallo
+' stesso Ausiliario; tolto l'opt [la segnalazione è Aperta] assegnaA (SCD_3, UC_OP_4).
 actor "Ausiliario del Traffico" as Aus
 boundary ":MappaSegnalazioni" as UI
 control ":ControlloChiusura" as Ctrl
@@ -8,7 +10,7 @@ Aus -> UI : 1: chiudi(segnalazione)
 UI -> Ctrl : 1.1: chiudi(segnalazione)
 Ctrl -> Segn : 2.1: statoEAssegnatario()
 
-break [2.a1 Presa in carico da un altro Ausiliario o già Chiusa]
+break [2.a1 Ancora Aperta, presa in carico da un altro Ausiliario o già Chiusa]
   Ctrl -> UI : 2.a1.1: segnalaNonChiudibile()
 end
 
@@ -32,10 +34,6 @@ loop [finché l'esito non è valido (3.a2)]
   end
 end
 
-opt [la segnalazione è Aperta]
-  Ctrl -> Segn : 4.1: assegnaA(ausiliario)
-end
-
-Ctrl -> Segn : 4.2: chiudi(esito, dataOra)
-Ctrl -> UI : 4.3: confermaChiusura()
+Ctrl -> Segn : 4.1: chiudi(esito, dataOra)
+Ctrl -> UI : 4.2: confermaChiusura()
 @enduml
