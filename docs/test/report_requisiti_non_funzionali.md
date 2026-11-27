@@ -1,6 +1,6 @@
 # Report dei requisiti non funzionali a priorità Alta
 
-Misura dei requisiti non funzionali che sono criteri di successo del RAD: NRF_PER_3, NRF_USA_2, NRF_AFF_2 e NRF_SUP_3. Task OMP-60 (issue #32, COD-19). I casi di test che producono le misure TS-11 e TS-12 sono in `docs/test/test_di_sistema.md` §6; i riepiloghi scritti in automatico dagli script sono in `docs/misure.md`.
+Misura dei requisiti non funzionali che sono criteri di successo del RAD: NRF_PER_3, NRF_USA_2, NRF_AFF_2 e NRF_SUP_3. Task OMP-60 (issue #32, COD-19). I casi di test che producono le misure TS-11 e TS-12 sono in `docs/test/test_di_sistema.md` §6; i riepiloghi scritti in automatico dagli script sono in `docs/misure.md`. In fondo, NRF_SIC_1 (priorità Media), aggiunto con COD-25.
 
 > Misure eseguite il 24 e il 25/11/2026. Tutte e quattro le soglie sono superate.
 >
@@ -14,6 +14,7 @@ Misura dei requisiti non funzionali che sono criteri di successo del RAD: NRF_PE
 | NRF_USA_2 | al massimo 3 interazioni dalla schermata principale alla sosta pagata | 3 interazioni                                                           | **superato** |
 | NRF_AFF_2 | almeno il 98% delle letture valide associate correttamente            | 100,00% (260 su 260)                                                    | **superato** |
 | NRF_SUP_3 | almeno l'80% del codice eseguibile dei componenti dei requisiti Alta  | righe 95,40%, istruzioni 95,42%                                         | **superato** |
+| NRF_SIC_1 | ogni cella applicabile di `matrice_accessi.md` verificata da un test  | 35 righe, 67/67 celle coperte, 5 test aggiunti (§8)                     | **superato** |
 
 ## 2. Ambienti
 
@@ -131,3 +132,20 @@ Le misure NRF_PER_3 e NRF_USA_2 si eseguono sull'anteprima pubblicata, con il da
 ## 7. Ripetibilità
 
 Le misure si ripetono con i comandi di ciascuna sezione. TS-11 e TS-12 creano dati propri e unici a ogni esecuzione (Automobilisti nuovi, targhe casuali) e non resettano il database delle anteprime; le soste avviate scadono da sole. `misura:anpr` e `test:copertura` ricreano il database di test personale e non toccano gli altri database.
+
+## 8. NRF_SIC_1 – Controllo degli accessi
+
+- **Requisito:** il sistema consente a ciascun utente autenticato di accedere solo alle funzioni e ai dati previsti dal proprio ruolo e dall'ente di appartenenza (priorità Media). Task OMP-66 (issue #46, COD-25).
+- **Soglia:** il requisito non fissa un valore numerico. Criterio di COD-25: ogni route API rifiuta la richiesta senza sessione (401), con un ruolo non ammesso (403) e, per le operazioni sui dati di un ente, con un ente diverso (403 o 404); ogni cella applicabile della matrice è verificata da un test esistente con quell'esito.
+- **Data:** 28/11/2026 (esecuzione dei test); matrice compilata e test aggiunti il 27/11/2026.
+- **Ambiente:** database di test personale (`DATABASE_URL_TEST`); test di route sul database, che chiamano gli handler con una `Request` reale.
+- **Procedura:** `docs/test/matrice_accessi.md` riporta una riga per ogni metodo e percorso di `src/app/api/`, con i ruoli ammessi e, per ogni cella, il file e il frame del test che la verifica. Le route pubbliche (registrazione, accesso, uscita, stato del database) e quelle dei simulatori (cella «senza token → 401») sono nella matrice con la loro protezione reale. Per le celle senza test sono stati aggiunti i frame nelle `cp_` delle route; una revisione indipendente ha controllato che ogni cella citi un test reale con l'esito della cella.
+- **Comando:**
+
+  ```bash
+  npx vitest run --config vitest.db.config.ts src/app/api src/application/segnalazioni/verificaPermesso.db.test.ts
+  ```
+
+- **Valori:** 35 righe (30 file di route), **67/67 celle coperte** (62 da test già presenti, 5 dai test aggiunti: TF-ACC-44, 45 e 46 in `cp_apiAccesso.md`, TF-API-ADM-35 in `cp_apiAmministrazione.md`, TF-API-PRO-20 in `cp_apiProlungamento.md`), **5 test aggiunti**. Nessuna route senza il controllo di sessione, ruolo o ente previsto.
+- **Esito:** **superato**: il comando, eseguito il 28/11/2026, termina con 11 file di test e 308 test superati, 0 falliti; `npm run lint`, `npm run format:check` e `npm test` sono verdi.
+- **Limiti:** la matrice verifica le route API, non le pagine (protette in modo ottimistico dal proxy, TF-ACC-32…43). L'ente diverso a livello di sistema è verificato da TS-10 (`docs/test/test_di_sistema.md`). Fuori ambito: test di penetrazione, attacchi alla sessione, limiti di frequenza.

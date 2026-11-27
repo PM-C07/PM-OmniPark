@@ -1,7 +1,7 @@
 # cp_apiProlungamento
 
 Specifica dei casi di test (category partition) delle route del prolungamento della sosta: `GET /api/soste/<id>/prolungamento?tempoAggiuntivo=<minuti>` (importo aggiuntivo e nuova scadenza prima della conferma) e `POST /api/soste/<id>/prolungamento` (conferma, addebito e nuova scadenza).
-Requisiti: RF_SOSTA_2 (prolungamento della sosta), RF_WALLET_2 (addebito, credito insufficiente), NRF_SIC_1 (controllo degli accessi). Task OMP-61 (issue #33), blocco A dei sotto-task 2–5.
+Requisiti: RF_SOSTA_2 (prolungamento della sosta), RF_WALLET_2 (addebito, credito insufficiente), NRF_SIC_1 (controllo degli accessi). Task OMP-61 (issue #33), blocco A dei sotto-task 2–5; TF-API-PRO-20 aggiunto con OMP-66 (issue #46).
 
 - **Fonti dell'esito atteso:** `UC_SOSTA_2` (passi 1–6, flussi 2.a1, 2.a2, 5.a1, exit condition), `SD_SOSTA_2`, `cp_prolungamento.md` §2 (sequenza, codici, `tempoDisponibile` e messaggio di `DURATA_OLTRE_IL_MASSIMO`), `src/app/api/_errori.ts` (tabella codice → status), categorie delle API di OMP-48 e OMP-58 (`cp_apiWalletSoste.md`, `cp_apiImporto.md`), issue #33, piano approvato di OMP-61 (decisioni D2: route `GET` per l'anteprima; D3: messaggio con meno di 15 minuti disponibili).
 - **File di test:** `src/app/api/soste/[id]/prolungamento/prolungamento.db.test.ts`, eseguito con `npx vitest run --config vitest.db.config.ts <file>`.
@@ -43,6 +43,7 @@ Nome del test: `<riferimento> · <frame> · <descrizione> → <esito>`, per esem
 | :---------------------------------- | :---------------------------------- | :------------------------------------------------------------------------ |
 | `stallo`                            | 3, 7, 8, 11, 12, 17, 18, 19, 20, 21 | `ORDINARIO_A_PAGAMENTO`, `OCCUPATO`, tariffa 1 (150 c/h, massimo 180 min) |
 | `stallo`                            | 23, 26                              | `ORDINARIO_A_PAGAMENTO`, `OCCUPATO`, tariffa 3 (100 c/h, massimo 120 min) |
+| `stallo`                            | 29                                  | `ORDINARIO_A_PAGAMENTO`, `OCCUPATO`, tariffa 4 (80 c/h, massimo 240 min)  |
 | `automobilista` / `wallet_virtuale` | 8 / 2                               | Marco Rossi, saldo 600                                                    |
 | `sosta`                             | 1                                   | di Marco Rossi, stallo 10, `TERMINATA`, scadenza `2026-10-31 10:00+01`    |
 | `utente`                            | 2                                   | Paolo Ferri (Ausiliario)                                                  |
@@ -73,7 +74,7 @@ Id inesistente: `999999`.
 
 **Concorrenza:** richiesta singola · due `POST` simultanei della stessa sosta [single].
 
-## 5. Test frame (19)
+## 5. Test frame (20)
 
 Tempo aggiuntivo in minuti; saldo in centesimi. Dove non indicato: automobilista nuovo del frame con saldo 1000, sosta `S` di quell'automobilista, richiesta con la sua sessione. `S + m` indica l'orario di scadenza di `S` della preparazione più `m` minuti.
 
@@ -101,8 +102,9 @@ Tempo aggiuntivo in minuti; saldo in centesimi. Dove non indicato: automobilista
 | TF-API-PRO-17 | `S` sullo stallo 26 di TF-API-PRO-16 (nessuna scrittura); `GET ?tempoAggiuntivo=30` senza cookie                                                                                        | 401 `SESSIONE_NON_VALIDA`; `N`                                                                                                                                                                                        | NRF_SIC_1   |
 | TF-API-PRO-18 | `S` sullo stallo 26 di TF-API-PRO-16; Paolo Ferri; `POST` con `{ tempoAggiuntivo: 30 }`                                                                                                 | 403 `RUOLO_NON_AMMESSO`; `N`                                                                                                                                                                                          | NRF_SIC_1   |
 | TF-API-PRO-19 | `S` del secondo automobilista di TF-API-PRO-04 (nessuna scrittura); `GET ?tempoAggiuntivo=30` del primo                                                                                 | 404 `SOSTA_INESISTENTE`; `N` per entrambi                                                                                                                                                                             | RF_SOSTA_2  |
+| TF-API-PRO-20 | `S` sullo stallo 29, preparata come in TF-API-PRO-16 con l'automobilista del frame; Paolo Ferri; `GET ?tempoAggiuntivo=30`                                                              | 403 `RUOLO_NON_AMMESSO`; `N`                                                                                                                                                                                          | NRF_SIC_1   |
 
-Totale 19: 2 prolungamenti riusciti (TF-API-PRO-01 e 03 [single] di concorrenza), 1 anteprima riuscita (TF-API-PRO-02), 16 errori. TF-API-PRO-15, 17, 18 e 19 riusano la sosta di un frame precedente del file, che non scrive. Ogni frame di errore viola un solo controllo.
+Totale 20: 2 prolungamenti riusciti (TF-API-PRO-01 e 03 [single] di concorrenza), 1 anteprima riuscita (TF-API-PRO-02), 17 errori. TF-API-PRO-15, 17, 18 e 19 riusano la sosta di un frame precedente del file, che non scrive; TF-API-PRO-20 prepara da sé automobilista, sosta e stallo. Ogni frame di errore viola un solo controllo.
 
 Note sui riferimenti:
 
@@ -114,7 +116,7 @@ Note sui riferimenti:
 - TF-API-PRO-08: RF_WALLET_2 e `UC_SOSTA_2` 5.a1 («la scadenza non cambia»).
 - TF-API-PRO-09, 10: `UC_SOSTA_2` 2.a2 («indicando il tempo ancora disponibile»), con il messaggio di `cp_prolungamento.md` §2 (TF-PRO-18, 19 lo verificano nel servizio).
 - TF-API-PRO-12…15: lettura della richiesta (§2) e durata minima di 15 minuti (`cp_prolungamento.md` TF-PRO-10).
-- TF-API-PRO-16…18: NRF_SIC_1 (solo l'Automobilista autenticato).
+- TF-API-PRO-16…18, 20: NRF_SIC_1 (solo l'Automobilista autenticato). TF-API-PRO-20 è aggiunto con OMP-66 (issue #46, COD-25) per la cella mancante di `docs/test/matrice_accessi.md` (`GET` con un ruolo non ammesso).
 
 ## 6. Note
 

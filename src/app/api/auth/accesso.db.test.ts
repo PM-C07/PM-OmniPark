@@ -28,7 +28,7 @@ import { GET as io } from "./io/route.ts";
 import { POST as registrazione } from "./registrazione/route.ts";
 import { POST as uscita } from "./uscita/route.ts";
 
-// Test frame TF-ACC-01…38 di docs/test/cp_apiAccesso.md (OMP-48).
+// Test frame TF-ACC-01…46 di docs/test/cp_apiAccesso.md (OMP-48; 39…43 da OMP-57, 44…46 da OMP-66).
 
 const BASE = "http://localhost";
 const NOME_COOKIE = "omnipark_sessione";
@@ -504,6 +504,31 @@ describe("OMP-48 · cp_apiAccesso", () => {
     // lettura diretta, senza scritture, sul database di test.
     const veicoli = await poolDiTest().query("SELECT 1 FROM veicolo WHERE targa = $1", ["AC031YY"]);
     expect(veicoli.rowCount).toBe(0);
+  });
+
+  // TF-ACC-44…46 (OMP-66, docs/test/matrice_accessi.md): prima di TF-ACC-38, che resta l'ultimo.
+
+  it("NRF_SIC_1 · TF-ACC-44 · aggiunta della targa AC044YY con la sessione di Paolo Ferri → 403 RUOLO_NON_AMMESSO", async () => {
+    const cookie = await cookieDiAccesso(PAOLO_FERRI, PASSWORD_AUSILIARIO);
+
+    await verificaErrore(await nuovaTarga({ targa: "AC044YY" }, cookie), 403, "RUOLO_NON_AMMESSO");
+  });
+
+  it("NRF_SIC_1 · TF-ACC-45 · rimozione della targa AC045YY senza cookie → 401 SESSIONE_NON_VALIDA, profilo invariato", async () => {
+    const { id, cookie } = await automobilistaNuovo("45");
+    expect((await nuovaTarga({ targa: "AC045YY" }, cookie)).status).toBe(201);
+
+    await verificaErrore(await togliTarga("AC045YY"), 401, "SESSIONE_NON_VALIDA");
+    expect(await targhe(id)).toEqual(["AC045XX", "AC045YY"]);
+  });
+
+  it("NRF_SIC_1 · TF-ACC-46 · rimozione della targa AC046YY con la sessione di Paolo Ferri → 403 RUOLO_NON_AMMESSO, profilo invariato", async () => {
+    const { id, cookie } = await automobilistaNuovo("46");
+    expect((await nuovaTarga({ targa: "AC046YY" }, cookie)).status).toBe(201);
+    const paolo = await cookieDiAccesso(PAOLO_FERRI, PASSWORD_AUSILIARIO);
+
+    await verificaErrore(await togliTarga("AC046YY", paolo), 403, "RUOLO_NON_AMMESSO");
+    expect(await targhe(id)).toEqual(["AC046XX", "AC046YY"]);
   });
 
   // ---- Proxy ----
