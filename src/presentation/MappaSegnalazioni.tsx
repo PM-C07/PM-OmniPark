@@ -12,7 +12,7 @@ import { Avviso } from "./Avviso.tsx";
 import { BadgeStato } from "./BadgeStato.tsx";
 import {
   applicaModificheSegnalazioni,
-  chiudibilitaPer,
+  azioniPer,
   descriviMotivo,
   elementoDellaSegnalazione,
   ESITI,
@@ -142,6 +142,12 @@ export function MappaSegnalazioni() {
     }
   }
 
+  // Presa in carico riuscita (UC_OP_2): la riga si aggiorna subito con quella restituita; agli altri
+  // Ausiliari arriva con il polling delle variazioni (ultima_modifica cambiata).
+  function presaInCarico(aggiornata: SegnalazioneDellaMappa) {
+    setSegnalazioni((attuali) => applicaModificheSegnalazioni(attuali, [aggiornata]));
+  }
+
   const contenutoRiga = useCallback(
     (elemento: ElementoMappa) => {
       const s = perId.get(elemento.id);
@@ -208,9 +214,10 @@ export function MappaSegnalazioni() {
             <SchedaSegnalazione
               key={segnalazione.id}
               segnalazione={segnalazione}
-              chiudibilita={chiudibilitaPer(segnalazione, utente)}
+              azioni={azioniPer(segnalazione, utente)}
               onTornaAllaMappa={() => tornaAllaMappa(segnalazione.id)}
               onAzioneDopoLaChiusura={dopoLaChiusura}
+              onPresaInCarico={presaInCarico}
             />
           ) : (
             <p className="rounded-lg border border-dashed border-zinc-400 p-4 text-base text-zinc-800">

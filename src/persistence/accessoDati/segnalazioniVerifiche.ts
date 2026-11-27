@@ -21,10 +21,11 @@ export type SegnalazioneMappa = {
   dataEOraDellaLettura: Date | null;
   ausiliarioId: number | null;
   ultimaModifica: Date;
+  /** Tipo dello stallo della segnalazione (OMP-63, UC_OP_1 passo 4). */
+  tipoDiStallo: TipoDiStallo;
 };
 
 export type DettaglioSegnalazione = SegnalazioneMappa & {
-  tipoDiStallo: TipoDiStallo;
   enteId: number;
   dataEOraDellaPresaInCarico: Date | null;
   esito: Esito | null;
@@ -83,6 +84,7 @@ function segnalazioneMappaDa(riga: RigaSegnalazione): SegnalazioneMappa {
     dataEOraDellaLettura: riga.data_e_ora_della_lettura,
     ausiliarioId: numeroONull(riga.ausiliario_del_traffico_id),
     ultimaModifica: riga.ultima_modifica,
+    tipoDiStallo: riga.tipo_di_stallo,
   };
 }
 
@@ -90,7 +92,6 @@ function dettaglioDa(riga: RigaSegnalazione): DettaglioSegnalazione {
   const ausiliarioId = numeroONull(riga.ausiliario_del_traffico_id);
   return {
     ...segnalazioneMappaDa(riga),
-    tipoDiStallo: riga.tipo_di_stallo,
     enteId: Number(riga.ente_preposto_id),
     dataEOraDellaPresaInCarico: riga.data_e_ora_della_presa_in_carico,
     esito: riga.esito,
@@ -234,6 +235,22 @@ export async function dettaglioSegnalazione(
   const r = await interroga<RigaSegnalazione>(es, `${SELEZIONE_SEGNALAZIONE} WHERE g.id = $1`, [
     id,
   ]);
+  return r.rows[0] ? dettaglioDa(r.rows[0]) : null;
+}
+
+/**
+ * Dettaglio della segnalazione con la riga bloccata fino alla fine della transazione del chiamante
+ * (OMP-63): presa in carico, stato del pagamento e chiusura controllano lo stato senza corse.
+ */
+export async function bloccaSegnalazione(
+  es: Esecutore,
+  id: number,
+): Promise<DettaglioSegnalazione | null> {
+  const r = await interroga<RigaSegnalazione>(
+    es,
+    `${SELEZIONE_SEGNALAZIONE} WHERE g.id = $1 FOR UPDATE OF g`,
+    [id],
+  );
   return r.rows[0] ? dettaglioDa(r.rows[0]) : null;
 }
 

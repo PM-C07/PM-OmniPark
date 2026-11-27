@@ -1,6 +1,6 @@
 // Errori di dominio del sottosistema Segnalazioni, con i codici delle specifiche
 // docs/test/cp_riscontroAnpr.md, cp_segnalazioniEnte.md, cp_chiusuraSegnalazione.md e
-// cp_panoramicaEnti.md.
+// cp_panoramicaEnti.md, cp_presaInCarico.md e cp_statoDelPagamento.md.
 
 export type CodiceErroreSegnalazioni =
   | "LETTURA_INCOMPLETA"
@@ -14,7 +14,8 @@ export type CodiceErroreSegnalazioni =
   | "ESITO_NON_VALIDO"
   | "SEGNALAZIONE_GIA_CHIUSA"
   | "SEGNALAZIONE_PRESA_DA_ALTRI"
-  | "ENTE_INESISTENTE";
+  | "ENTE_INESISTENTE"
+  | "SEGNALAZIONE_NON_PRESA_IN_CARICO";
 
 const MESSAGGI: Readonly<Record<CodiceErroreSegnalazioni, string>> = {
   LETTURA_INCOMPLETA: "La lettura è incompleta: servono targa, stallo, data e ora.",
@@ -29,6 +30,7 @@ const MESSAGGI: Readonly<Record<CodiceErroreSegnalazioni, string>> = {
   SEGNALAZIONE_GIA_CHIUSA: "La segnalazione è già chiusa.",
   SEGNALAZIONE_PRESA_DA_ALTRI: "La segnalazione è presa in carico da un altro Ausiliario.",
   ENTE_INESISTENTE: "L'ente indicato non esiste.",
+  SEGNALAZIONE_NON_PRESA_IN_CARICO: "Prendi in carico la segnalazione prima di continuare.",
 };
 
 export class ErroreSegnalazioni extends Error {

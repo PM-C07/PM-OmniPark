@@ -11,6 +11,7 @@ import { avviaSosta, type RichiestaDiAvvio, type SostaAvviata } from "./avvio.ts
 import { calcolaImporto, type ImportoDellaSosta } from "./calcoloImporto.ts";
 import {
   contaSosteAttive,
+  sostaDellaTargaSulloStallo,
   sostaInCorso,
   sosteDellAutomobilista,
   sosteInCorsoDellaTarga,
@@ -59,6 +60,8 @@ export type FacadeGestioneSoste = {
   sosteDellAutomobilista(automobilista: number): Promise<Sosta[]>;
   // Soste in corso della targa, su qualsiasi stallo (riscontro ANPR, OMP-46)
   sosteInCorsoDellaTarga(targa: string): Promise<Sosta[]>;
+  // Sosta più recente della targa sullo stallo, per lo stato del pagamento (UC_OP_3, OMP-63)
+  sostaDellaTargaSulloStallo(targa: string, stallo: number): Promise<Sosta | null>;
 };
 
 /**
@@ -97,5 +100,7 @@ export function creaFacadeGestioneSoste(dipendenze: {
     contaSosteAttive: (ente) => contaSosteAttive(contesto, ente),
     sosteDellAutomobilista: (automobilista) => sosteDellAutomobilista(contesto, automobilista),
     sosteInCorsoDellaTarga: (targa) => sosteInCorsoDellaTarga(contesto, targa),
+    sostaDellaTargaSulloStallo: (targa, stallo) =>
+      sostaDellaTargaSulloStallo(contesto, targa, stallo),
   };
 }

@@ -1,6 +1,6 @@
 # TCS — Persistenza: segnalazioni, letture delle targhe e verifiche
 
-- **Task:** OMP-34 (issue #5). Metodo: category partition.
+- **Task:** OMP-34 (issue #5); `bloccaSegnalazione` e il campo `tipoDiStallo` di `SegnalazioneMappa` (TF-SV-51…53) aggiunti con OMP-63 (issue #40). Metodo: category partition.
 - **Oggetto:** le funzioni di accesso di `src/persistence/accessoDati/segnalazioniVerifiche.ts`.
 - **Fonti dell'esito atteso:** sequence diagram e casi d'uso indicati per ogni funzione (inventario del piano approvato); vincoli dello schema; `docs/rad/requisiti.md`; `docs/rad/vincoli_dominio.md` §2; statechart `SCD_3`; codici di errore di `docs/test/cp_persistenza_base.md`.
 - **File di test:** `src/persistence/accessoDati/segnalazioniVerifiche.db.test.ts` (eseguito da `npm run test:db`).
@@ -46,6 +46,8 @@ prendiInCarico(es, id: number, ausiliarioId: number, dataEOra: Date): Promise<bo
 chiudiSegnalazione(es, id: number, ausiliarioId: number, esito: Esito, dataEOra: Date): Promise<boolean>;
 // se APERTA (la assegna a chi chiude) o PRESA_IN_CARICO dallo stesso ausiliario: CHIUSA con esito e data; false altrimenti
 contaSegnalazioniPreseInCarico(es, ausiliarioId: number): Promise<number>;
+bloccaSegnalazione(es, id: number): Promise<DettaglioSegnalazione | null>;           // OMP-63: come dettaglioSegnalazione, con la riga bloccata FOR UPDATE
+// OMP-63: SegnalazioneMappa ha anche tipoDiStallo (quello dello stallo della segnalazione)
 registraVerifica(es, dati: { sostaId; ausiliarioId; esito: EsitoVerifica; dataEOra: Date }): Promise<number>;
 creaSegnalazioneDaVerifica(es, dati: { verificaId; stalloId; ausiliarioId; dataEOra: Date }): Promise<number>;
 // nasce CHIUSA, esito SOSTA_IRREGOLARE_ACCERTATA, assegnata all'ausiliario, senza dati di lettura
@@ -91,21 +93,23 @@ Id inesistente: `999999`.
 
 ## 4. Categorie per funzione
 
-| Funzione                         | Scelte                                                                                                                                                                                      |
-| :------------------------------- | :------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `esisteSegnalazioneNonChiusa`    | targa con segnalazione `APERTA` · con segnalazione `PRESA_IN_CARICO` · solo segnalazioni chiuse · nessuna segnalazione                                                                      |
-| `creaSegnalazioneDaLettura`      | dati validi · targa con una segnalazione non chiusa [error] · targa con sole segnalazioni chiuse · stallo inesistente [error] · targa non normalizzata [error] · motivo non ammesso [error] |
-| `segnalazioniNonChiuseDellEnte`  | più risultati · un risultato · nessun risultato · ente inesistente                                                                                                                          |
-| `segnalazioniModificateDopo`     | istante precedente · istante uguale all'ultima modifica · segnalazione modificata dopo l'istante · segnalazione chiusa dopo l'istante                                                       |
-| `permessiDaVerificare`           | nessuna sosta attiva · sosta con permesso e sosta senza permesso · sosta con permesso già verificata · sosta con permesso in un altro ente                                                  |
-| `dettaglioSegnalazione`          | da lettura presa in carico · da verifica · inesistente                                                                                                                                      |
-| `prendiInCarico`                 | `APERTA` · già `PRESA_IN_CARICO` · `CHIUSA` · inesistente · ausiliario inesistente [error] · data precedente alla lettura [error]                                                           |
-| `chiudiSegnalazione`             | `APERTA` · `PRESA_IN_CARICO` dallo stesso ausiliario · `PRESA_IN_CARICO` da un altro · `CHIUSA` · inesistente · esito non ammesso [error]                                                   |
-| `contaSegnalazioniPreseInCarico` | più · una · nessuna · ausiliario inesistente                                                                                                                                                |
-| `registraVerifica`               | sosta senza verifica · seconda verifica della stessa sosta [error] · sosta con verifica nel dataset [error] · sosta inesistente [error] · esito non ammesso [error]                         |
-| `creaSegnalazioneDaVerifica`     | verifica non conforme · verifica conforme [error] · verifica che ha già generato una segnalazione [error] · ausiliario diverso da chi ha verificato [error]                                 |
+| Funzione                                                       | Scelte                                                                                                                                                                                      |
+| :------------------------------------------------------------- | :------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `esisteSegnalazioneNonChiusa`                                  | targa con segnalazione `APERTA` · con segnalazione `PRESA_IN_CARICO` · solo segnalazioni chiuse · nessuna segnalazione                                                                      |
+| `creaSegnalazioneDaLettura`                                    | dati validi · targa con una segnalazione non chiusa [error] · targa con sole segnalazioni chiuse · stallo inesistente [error] · targa non normalizzata [error] · motivo non ammesso [error] |
+| `segnalazioniNonChiuseDellEnte`                                | più risultati · un risultato · nessun risultato · ente inesistente                                                                                                                          |
+| `segnalazioniModificateDopo`                                   | istante precedente · istante uguale all'ultima modifica · segnalazione modificata dopo l'istante · segnalazione chiusa dopo l'istante                                                       |
+| `permessiDaVerificare`                                         | nessuna sosta attiva · sosta con permesso e sosta senza permesso · sosta con permesso già verificata · sosta con permesso in un altro ente                                                  |
+| `dettaglioSegnalazione`                                        | da lettura presa in carico · da verifica · inesistente                                                                                                                                      |
+| `prendiInCarico`                                               | `APERTA` · già `PRESA_IN_CARICO` · `CHIUSA` · inesistente · ausiliario inesistente [error] · data precedente alla lettura [error]                                                           |
+| `chiudiSegnalazione`                                           | `APERTA` · `PRESA_IN_CARICO` dallo stesso ausiliario · `PRESA_IN_CARICO` da un altro · `CHIUSA` · inesistente · esito non ammesso [error]                                                   |
+| `contaSegnalazioniPreseInCarico`                               | più · una · nessuna · ausiliario inesistente                                                                                                                                                |
+| `registraVerifica`                                             | sosta senza verifica · seconda verifica della stessa sosta [error] · sosta con verifica nel dataset [error] · sosta inesistente [error] · esito non ammesso [error]                         |
+| `creaSegnalazioneDaVerifica`                                   | verifica non conforme · verifica conforme [error] · verifica che ha già generato una segnalazione [error] · ausiliario diverso da chi ha verificato [error]                                 |
+| `bloccaSegnalazione` (OMP-63)                                  | esistente · inesistente                                                                                                                                                                     |
+| `segnalazioniNonChiuseDellEnte`, campo `tipoDiStallo` (OMP-63) | stallo a pagamento                                                                                                                                                                          |
 
-## 5. Test frame (50)
+## 5. Test frame (53)
 
 | Frame    | Funzione e scelte                                                                                                                                                    | Esito atteso                                                                                                                                                                                                                                                     | Riferimento |
 | :------- | :------------------------------------------------------------------------------------------------------------------------------------------------------------------- | :--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | :---------- |
@@ -159,11 +163,16 @@ Id inesistente: `999999`.
 | TF-SV-48 | `creaSegnalazioneDaVerifica({ 1, 15, 3, I })` (verifica 1 `CONFORME`)                                                                                                | `STATO_SEGNALAZIONE_NON_VALIDO`                                                                                                                                                                                                                                  | VD_13       |
 | TF-SV-49 | `creaSegnalazioneDaVerifica({ 2, 2, 2, I })` (la verifica 2 ha già generato la 6)                                                                                    | `SEGNALAZIONE_GIA_GENERATA`                                                                                                                                                                                                                                      | SCHEMA      |
 | TF-SV-50 | come TF-SV-47 fino alla verifica dell'ausiliario 2; `creaSegnalazioneDaVerifica({ verifica, 15, 3, I })`                                                             | `STATO_SEGNALAZIONE_NON_VALIDO`                                                                                                                                                                                                                                  | VD_13       |
+| TF-SV-51 | `bloccaSegnalazione(11)`                                                                                                                                             | il dettaglio della 11 (stesso risultato di `dettaglioSegnalazione(11)`: `APERTA`, stallo 3, ente 1, `tipoDiStallo` `ORDINARIO_A_PAGAMENTO`)                                                                                                                      | RF_OP_3     |
+| TF-SV-52 | `bloccaSegnalazione(999999)`                                                                                                                                         | `null`                                                                                                                                                                                                                                                           | RF_OP_3     |
+| TF-SV-53 | `segnalazioniNonChiuseDellEnte(1)`                                                                                                                                   | ogni segnalazione ha `tipoDiStallo`; la 11 (stallo 3) ha `ORDINARIO_A_PAGAMENTO`                                                                                                                                                                                 | RF_OP_1     |
 
 Note sui riferimenti:
 
+- TF-SV-51…53 (OMP-63): `bloccaSegnalazione` serve alla presa in carico, allo stato del pagamento e alla chiusura, che controllano lo stato con la riga bloccata (`cp_presaInCarico.md`); il tipo di stallo nel dettaglio è `UC_OP_1` passo 4. Il blocco si verifica solo come lettura: nei test la transazione è quella del test.
+
 - TF-SV-01…04, 06, 07: VD_16 (al più una segnalazione non chiusa per targa); una targa con sole segnalazioni chiuse può averne una nuova.
-- TF-SV-32: la chiusura diretta di una segnalazione `Aperta` è prevista da `SCD_3` (`Aperta --> Chiusa : chiusura / assegnaAusiliario(), registraEsito()`), da `UC_OP_4` (Regole di dominio e passo 4) e da `SD_OP_4` (`opt [la segnalazione è Aperta] 4.1: assegnaA`).
+- TF-SV-32: la chiusura diretta di una segnalazione `Aperta` è prevista da `SCD_3` (`Aperta --> Chiusa : chiusura / assegnaAusiliario(), registraEsito()`), da `UC_OP_4` (Regole di dominio e passo 4) e da `SD_OP_4` (`opt [la segnalazione è Aperta] 4.1: assegnaA`). Da OMP-63 (RAD 0.6) la regola di dominio è più stretta: il servizio di chiusura rifiuta una segnalazione `Aperta` (`SEGNALAZIONE_NON_PRESA_IN_CARICO`, `cp_chiusuraSegnalazione.md`); la funzione di persistenza resta invariata, perché la usano anche i test di altre issue per preparare i dati.
 - TF-SV-19…22: `permessiDaVerificare` comprende solo le soste `ATTIVA`, non le `SCADUTA`: RF_OP_2 parla di stalli «occupati da una sosta attiva», `vincoli_dominio.md` §1 definisce il permesso da verificare come una sosta «in stato `Attiva`» senza verifica, e `UC_OP_5` 2.a1 dice che con la sosta `Scaduta` o `Terminata` «non c'è più nulla da verificare».
 - TF-SV-15…18: la mappa delle segnalazioni con le sole variazioni (RF_OP_1). Il cursore ha lo stesso limite descritto in `cp_persistenza_stalli_tariffe.md` §6.
 - TF-SV-30, 31, 37, 45, 46: vincoli dello schema (chiave esterna, `segnalazione_date_ordinate`, valori ammessi).

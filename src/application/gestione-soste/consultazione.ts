@@ -7,6 +7,7 @@ import {
   sostaInCorsoSuStallo,
   sosteInCorsoDiAutomobilista,
   sosteInCorsoDiTarga,
+  sostaPerTargaSuStallo,
   type Sosta,
 } from "../../persistence/accessoDati/walletSoste.ts";
 import { normalizzaTarga } from "../utenti-accessi/facade.ts";
@@ -56,4 +57,19 @@ export async function sosteInCorsoDellaTarga(
   await contesto.allineamento.allinea();
   const targaNormalizzata = typeof targa === "string" ? normalizzaTarga(targa) : "";
   return targaNormalizzata === "" ? [] : sosteInCorsoDiTarga(contesto.pool, targaNormalizzata);
+}
+
+/**
+ * La sosta più recente della targa sullo stallo, in qualsiasi stato, dopo l'allineamento temporale
+ * (OMP-63, UC_OP_3 passo 2): per lo stato del pagamento di una segnalazione. null se non ce n'è.
+ */
+export async function sostaDellaTargaSulloStallo(
+  contesto: ContestoGestioneSoste,
+  targa: string,
+  stallo: number,
+): Promise<Sosta | null> {
+  await contesto.allineamento.allinea();
+  return idValido(stallo) && typeof targa === "string"
+    ? sostaPerTargaSuStallo(contesto.pool, normalizzaTarga(targa), stallo)
+    : null;
 }

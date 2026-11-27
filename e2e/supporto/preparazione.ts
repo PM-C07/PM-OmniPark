@@ -15,6 +15,7 @@ import { inviaRilevazioni } from "./simulatori.ts";
 
 export const AUSILIARI = {
   paoloFerri: "paolo.ferri@omnipark.example", // ente 1, Gragnano
+  saraGalli: "sara.galli@omnipark.example", // ente 1, Gragnano (OMP-63, TS-16)
   annaMoretti: "anna.moretti@omnipark.example", // ente 2, Fisciano
   lucaRusso: "luca.russo@omnipark.example", // ente 1, disattivato
 } as const;
