@@ -1,4 +1,4 @@
-import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
+import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { osservatoreGestioneSoste } from "../../../../../application/gestione-soste/facade.ts";
 import { creaFacadeGestioneStalli } from "../../../../../application/gestione-stalli/facade.ts";
 import { trovaStallo } from "../../../../../persistence/accessoDati/stalliTariffe.ts";
@@ -18,6 +18,7 @@ import {
   preparaDatabaseDiTest,
   verificaDatabaseDiTest,
 } from "../../../../../persistence/test/databaseDiTest.ts";
+import { rilevazioniAllIstante } from "../../../../../persistence/test/datiDiProva.ts";
 import { POST as accesso } from "../../../auth/accesso/route.ts";
 import { POST as registrazione } from "../../../auth/registrazione/route.ts";
 import { GET as saldoWallet } from "../../../wallet/route.ts";
@@ -292,6 +293,12 @@ describe("OMP-61 · cp_apiProlungamento", () => {
 
     marco = await cookieDiAccesso(MARCO_ROSSI, PASSWORD_AUTOMOBILISTA);
     paolo = await cookieDiAccesso(PAOLO_FERRI, PASSWORD_AUSILIARIO);
+  });
+
+  // COD-23 (RF_IOT_2): rilevazioni all'istante corrente prima di ogni frame, così l'allineamento
+  // delle route non porta gli stalli a Sconosciuto (§3).
+  beforeEach(async () => {
+    await rilevazioniAllIstante(poolDiTest(), new Date());
   });
 
   afterAll(async () => {

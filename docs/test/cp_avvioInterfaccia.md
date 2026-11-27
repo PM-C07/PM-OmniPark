@@ -1,7 +1,7 @@
 # cp_avvioInterfaccia
 
 Specifica dei casi di test (category partition) della logica dell'avvio della sosta nell'interfaccia: funzioni pure di `src/presentation/logica/avvioSosta.ts` e, dalla OMP-61, di `src/presentation/logica/permesso.ts` (passaggio del permesso negli stalli riservati), usate dalla scheda dello stallo del boundary `:MappaStalli` (`MU_2`).
-Requisiti: RF_SOSTA_1 (avvio della sosta), RF_WALLET_2 (addebito, credito insufficiente), NRF_USA_2 (avvio e pagamento in tre interazioni), RF_SOSTA_5 (dichiarazione e foto del permesso sugli stalli riservati). Task OMP-58 (issue #29); dalla OMP-61 (issue #33, blocco B) avvio sugli stalli riservati con il passaggio del permesso, TF-AVVUI-02 e 03 aggiornati e TF-AVVUI-31…57 aggiunti.
+Requisiti: RF_SOSTA_1 (avvio della sosta), RF_WALLET_2 (addebito, credito insufficiente), NRF_USA_2 (avvio e pagamento in tre interazioni), RF_SOSTA_5 (dichiarazione e foto del permesso sugli stalli riservati), RF_STALLI_2 (tariffe e condizioni dello stallo nella scheda, dalla COD-23). Task OMP-58 (issue #29); dalla OMP-61 (issue #33, blocco B) avvio sugli stalli riservati con il passaggio del permesso, TF-AVVUI-02 e 03 aggiornati e TF-AVVUI-31…57 aggiunti; dalla OMP-64 (COD-23, issue #44) TF-AVVUI-58…60.
 
 - **Fonti dell'esito atteso:** `UC_SOSTA_1` (entry condition: stallo `Occupato`; passi 1–5; flussi 2.a1, 2.a2, 2.a3, 2.a4, 5.a1), `SD_SOSTA_1`, `np_01_automobilista` (Scheda → ErrCredito → Ricarica → «torna alla conferma»), `cp_apiWalletSoste.md` §2 (codici di errore di `POST /api/soste`), `cp_calcoloImporto.md` §2 (durata intera da 15 minuti alla durata massima), issue #29 (categorie minime: stato dello stallo → disponibilità di «Avvia sosta»; tipo di stallo; credito rispetto all'importo), piano approvato di OMP-58 (punti 4 e 6, decisioni D2 e D4); dalla OMP-61: `np_01_automobilista` (Scheda → «Dichiarazione e foto del permesso» [stallo riservato] → «permesso dichiarato»), `UC_SOSTA_5` (passi 1–3, flusso 2.a1), scenari `SC_UT_3` e `SC_UT_6`, `cp_avvioSosta.md` §2 (regola del permesso nel servizio), `cp_apiWalletSoste.md` §2 (JSON o `multipart/form-data`), issue #33 (foto scattata dalla fotocamera o scelta dalla galleria, JPEG o PNG, al massimo 2 MB) e piano approvato di OMP-61 (decisioni D5: riduzione della foto nel browser, lato massimo 1600 px, JPEG; D6: due input).
 - **File di test:** `src/presentation/logica/avvioSosta.test.ts` (funzioni di `avvioSosta.ts`) e `src/presentation/logica/permesso.test.ts` (funzioni di `permesso.ts`), eseguiti da `npm test` (ambiente node, senza database).
@@ -26,6 +26,8 @@ etichettaConferma(importo: number): string;            // testo del pulsante del
 const CAMPI_AVVIO_SOSTA: Readonly<Record<string, string>>; // codice → campo, per interpretaRisposta (cp_risposteApi.md)
 type PermessoDiAvvio = { dichiarazione: string; foto: Blob };       // dalla OMP-61
 richiestaDiAvvio(dati: { stallo: number; targa: string; durata: number; permesso?: PermessoDiAvvio }): RequestInit; // POST /api/soste
+type TariffaDelloStallo = { costoOrario: number; orarioInizioVigenza: string; orarioFineVigenza: string; durataMassima: number }; // da GET /api/stalli/<id>
+condizioniDelloStallo(tipoDiStallo: string, tariffa: TariffaDelloStallo): { tariffa: string; durataMassima: string; permesso: string | null }; // dalla COD-23
 
 // src/presentation/logica/permesso.ts (OMP-61) — nessuna dipendenza da React, dal DOM né dai sottosistemi
 richiedePermesso(tipoDiStallo: string): boolean;
@@ -59,6 +61,12 @@ dimensioniRidotte(larghezza: number, altezza: number): { larghezza: number; alte
 
 - senza `permesso`: `{ method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ stallo, targa, durata }) }`, come in OMP-58;
 - con `permesso`: `{ method: "POST", body }` senza intestazione `content-type` (la imposta il browser con il separatore), dove `body` è un `FormData` con i campi di testo `stallo`, `targa`, `durata` (numeri scritti in cifre), `dichiarazioneDiPermesso` (`permesso.dichiarazione`) e il file `fotoDelPermesso` con il contenuto di `permesso.foto` e nome `permesso.png` se il tipo della foto è `image/png`, altrimenti `permesso.jpg`.
+
+**`condizioniDelloStallo`** (dalla COD-23, `UC_STALLI_2` passo 2 e flusso 2.a1): i testi delle righe «Tariffa», «Durata massima» e «Permesso» della scheda, mostrati prima di «Avvia sosta».
+
+- `tariffa`: `formattaEuro(costoOrario) + " l'ora, dalle " + HH:MM di inizio + " alle " + HH:MM di fine` (gli orari arrivano come `HH:MM:SS`);
+- `durataMassima`: `etichettaDurata(durataMassima)`;
+- `permesso`: `DISABILI` → `"Contrassegno per persone con disabilità, da dichiarare e fotografare all'avvio; sosta gratuita."`; `ROSA` → `"Permesso rosa, da dichiarare e fotografare all'avvio; sosta a pagamento."`; ogni altro tipo → `null` (la riga non compare).
 
 **`richiedePermesso`:** `true` per `DISABILI` e `ROSA`, `false` per ogni altro tipo (RF_SOSTA_5, VD_8).
 
@@ -103,9 +111,11 @@ Funzioni pure: nessun database, nessuna rete, nessun DOM. `Blob` e `FormData` so
 
 **Foto del permesso (controllo anticipato):** JPEG entro il limite · PNG entro il limite · esattamente 2 MB [single] · vuota [error] · altro formato [error] (HEIC, GIF) · oltre 2 MB [error] · più errori insieme [single] → vale il primo.
 
+**Condizioni nella scheda** (dalla COD-23): stallo a pagamento → nessun permesso · per persone con disabilità → permesso e sosta gratuita · rosa → permesso e sosta a pagamento.
+
 **Dimensioni della foto:** orizzontale oltre 1600 · verticale oltre 1600 · lato maggiore uguale a 1600 [single] · entro il limite → invariate · proporzioni estreme [single].
 
-## 5. Test frame (57)
+## 5. Test frame (60)
 
 | Frame       | Chiamata                                                                                                                                                                                | Esito atteso                                                                                                                                                                                                                                              | Riferimento |
 | :---------- | :-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | :-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | :---------- |
@@ -166,8 +176,11 @@ Funzioni pure: nessun database, nessuna rete, nessun DOM. `Blob` e `FormData` so
 | TF-AVVUI-55 | `dimensioniRidotte(1600, 900)`                                                                                                                                                          | `{ larghezza: 1600, altezza: 900 }`                                                                                                                                                                                                                       | ISSUE_33    |
 | TF-AVVUI-56 | `dimensioniRidotte(800, 600)`                                                                                                                                                           | `{ larghezza: 800, altezza: 600 }`                                                                                                                                                                                                                        | ISSUE_33    |
 | TF-AVVUI-57 | `dimensioniRidotte(1000, 5000)`                                                                                                                                                         | `{ larghezza: 320, altezza: 1600 }`                                                                                                                                                                                                                       | ISSUE_33    |
+| TF-AVVUI-58 | `condizioniDelloStallo("ORDINARIO_A_PAGAMENTO", { costoOrario: 150, orarioInizioVigenza: "08:00:00", orarioFineVigenza: "20:00:00", durataMassima: 180 })`                              | `{ tariffa: "1,50 € l'ora, dalle 08:00 alle 20:00", durataMassima: "3 h", permesso: null }`                                                                                                                                                               | RF_STALLI_2 |
+| TF-AVVUI-59 | `condizioniDelloStallo("DISABILI", { costoOrario: 150, orarioInizioVigenza: "08:00:00", orarioFineVigenza: "20:00:00", durataMassima: 180 })`                                           | `{ tariffa: "1,50 € l'ora, dalle 08:00 alle 20:00", durataMassima: "3 h", permesso: "Contrassegno per persone con disabilità, da dichiarare e fotografare all'avvio; sosta gratuita." }`                                                                  | RF_STALLI_2 |
+| TF-AVVUI-60 | `condizioniDelloStallo("ROSA", { costoOrario: 100, orarioInizioVigenza: "08:30:00", orarioFineVigenza: "19:30:00", durataMassima: 90 })`                                                | `{ tariffa: "1,00 € l'ora, dalle 08:30 alle 19:30", durataMassima: "1 h 30 min", permesso: "Permesso rosa, da dichiarare e fotografare all'avvio; sosta a pagamento." }`                                                                                  | RF_STALLI_2 |
 
-Totale 57: 9 sulla disponibilità di «Avvia sosta» (stato e tipo), 9 sulla durata, 4 sul credito, 2 sul pulsante di conferma (TF-AVVUI-23, 31), 10 sull'esito dell'avvio (TF-AVVUI-24…30, 32…34), 3 sul corpo della richiesta (TF-AVVUI-35…37) in `avvioSosta.test.ts`; 20 sul permesso (TF-AVVUI-38…57) in `permesso.test.ts`.
+Totale 60: 9 sulla disponibilità di «Avvia sosta» (stato e tipo), 9 sulla durata, 4 sul credito, 2 sul pulsante di conferma (TF-AVVUI-23, 31), 10 sull'esito dell'avvio (TF-AVVUI-24…30, 32…34), 3 sul corpo della richiesta (TF-AVVUI-35…37), 3 sulle condizioni nella scheda (TF-AVVUI-58…60) in `avvioSosta.test.ts`; 20 sul permesso (TF-AVVUI-38…57) in `permesso.test.ts`.
 
 Note sui riferimenti:
 
@@ -182,6 +195,7 @@ Note sui riferimenti:
 - TF-AVVUI-38…44: RF_SOSTA_5 e VD_8; i testi della dichiarazione seguono `SC_UT_3` («dichiarare di esporre il contrassegno») e `SC_UT_6` («la dichiarazione … del permesso rosa»).
 - TF-AVVUI-45…52: controllo anticipato con i limiti del servizio (`cp_avvioSosta.md` §2, issue #33); HEIC (TF-AVVUI-49) è il formato delle foto di molti telefoni, che il browser invia così quando non riesce a ridurlo. TF-AVVUI-52: ordine delle regole.
 - TF-AVVUI-53…57: decisione D5 (lato massimo 1600 px), per stare sotto i 2 MB con le foto della fotocamera del telefono.
+- TF-AVVUI-58…60: RF_STALLI_2 e `UC_STALLI_2` (costo orario, fascia a pagamento e durata massima; 2.a1: permesso richiesto e se la sosta è gratuita, VD_10). Tipo e stato hanno già le loro righe nella scheda (`descriviTipo`, `BadgeStato`); i dati arrivano da `GET /api/stalli/<id>` (`cp_apiStalli.md` TF-API-STA-18).
 
 ## 6. Note
 

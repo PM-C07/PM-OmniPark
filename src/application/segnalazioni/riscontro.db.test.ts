@@ -24,6 +24,7 @@ import {
   poolDiTest,
   preparaDatabaseDiTest,
 } from "../../persistence/test/databaseDiTest";
+import { rilevazioniAllIstante } from "../../persistence/test/datiDiProva";
 import { SimulatorePagamento } from "../../simulators/pagamento/simulatorePagamento";
 import {
   creaFacadeSegnalazioni,
@@ -51,6 +52,8 @@ const LETTURA = ora("09:50"); // L, data e ora predefinita della lettura
 describe("OMP-46 · cp_riscontroAnpr", () => {
   beforeAll(async () => {
     await preparaDatabaseDiTest();
+    // COD-23 (RF_IOT_2): rilevazioni recenti rispetto all'orologio dei test (§3).
+    await rilevazioniAllIstante(poolDiTest(), ADESSO);
   });
 
   afterAll(async () => {
@@ -86,7 +89,7 @@ describe("OMP-46 · cp_riscontroAnpr", () => {
     const stato = await gestioneStalli().registraRilevazione({
       stallo,
       presenza: true,
-      dataOra: ora("09:00"),
+      dataOra: ADESSO, // COD-23: entro 60 s da T (§3)
     });
     expect(stato).toBe("OCCUPATO");
   }

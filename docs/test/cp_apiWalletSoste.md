@@ -33,6 +33,7 @@ Nome del test: `<riferimento> · <frame> · <descrizione> → <esito>`, per esem
 ## 3. Ambiente
 
 - Database di test, pool applicativo e composizione come in `cp_apiAccesso.md` §3; il servizio di pagamento è il `SimulatorePagamento` del punto di composizione, con la configurazione predefinita. Le scritture vanno in commit: ogni frame usa il proprio automobilista, la propria targa e il proprio stallo.
+- **Dalla COD-23 (RF_IOT_2):** prima di ogni frame (`beforeEach`) `rilevazioniAllIstante(poolDiTest(), new Date())` (`src/persistence/test/datiDiProva.ts`) porta all'istante corrente l'ultima rilevazione degli stalli rilevati; lo stallo si porta a `OCCUPATO` con una rilevazione all'istante della chiamata, così l'allineamento delle route non li porta a `Sconosciuto`. Gli esiti non cambiano.
 - **Automobilista nuovo del frame `n`:** `POST /api/auth/registrazione` con email `api.ws<n>@test.example`, password `parola-di-prova-lunga` e targa `WS0<n>XX`, cioè con il numero del frame su tre cifre (per esempio `WS011XX`), nel formato `AB123CD` richiesto da Utenti e accessi; nasce con wallet a saldo 0 e con il cookie di sessione.
 - **Saldo di preparazione:** `registraRicarica` della persistenza sul wallet dell'automobilista (non la route), dell'importo indicato.
 - **Stallo portato a `OCCUPATO`:** `registraRilevazione({ stallo, presenza: true, dataOra: 2026-11-20 09:00:00+01 })` della Facade di Gestione stalli composta con `osservatoreGestioneSoste`.

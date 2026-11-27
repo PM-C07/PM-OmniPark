@@ -67,6 +67,40 @@ export function etichettaDurata(minuti: number): string {
   return resto === 0 ? `${ore} h` : `${ore} h ${resto} min`;
 }
 
+/** Tariffa dello stallo come la restituisce GET /api/stalli/<id> (orari HH:MM:SS, importi in centesimi). */
+export type TariffaDelloStallo = {
+  costoOrario: number;
+  orarioInizioVigenza: string;
+  orarioFineVigenza: string;
+  durataMassima: number;
+};
+
+// UC_STALLI_2 2.a1: permesso richiesto sugli stalli riservati e gratuità della sosta (VD_10).
+const PERMESSO_PER_TIPO: Readonly<Record<string, string>> = {
+  DISABILI:
+    "Contrassegno per persone con disabilità, da dichiarare e fotografare all'avvio; sosta gratuita.",
+  ROSA: "Permesso rosa, da dichiarare e fotografare all'avvio; sosta a pagamento.",
+};
+
+/**
+ * Righe «Tariffa», «Durata massima» e «Permesso» della scheda dello stallo, prima di «Avvia sosta»
+ * (RF_STALLI_2, UC_STALLI_2 passo 2 e 2.a1). Senza permesso richiesto, permesso è null.
+ */
+export function condizioniDelloStallo(
+  tipoDiStallo: string,
+  tariffa: TariffaDelloStallo,
+): { tariffa: string; durataMassima: string; permesso: string | null } {
+  const inizio = tariffa.orarioInizioVigenza.slice(0, 5);
+  const fine = tariffa.orarioFineVigenza.slice(0, 5);
+  return {
+    tariffa: `${formattaEuro(tariffa.costoOrario)} l'ora, dalle ${inizio} alle ${fine}`,
+    durataMassima: etichettaDurata(tariffa.durataMassima),
+    permesso: Object.hasOwn(PERMESSO_PER_TIPO, tipoDiStallo)
+      ? PERMESSO_PER_TIPO[tipoDiStallo]
+      : null,
+  };
+}
+
 /** Controllo anticipato del credito (UC_SOSTA_1 5.a1); CREDITO_INSUFFICIENTE resta del server. */
 export function creditoSufficiente(saldo: number, importo: number): boolean {
   return saldo >= importo;

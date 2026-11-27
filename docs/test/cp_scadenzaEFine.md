@@ -5,7 +5,7 @@ Specifica dei casi di test (category partition) dei servizi Scadenza e Fine dell
 - **Scadenza** (attore Time): operazione `allinea()` del modulo di allineamento temporale `src/application/allineamento-temporale/allineamento.ts`;
 - **Fine**: osservatore `osservatoreGestioneSoste` di Gestione soste (`terminaSosta`), notificato da Gestione stalli quando uno stallo entra in `Libero`.
 
-Requisiti: RF_SOSTA_7 (scadenza della sosta), RF_SOSTA_6 (ritorno dello stallo allo stato rilevato), NRF_LEG_2 (dichiarazione e foto eliminate al termine). Task OMP-45 (issue #9).
+Requisiti: RF_SOSTA_7 (scadenza della sosta), RF_SOSTA_6 (ritorno dello stallo allo stato rilevato), NRF_LEG_2 (dichiarazione e foto eliminate al termine), RF_IOT_2 (stato Sconosciuto, dalla COD-23). Task OMP-45 (issue #9); TF-SCA-11 e 12 da OMP-64 (COD-23, issue #44).
 
 - **Fonti dell'esito atteso:** `UC_SOSTA_7` (passi 1–3, flusso 3.a1), `SD_SOSTA_7`, `UC_IOT_1` 3.a1 e 3.a2, statechart `SCD_1` (`scadenzaSosta`, `entry / terminaSosta()` di Libero) e `SCD_2` (`at(orario di scadenza)`, `terminaSosta`), `docs/rad/statechart/sincronizzazione_eventi.md` §1 e §2, `docs/rad/vincoli_dominio.md` (VD_6, VD_11, VD_20), `docs/test/cp_statoPerLaSosta.md` §6, issue #9, piano approvato di OMP-45 (decisioni 6 e 7, risposta D4).
 - **File di test:** `src/application/allineamento-temporale/allineamento.db.test.ts` (TF-SCA) e `src/application/gestione-soste/fineSosta.db.test.ts` (TF-FIN), eseguiti con `npx vitest run --config vitest.db.config.ts <file>`.
@@ -24,6 +24,7 @@ type EsitoAllineamento = {
   sosteScadute: number[];     // soste portate da ATTIVA a SCADUTA da questa chiamata (comprese le anomale)
   sosteInConflitto: number[]; // soste lasciate ATTIVA per un CONFLITTO_DI_CONCORRENZA, riprese alla lettura successiva
   sosteAnomale: number[];     // sottoinsieme di sosteScadute: lo stallo non era Non disponibile e resta com'è
+  stalliSconosciuti: number[]; // dalla COD-23: stalli portati a Sconosciuto da marcaSconosciuti (cp_rilevazioni.md §7)
 };
 type AllineamentoTemporale = { allinea(): Promise<EsitoAllineamento> };
 creaAllineamentoTemporale(dipendenze: { gestioneStalli: FacadeGestioneStalli; pool?: Pool; orologio?: Orologio }): AllineamentoTemporale;
@@ -36,9 +37,10 @@ Comportamento atteso di `allinea()` (piano approvato):
 
 - prende le soste `ATTIVA` con orario di scadenza ≤ `orologio.adesso()` e tratta ciascuna in una transazione propria;
 - passaggio `ATTIVA` → `SCADUTA` condizionato allo stato `ATTIVA`: se un'altra transazione l'ha già fatta scadere, la sosta non compare nell'esito e non c'è errore;
-- poi `ripristinaStatoRilevato(stallo, esecutore)` della Facade di Gestione stalli: lo stallo torna `OCCUPATO` se l'ultima rilevazione indica un veicolo, `LIBERO` se non lo indica. Nel secondo caso l'osservatore di Gestione soste, nella stessa transazione, porta a `TERMINATA` tutte le soste `SCADUTA` dello stallo, compresa quella appena scaduta, ed elimina dichiarazione e foto;
+- poi `ripristinaStatoRilevato(stallo, esecutore, adesso)` della Facade di Gestione stalli: lo stallo torna `OCCUPATO` se l'ultima rilevazione indica un veicolo, `LIBERO` se non lo indica. Nel secondo caso l'osservatore di Gestione soste, nella stessa transazione, porta a `TERMINATA` tutte le soste `SCADUTA` dello stallo, compresa quella appena scaduta, ed elimina dichiarazione e foto. Dalla COD-23, se l'ultima rilevazione è precedente a `adesso − 60 s`, lo stallo passa a `SCONOSCIUTO`, senza notifica: la sosta resta `SCADUTA` (`SD_SOSTA_7`, `SCD_1`);
 - se lo stallo non è `NON_DISPONIBILE` (`STALLO_NON_IMPEGNATO`, dati incoerenti), la sosta passa comunque a `SCADUTA`, lo stallo resta com'è e l'id va anche in `sosteAnomale` (risposta D4);
-- `allinea()` non termina mai una sosta da sé: lo fa solo l'osservatore (`cp_statoPerLaSosta.md` §6).
+- `allinea()` non termina mai una sosta da sé: lo fa solo l'osservatore (`cp_statoPerLaSosta.md` §6);
+- dalla COD-23, dopo le soste, `marcaSconosciuti(orologio.adesso())` della Facade di Gestione stalli (`cp_rilevazioni.md` §7); gli id restituiti vanno in `stalliSconosciuti`. Un `CONFLITTO_DI_CONCORRENZA` di questa operazione non fa fallire `allinea()`: `stalliSconosciuti` resta vuoto e la lettura successiva riprende (come per le soste, nessun frame: il conflitto non si produce in modo deterministico).
 
 Funzioni usate dai test solo per preparare e verificare i dati (mai stub): persistenza `creaAutomobilista`, `trovaOCreaVeicolo`, `associaVeicolo`, `creaSosta`, `impostaSostaScaduta`, `trovaSosta`, `trovaStallo`, con `poolDiTest()` come esecutore; Facade di Gestione stalli `registraRilevazione` e `impostaNonDisponibile`.
 
@@ -47,6 +49,7 @@ Funzioni usate dai test solo per preparare e verificare i dati (mai stub): persi
 - Database di test riportato allo stato noto da `preparaDatabaseDiTest()` nel `beforeAll` di ciascun file. Le transazioni vanno in commit: ogni frame usa stalli, automobilisti e veicoli propri.
 - Facade di Gestione stalli dei test: `creaFacadeGestioneStalli({ pool: poolDiTest(), osservatori: [osservatoreGestioneSoste] })`, cioè con l'osservatore reale di Gestione soste.
 - TF-SCA: `creaAllineamentoTemporale({ gestioneStalli, pool: poolDiTest(), orologio })` con orologio di prova fisso `adesso() = 2026-11-20 10:00:00+01` (`T`).
+- **Dalla COD-23 (RF_IOT_2):** dopo `preparaDatabaseDiTest()`, `rilevazioniAllIstante(poolDiTest(), T)` porta a `T` l'ultima rilevazione degli stalli rilevati, e le rilevazioni di preparazione indicate alle `09:00` e `09:30` si eseguono a `T`: uno stallo resta `Libero` od `Occupato` solo con una rilevazione degli ultimi 60 secondi. Gli esiti non cambiano.
 - **Automobilista di prova:** `creaAutomobilista(pool, { email, hashPassword: "hash-di-prova" })`, veicolo con la targa indicata (`trovaOCreaVeicolo`, `associaVeicolo`); nessun wallet. TF-SCA-n usa `scadenza.<n>@test.example` e la targa `SC0` seguito da `<n>` su due cifre e da `AA` (per esempio `SC001AA`, `SC010AA`); TF-FIN-n usa `fine.<n>@test.example` e `FI00<n>AA`; il secondo automobilista di TF-FIN-04 usa `fine.4b@test.example` e `FI004BB`.
 - **Sosta preesistente:** `creaSosta(pool, { automobilistaId, veicoloId, stalloId, orarioDiAvvio, orarioDiScadenza, pagamento })`, `PAGATA` salvo indicazione; «con lo stallo Non disponibile» aggiunge `impostaNonDisponibile(stallo)`; «scaduta» aggiunge `impostaSostaScaduta(pool, id)`.
 - **Rilevazioni di preparazione:** `registraRilevazione({ stallo, presenza, dataOra })` della Facade di Gestione stalli, con gli orari indicati.
@@ -109,7 +112,7 @@ Colonne usate dai test:
 3. Scaduta, con permesso
 4. più soste Scadute [single]
 
-## 5. Test frame (14)
+## 5. Test frame (16)
 
 ### Scadenza (`allinea()`, istante `T` = `10:00`)
 
@@ -125,6 +128,8 @@ Colonne usate dai test:
 | TF-SCA-08 | stallo 20: sosta S1 `08:00` → `08:30`, scaduta; sosta S2 dello stesso veicolo `08:45` → `09:45`, con lo stallo Non disponibile; rilevazione presenza falsa alle `09:30`                                                                                                        | S2 in `sosteScadute`, S1 non compare; S1 e S2 `TERMINATA`; stallo 20 `LIBERO`                                                                                                                                   | VD_11       |
 | TF-SCA-09 | sosta S sullo stallo 21, `08:00` → `09:00`, **senza** Non disponibile (lo stallo resta `OCCUPATO`)                                                                                                                                                                             | S in `sosteScadute` e in `sosteAnomale`; S `SCADUTA`; stallo 21 `OCCUPATO`, invariato                                                                                                                           | ISSUE_9     |
 | TF-SCA-10 | sosta S sullo stallo 23, `08:00` → `09:00`, con lo stallo Non disponibile; due allineamenti creati separatamente con le stesse dipendenze, `allinea()` di entrambi avviati insieme (`Promise.all`)                                                                             | entrambe le chiamate terminano senza errore; S compare in `sosteScadute` di una sola delle due e non compare in `sosteAnomale` né in `sosteInConflitto` di nessuna delle due; S `SCADUTA`; stallo 23 `OCCUPATO` | ISSUE_9     |
+| TF-SCA-11 | stallo 5: `registraRilevazione(poolDiTest(), 5, { occupazioneRilevata: "NESSUN_VEICOLO", dataEOra: 09:58:59, stato: "LIBERO" })` della persistenza (ultima rilevazione 61 s prima di `T`)                                                                                      | `stalliSconosciuti` contiene 5; stallo 5 `SCONOSCIUTO`, `NESSUN_VEICOLO`                                                                                                                                        | RF_IOT_2    |
+| TF-SCA-12 | sosta S sullo stallo 11, `08:00` → `09:00`, con lo stallo Non disponibile; poi `registraRilevazione(poolDiTest(), 11, { occupazioneRilevata: "NESSUN_VEICOLO", dataEOra: 09:58:59, stato: "NON_DISPONIBILE" })` della persistenza                                              | S in `sosteScadute`, non in `sosteAnomale`; S `SCADUTA` (non `TERMINATA`); stallo 11 `SCONOSCIUTO`, `NESSUN_VEICOLO`; `stalliSconosciuti` non contiene 11                                                       | RF_IOT_2    |
 
 ### Fine (`registraRilevazione` della Facade di Gestione stalli con l'osservatore di Gestione soste, presenza falsa alle `10:30`)
 
@@ -145,6 +150,8 @@ Note sui riferimenti:
 - TF-SCA-08: `sincronizzazione_eventi.md` §1: `terminaSosta` porta a `Terminata` tutte le soste `Scadute` dello stallo, anche quella scaduta in precedenza (VD_11).
 - TF-SCA-09: risposta D4 del piano. Lo stallo con una sosta attiva è sempre `Non disponibile` (VD_6): il caso si costruisce saltando `impostaNonDisponibile`.
 - TF-SCA-10: decisione 7. Il passaggio a `SCADUTA` è condizionato: la seconda transazione aspetta la prima, rivaluta la condizione e non trova righe. Il test non può imporre l'ordine con cui le due transazioni arrivano al database: se la seconda parte quando la prima ha già confermato, non trova la sosta tra quelle da scadere. In entrambi i casi l'esito atteso è lo stesso. Che S non compaia in `sosteAnomale` dimostra che l'allineamento che trova la sosta già scaduta non chiama `ripristinaStatoRilevato`: lo chiama solo se il passaggio `ATTIVA` → `SCADUTA` ha aggiornato la riga (altrimenti riceverebbe `STALLO_NON_IMPEGNATO` e la segnerebbe come anomala).
+- TF-SCA-11: RF_IOT_2 e issue #44: il passaggio a `Sconosciuto` avviene nell'allineamento, a ogni lettura, senza timer. La rilevazione vecchia si scrive con la persistenza perché la Facade la rifiuterebbe come superata.
+- TF-SCA-12: `SD_SOSTA_7` (ramo «nessuna rilevazione da oltre 60 secondi») e `SCD_1` (`NonDisponibile → Sconosciuto : scadenzaSosta`): lo stallo non passa da `Libero`, quindi `terminaSosta` non scatta e la sosta resta `Scaduta`; l'id dello stallo non è in `stalliSconosciuti` perché lo porta a `Sconosciuto` il ripristino, non `marcaSconosciuti`.
 - TF-FIN-01: RF_IOT_1: la liberazione di uno stallo senza soste non produce errori nell'osservatore.
 - TF-FIN-02: VD_20 e decisione 6: se il veicolo lascia lo stallo durante una sosta `Attiva`, la sosta resta `Attiva` fino alla scadenza e lo stallo resta `Non disponibile` (`UC_IOT_1` 3.a1); l'osservatore non è chiamato.
 - TF-FIN-03, 04: `UC_IOT_1` 3.a2 e `sincronizzazione_eventi.md` §1, con l'osservatore reale.
@@ -155,5 +162,5 @@ Note sui riferimenti:
 - **Chi porta la sosta a `Terminata`.** `SD_SOSTA_7` (3.a1.2) la fa terminare da `ControlloScadenza`; `SCD_1` e `sincronizzazione_eventi.md` dall'azione d'ingresso di `Libero`. Come indicato in `cp_statoPerLaSosta.md` §6 e nella decisione 6, lo fa solo l'osservatore (TF-SCA-04, 07, 08). L'issue #9 dice «la sosta attiva o scaduta passa a Terminata»; i modelli (VD_20, sincronizzazione §1) terminano solo le soste `Scadute`, ed è questo che verifica TF-FIN-02.
 - **Conflitti di concorrenza.** Un `CONFLITTO_DI_CONCORRENZA` (SQLSTATE 40001 o 40P01) su una sosta la lascia `ATTIVA` e ne mette l'id in `sosteInConflitto`; `allinea()` prosegue con le altre e non fallisce. Con l'aggiornamento condizionato in READ COMMITTED il conflitto non si produce in modo deterministico: nessun frame lo verifica.
 - **Prima lettura dopo la scadenza.** Che la sosta risulti `Scaduta` alla prima lettura successiva tramite la Facade di Gestione soste (criterio di accettazione dell'issue) lo verificano `cp_consultazione.md` TF-CNS-06 e TF-CNS-14 e `cp_avvioSosta.md` TF-AVV-08.
-- **Stato Sconosciuto.** Il ramo `scadenzaSosta [nessuna rilevazione da più di 60 s] → Sconosciuto` di `SCD_1` è fuori ambito (RF_IOT_2, COD-22).
+- **Stato Sconosciuto.** Dalla COD-23 il ramo `scadenzaSosta [nessuna rilevazione da più di 60 s] → Sconosciuto` di `SCD_1` è realizzato (TF-SCA-12) e l'allineamento porta a `Sconosciuto` gli stalli senza rilevazioni da più di 60 secondi (TF-SCA-11; categorie complete in `cp_rilevazioni.md` §7).
 - **Comportamenti già verificati altrove:** ripristino dello stallo da `Non disponibile` e notifica agli osservatori, `cp_statoPerLaSosta.md` TF-SOS-10…15; `sosteDaScadere`, `impostaSostaScaduta` e `terminaSosteScaduteDelloStallo`, `cp_persistenza_wallet_soste.md` TF-WS-36…43; `impostaSostaScadutaSeRaggiunta`, `cp_persistenza_wallet_soste.md` TF-WS-55, 56; rilevazione su stallo `Non disponibile`, `cp_rilevazioni.md`.
