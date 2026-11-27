@@ -19,7 +19,7 @@ import {
   poolDiTest,
   preparaDatabaseDiTest,
 } from "../../persistence/test/databaseDiTest";
-import { creaEnteDiProva } from "../../persistence/test/datiDiProva";
+import { creaEnteDiProva, rilevazioniAllIstante } from "../../persistence/test/datiDiProva";
 import { SimulatorePagamento } from "../../simulators/pagamento/simulatorePagamento";
 import {
   creaFacadeAmministrazione,
@@ -44,6 +44,8 @@ function ora(hhmm: string): Date {
 describe("OMP-62 · cp_panoramicaEnti", () => {
   beforeAll(async () => {
     await preparaDatabaseDiTest();
+    // COD-23 (RF_IOT_2): rilevazioni recenti rispetto all'orologio dei test (§3).
+    await rilevazioniAllIstante(poolDiTest(), ADESSO);
   });
 
   afterAll(async () => {

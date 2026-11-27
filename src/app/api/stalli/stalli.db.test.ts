@@ -31,7 +31,6 @@ const MARE = "40.0,14.0,40.1,14.1";
 const VIVIANI = "40.7077,14.5033,40.7079,14.5034";
 const VIA_ROMA = "40.6913,14.5161,40.6915,14.5162";
 const GIOVANNI_PAOLO_II = "40.7804,14.7706,40.7806,14.7707";
-const PENTA = "40.7673,14.7972,40.7675,14.7973";
 const LATITUDINI_INVERTITE = "40.689,14.522,40.688,14.5223";
 
 const ISO_8601_CON_FUSO = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d+)?(Z|[+-]\d{2}:\d{2})$/;
@@ -193,7 +192,8 @@ describe("OMP-48 · cp_apiStalli", () => {
     expect(corpo.stalli.map((s) => s.id)).toEqual([14, 15, 16, 17, 18, 19, 20, 21]);
     const s14 = stallo(corpo, 14)!;
     expect(s14.tipoDiStallo).toBe("DISABILI");
-    expect(s14.stato).toBe("LIBERO");
+    // COD-23 (RF_IOT_2): ultima rilevazione del 15/11, orologio di sistema → Sconosciuto.
+    expect(s14.stato).toBe("SCONOSCIUTO");
     expect(s14.areaDiSosta).toEqual({ id: 5, nome: "Piazza Aubry" });
     expect(s14.tariffa).toEqual({ id: 1, costoOrario: 150 });
     expect(typeof s14.ultimaModifica).toBe("string");
@@ -269,19 +269,22 @@ describe("OMP-48 · cp_apiStalli", () => {
   });
 
   it("NRF_PER_3 · TF-API-STA-12 · variazione confermata con ritardo entro il margine → restituita", async () => {
-    const c0 = (await leggiStalli(await chiediStalli(PENTA, marco))).cursore;
+    // COD-23: stallo 13 di Via Roma, già Sconosciuto nel dataset, che l'allineamento delle route non
+    // modifica né attende (lo stallo 27 di Penta, portato a Sconosciuto da TF-API-STA-01 meno di 5 s
+    // prima, ricompariva in r1 per il margine del cursore).
+    const c0 = (await leggiStalli(await chiediStalli(VIA_ROMA, marco))).cursore;
     const client = await poolDiTest().connect();
     try {
       await client.query("BEGIN");
-      await impostaStatoStallo(client, 27, "NON_DISPONIBILE");
+      await impostaStatoStallo(client, 13, "NON_DISPONIBILE");
 
-      const r1 = await leggiStalli(await chiediModifiche(PENTA, c0, marco));
-      expect(stallo(r1, 27)).toBeUndefined();
+      const r1 = await leggiStalli(await chiediModifiche(VIA_ROMA, c0, marco));
+      expect(stallo(r1, 13)).toBeUndefined();
 
       await client.query("COMMIT");
 
-      const r2 = await leggiStalli(await chiediModifiche(PENTA, r1.cursore, marco));
-      expect(stallo(r2, 27)?.stato).toBe("NON_DISPONIBILE");
+      const r2 = await leggiStalli(await chiediModifiche(VIA_ROMA, r1.cursore, marco));
+      expect(stallo(r2, 13)?.stato).toBe("NON_DISPONIBILE");
     } finally {
       client.release();
     }
@@ -329,14 +332,14 @@ describe("OMP-48 · cp_apiStalli", () => {
 
   // ---- Dettaglio: GET /api/stalli/<id> ----
 
-  it("RF_STALLI_2 · TF-API-STA-18 · stato e tariffa dello stallo 14 → 200, DISABILI, LIBERO, tariffa 1", async () => {
+  it("RF_STALLI_2 · TF-API-STA-18 · stato e tariffa dello stallo 14 → 200, DISABILI, SCONOSCIUTO, tariffa 1", async () => {
     const risposta = await chiediStallo("14", marco);
 
     expect(risposta.status).toBe(200);
     expect(await risposta.json()).toEqual({
       stallo: 14,
       tipoDiStallo: "DISABILI",
-      stato: "LIBERO",
+      stato: "SCONOSCIUTO", // COD-23 (RF_IOT_2), come TF-API-STA-01
       tariffa: {
         costoOrario: 150,
         orarioInizioVigenza: "08:00:00",

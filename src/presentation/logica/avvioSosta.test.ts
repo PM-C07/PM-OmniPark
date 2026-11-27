@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   CAMPI_AVVIO_SOSTA,
+  condizioniDelloStallo,
   creditoSufficiente,
   disponibilitaAvvio,
   durataPredefinita,
@@ -268,5 +269,51 @@ describe("logica dell'avvio della sosta nell'interfaccia", () => {
     expect(foto).toBeInstanceOf(File);
     expect((foto as File).name).toBe("permesso.png");
     expect([...new Uint8Array(await (foto as File).arrayBuffer())]).toEqual(BYTE_P);
+  });
+
+  it("RF_STALLI_2 · TF-AVVUI-58 · stallo a pagamento → tariffa e durata massima, nessun permesso", () => {
+    expect(
+      condizioniDelloStallo("ORDINARIO_A_PAGAMENTO", {
+        costoOrario: 150,
+        orarioInizioVigenza: "08:00:00",
+        orarioFineVigenza: "20:00:00",
+        durataMassima: 180,
+      }),
+    ).toEqual({
+      tariffa: "1,50\u00a0€ l'ora, dalle 08:00 alle 20:00",
+      durataMassima: "3 h",
+      permesso: null,
+    });
+  });
+
+  it("RF_STALLI_2 · TF-AVVUI-59 · stallo per disabili → gratuità con il contrassegno, tariffa dello stallo e contrassegno da dichiarare", () => {
+    expect(
+      condizioniDelloStallo("DISABILI", {
+        costoOrario: 150,
+        orarioInizioVigenza: "08:00:00",
+        orarioFineVigenza: "20:00:00",
+        durataMassima: 180,
+      }),
+    ).toEqual({
+      tariffa:
+        "Sosta gratuita con il contrassegno esposto · tariffa dello stallo 1,50\u00a0€ l'ora, dalle 08:00 alle 20:00",
+      durataMassima: "3 h",
+      permesso: "Contrassegno di parcheggio, da dichiarare e fotografare all'avvio della sosta.",
+    });
+  });
+
+  it("RF_STALLI_2 · TF-AVVUI-60 · stallo rosa → permesso da dichiarare e sosta a pagamento", () => {
+    expect(
+      condizioniDelloStallo("ROSA", {
+        costoOrario: 100,
+        orarioInizioVigenza: "08:30:00",
+        orarioFineVigenza: "19:30:00",
+        durataMassima: 90,
+      }),
+    ).toEqual({
+      tariffa: "1,00\u00a0€ l'ora, dalle 08:30 alle 19:30",
+      durataMassima: "1 h 30 min",
+      permesso: "Permesso rosa, da dichiarare e fotografare all'avvio; sosta a pagamento.",
+    });
   });
 });

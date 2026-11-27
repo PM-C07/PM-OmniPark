@@ -13,6 +13,7 @@ import {
 } from "../../persistence/accessoDati/stalliTariffe.ts";
 import { nellaTransazione, notificaLiberazione, type ContestoGestioneStalli } from "./contesto.ts";
 import { ErroreGestioneStalli } from "./errori.ts";
+import { senzaRilevazioniRecenti } from "./rilevazioni.ts";
 
 export type StatoETariffa = {
   stallo: number;
@@ -66,12 +67,14 @@ export async function impostaNonDisponibile(
 /**
  * SD_SOSTA_7 3.1–3.2, evento scadenzaSosta di SCD_1: da Non disponibile allo stato dell'ultima
  * rilevazione. Se lo stallo torna Libero notifica gli osservatori (entry / terminaSosta()).
- * Il ramo verso Sconosciuto (nessuna rilevazione da più di 60 s, RF_IOT_2) è fuori ambito.
+ * Con adesso (dall'allineamento temporale, COD-23) e nessuna rilevazione da più di 60 s lo stallo
+ * passa a Sconosciuto senza notifica: la sosta resta Scaduta (RF_IOT_2).
  */
 export async function ripristinaStatoRilevato(
   contesto: ContestoGestioneStalli,
   stallo: number,
   esecutore?: PoolClient,
+  adesso?: Date,
 ): Promise<StatoStallo> {
   return nellaTransazione(contesto, esecutore, async (client) => {
     const attuale = await bloccaStallo(client, stallo);
@@ -82,7 +85,11 @@ export async function ripristinaStatoRilevato(
       throw new ErroreGestioneStalli("STALLO_NON_IMPEGNATO");
     }
     const nuovoStato: StatoStallo =
-      attuale.occupazioneRilevata === "VEICOLO_PRESENTE" ? "OCCUPATO" : "LIBERO";
+      adesso !== undefined && senzaRilevazioniRecenti(attuale.dataEOraUltimaRilevazione, adesso)
+        ? "SCONOSCIUTO"
+        : attuale.occupazioneRilevata === "VEICOLO_PRESENTE"
+          ? "OCCUPATO"
+          : "LIBERO";
     await impostaStatoStallo(client, stallo, nuovoStato);
     if (nuovoStato === "LIBERO") {
       await notificaLiberazione(contesto, { stallo }, client);

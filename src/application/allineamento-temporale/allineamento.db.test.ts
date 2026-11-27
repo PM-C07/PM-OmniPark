@@ -2,6 +2,7 @@ import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { creaFacadeGestioneStalli } from "../gestione-stalli/facade";
 import { osservatoreGestioneSoste } from "../gestione-soste/facade";
 import {
+  registraRilevazione as registraRilevazionePersistenza,
   trovaStallo,
   type OccupazioneRilevata,
   type StatoStallo,
@@ -23,9 +24,10 @@ import {
   poolDiTest,
   preparaDatabaseDiTest,
 } from "../../persistence/test/databaseDiTest";
+import { rilevazioniAllIstante } from "../../persistence/test/datiDiProva";
 import { creaAllineamentoTemporale, type EsitoAllineamento } from "./allineamento";
 
-// Test frame TF-SCA-01…10 di docs/test/cp_scadenzaEFine.md (OMP-45).
+// Test frame TF-SCA-01…10 di docs/test/cp_scadenzaEFine.md (OMP-45); TF-SCA-11 e 12 (COD-23).
 
 const ADESSO = new Date("2026-11-20T10:00:00+01:00");
 const orologio = { adesso: () => ADESSO };
@@ -39,6 +41,8 @@ function ora(hhmmss: string): Date {
 describe("OMP-45 · cp_scadenzaEFine · scadenza", () => {
   beforeAll(async () => {
     await preparaDatabaseDiTest();
+    // COD-23 (RF_IOT_2): rilevazioni recenti rispetto all'orologio dei test (§3).
+    await rilevazioniAllIstante(poolDiTest(), ADESSO);
   });
 
   afterAll(async () => {
@@ -175,14 +179,14 @@ describe("OMP-45 · cp_scadenzaEFine · scadenza", () => {
   // --- Ultima rilevazione ---
 
   it("RF_SOSTA_6 · TF-SCA-04 · ultima rilevazione nessun veicolo → TERMINATA, stallo Libero", async () => {
-    await rilevazione(14, true, "09:00");
+    await rilevazione(14, true, "10:00");
     const a = await automobilista("scadenza.4@test.example", "SC004AA");
     const s = await sosta(a, 14, "09:00", "10:00", {
       nonDisponibile: true,
       pagamento: "GRATUITA",
       permesso: true,
     });
-    await rilevazione(14, false, "09:30");
+    await rilevazione(14, false, "10:00");
 
     const esito = await allineamento().allinea();
 
@@ -222,7 +226,7 @@ describe("OMP-45 · cp_scadenzaEFine · scadenza", () => {
     const b = await automobilista("scadenza.7b@test.example", "SC007BB");
     const s1 = await sosta(a, 18, "08:00", "09:00", { nonDisponibile: true });
     const s2 = await sosta(b, 19, "08:00", "09:30", { nonDisponibile: true });
-    await rilevazione(19, false, "09:30");
+    await rilevazione(19, false, "10:00");
 
     const esito = await allineamento().allinea();
 
@@ -238,7 +242,7 @@ describe("OMP-45 · cp_scadenzaEFine · scadenza", () => {
     const a = await automobilista("scadenza.8@test.example", "SC008AA");
     const s1 = await sosta(a, 20, "08:00", "08:30", { scaduta: true });
     const s2 = await sosta(a, 20, "08:45", "09:45", { nonDisponibile: true });
-    await rilevazione(20, false, "09:30");
+    await rilevazione(20, false, "10:00");
 
     const esito = await allineamento().allinea();
 
@@ -286,5 +290,42 @@ describe("OMP-45 · cp_scadenzaEFine · scadenza", () => {
     }
     await verificaSosta(s, "SCADUTA");
     await verificaStallo(23, "OCCUPATO");
+  });
+
+  // --- Stato Sconosciuto (COD-23, TF-SCA-11 e 12) ---
+
+  it("RF_IOT_2 · TF-SCA-11 · stallo Libero con ultima rilevazione 61 s prima → in stalliSconosciuti, SCONOSCIUTO", async () => {
+    await registraRilevazionePersistenza(poolDiTest(), 5, {
+      occupazioneRilevata: "NESSUN_VEICOLO",
+      dataEOra: ora("09:58:59"),
+      stato: "LIBERO",
+    });
+    const prima = await verificaStallo(5, "LIBERO", "NESSUN_VEICOLO");
+    expect(prima.dataEOraUltimaRilevazione?.getTime()).toBe(ora("09:58:59").getTime());
+
+    const esito = await allineamento().allinea();
+
+    expect(esito.stalliSconosciuti).toContain(5);
+    await verificaStallo(5, "SCONOSCIUTO", "NESSUN_VEICOLO");
+  });
+
+  it("RF_IOT_2 · TF-SCA-12 · scadenza con ultima rilevazione 61 s prima → SCADUTA, stallo Sconosciuto", async () => {
+    const a = await automobilista("scadenza.12@test.example", "SC012AA");
+    const s = await sosta(a, 11, "08:00", "09:00", { nonDisponibile: true });
+    await registraRilevazionePersistenza(poolDiTest(), 11, {
+      occupazioneRilevata: "NESSUN_VEICOLO",
+      dataEOra: ora("09:58:59"),
+      stato: "NON_DISPONIBILE",
+    });
+    const prima = await verificaStallo(11, "NON_DISPONIBILE", "NESSUN_VEICOLO");
+    expect(prima.dataEOraUltimaRilevazione?.getTime()).toBe(ora("09:58:59").getTime());
+
+    const esito = await allineamento().allinea();
+
+    expect(esito.sosteScadute).toContain(s);
+    expect(esito.sosteAnomale).not.toContain(s);
+    await verificaSosta(s, "SCADUTA");
+    await verificaStallo(11, "SCONOSCIUTO", "NESSUN_VEICOLO");
+    expect(esito.stalliSconosciuti).not.toContain(11);
   });
 });

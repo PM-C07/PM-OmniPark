@@ -29,14 +29,14 @@ type OsservatoreStalli = { terminaSosta(evento: StalloLiberato, esecutore: PoolC
 creaFacadeGestioneStalli(dipendenze?: { pool?: Pool; osservatori?: readonly OsservatoreStalli[] }): FacadeGestioneStalli;
 facade.statoETariffa(stallo: number, esecutore?: PoolClient): Promise<StatoETariffa>;
 facade.impostaNonDisponibile(stallo: number, esecutore?: PoolClient): Promise<void>;          // OCCUPATO → NON_DISPONIBILE
-facade.ripristinaStatoRilevato(stallo: number, esecutore?: PoolClient): Promise<StatoStallo>; // restituisce il nuovo stato
+facade.ripristinaStatoRilevato(stallo: number, esecutore?: PoolClient, adesso?: Date): Promise<StatoStallo>; // restituisce il nuovo stato; adesso dalla COD-23
 facade.registraRilevazione(rilevazione): Promise<StatoStallo>; // solo per preparare i frame
 // errori: ErroreGestioneStalli con `codice` (esportati dalla Facade)
 ```
 
 - **Esecutore.** Senza `esecutore` l'operazione apre una propria transazione. Con l'`esecutore` (il client di una transazione del chiamante, per esempio di Gestione soste) lavora in quella transazione e passa lo stesso esecutore agli osservatori: il commit o il rollback li decide il chiamante.
 - **`impostaNonDisponibile`:** aggiornamento condizionato sullo stato `OCCUPATO`, in un'unica istruzione SQL. Su uno stallo in un altro stato restituisce `STALLO_NON_OCCUPATO`, su uno inesistente `STALLO_INESISTENTE`. Non notifica.
-- **`ripristinaStatoRilevato`:** da `NON_DISPONIBILE` porta lo stallo a `OCCUPATO` se l'occupazione rilevata è `VEICOLO_PRESENTE`, a `LIBERO` se è `NESSUN_VEICOLO`. Nel secondo caso notifica gli osservatori con `{ stallo }` (ingresso in Libero, `SCD_1`). Da un altro stato restituisce `STALLO_NON_IMPEGNATO`, su uno stallo inesistente `STALLO_INESISTENTE`. Il ramo `[nessuna rilevazione da più di 60 s] → Sconosciuto` è fuori ambito (RF_IOT_2, priorità Media).
+- **`ripristinaStatoRilevato`:** da `NON_DISPONIBILE` porta lo stallo a `OCCUPATO` se l'occupazione rilevata è `VEICOLO_PRESENTE`, a `LIBERO` se è `NESSUN_VEICOLO`. Nel secondo caso notifica gli osservatori con `{ stallo }` (ingresso in Libero, `SCD_1`). Da un altro stato restituisce `STALLO_NON_IMPEGNATO`, su uno stallo inesistente `STALLO_INESISTENTE`. Dalla COD-23, con `adesso` (passato solo dall'allineamento temporale) e l'ultima rilevazione precedente a `adesso − 60 s`, lo stallo passa a `SCONOSCIUTO` senza notifica (ramo `[nessuna rilevazione da più di 60 s]` di `SCD_1`, RF_IOT_2): verificato in `cp_scadenzaEFine.md` TF-SCA-12. Senza `adesso` il comportamento è quello dei frame di questo file.
 
 Funzioni dello strato di persistenza usate dai test solo per preparare e verificare i dati (mai stub): `trovaStallo(es, id)`, `eseguiInTransazione(op, poolDiTest())`, `creaSosta(es, dati)`, `impostaSostaScaduta(es, id)`, `trovaSosta(es, id)`, `terminaSosteScaduteDelloStallo(es, stalloId)`.
 

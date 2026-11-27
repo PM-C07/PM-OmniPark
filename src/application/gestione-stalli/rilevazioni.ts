@@ -1,6 +1,8 @@
-// Servizio Rilevazioni: acquisizione delle rilevazioni dei sensori (UC_IOT_1, SD_IOT_1, SCD_1).
+// Servizio Rilevazioni: acquisizione delle rilevazioni dei sensori (UC_IOT_1, SD_IOT_1, SCD_1) e,
+// dalla COD-23, assenza di rilevazioni da più di 60 secondi (UC_IOT_2, SD_IOT_2, RF_IOT_2).
 import {
   bloccaStallo,
+  impostaSconosciutiSenzaRilevazioniDa,
   registraRilevazione as registraRilevazioneStallo,
   type OccupazioneRilevata,
   type StatoStallo,
@@ -14,6 +16,34 @@ export type RilevazioneRicevuta = {
   presenza?: boolean | null;
   dataOra?: Date | null;
 };
+
+/** Oltre questo intervallo dall'ultima rilevazione lo stato dello stallo non è affidabile (RF_IOT_2). */
+const TIMEOUT_RILEVAZIONI_MS = 60_000;
+
+/** Istante prima del quale un'ultima rilevazione è «da più di 60 s» rispetto ad adesso. */
+function limiteRilevazioni(adesso: Date): Date {
+  return new Date(adesso.getTime() - TIMEOUT_RILEVAZIONI_MS);
+}
+
+/** Guardia [nessuna rilevazione da più di 60 s] di SCD_1 (sincronizzazione_eventi.md §2). */
+export function senzaRilevazioniRecenti(ultimaRilevazione: Date | null, adesso: Date): boolean {
+  return (
+    ultimaRilevazione === null || ultimaRilevazione.getTime() < limiteRilevazioni(adesso).getTime()
+  );
+}
+
+/**
+ * UC_IOT_2, SD_IOT_2: porta a Sconosciuto gli stalli Libero od Occupato senza rilevazioni da più
+ * di 60 secondi rispetto ad adesso e ne restituisce gli id. Gli stalli Non disponibile (sosta
+ * Attiva, 2.a1) restano tali. Chiamata dall'allineamento temporale a ogni lettura, senza timer;
+ * nessuna notifica (l'ingresso in Sconosciuto non ha azioni in SCD_1).
+ */
+export async function marcaSconosciuti(
+  contesto: ContestoGestioneStalli,
+  adesso: Date,
+): Promise<number[]> {
+  return impostaSconosciutiSenzaRilevazioniDa(contesto.pool, limiteRilevazioni(adesso));
+}
 
 /**
  * Nuovo stato dopo una rilevazione (SCD_1): Non disponibile resta tale (transizione interna,

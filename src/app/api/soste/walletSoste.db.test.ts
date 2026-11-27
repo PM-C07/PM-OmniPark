@@ -1,4 +1,4 @@
-import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
+import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { osservatoreGestioneSoste } from "../../../application/gestione-soste/facade.ts";
 import { creaFacadeGestioneStalli } from "../../../application/gestione-stalli/facade.ts";
 import { calcolaHashToken } from "../../../application/utenti-accessi/crittografia.ts";
@@ -26,6 +26,7 @@ import {
   preparaDatabaseDiTest,
   verificaDatabaseDiTest,
 } from "../../../persistence/test/databaseDiTest.ts";
+import { rilevazioniAllIstante } from "../../../persistence/test/datiDiProva.ts";
 import { POST as accesso } from "../auth/accesso/route.ts";
 import { POST as registrazione } from "../auth/registrazione/route.ts";
 import { POST as ricarica } from "../wallet/ricarica/route.ts";
@@ -44,7 +45,6 @@ const MARCO_ROSSI = "marco.rossi@omnipark.example";
 const PAOLO_FERRI = "paolo.ferri@omnipark.example";
 const TARGA_MARCO_ROSSI = "MN234PQ";
 const SCADENZA_PASSATA = new Date("2026-01-01T00:00:00+01:00");
-const DATA_RILEVAZIONE = new Date("2026-11-20T09:00:00+01:00");
 const UN_ORA_MS = 60 * 60_000;
 
 // Foto di prova (§3, da cp_avvioSosta.md §3), generate in memoria.
@@ -263,7 +263,7 @@ async function portaAOccupato(stallo: number): Promise<void> {
   await gestioneStalli().registraRilevazione({
     stallo,
     presenza: true,
-    dataOra: DATA_RILEVAZIONE,
+    dataOra: new Date(), // COD-23: istante della chiamata (§3)
   });
   expect((await trovaStallo(poolDiTest(), stallo))?.stato).toBe("OCCUPATO");
 }
@@ -346,6 +346,12 @@ describe("OMP-48 · cp_apiWalletSoste", () => {
     // Stalli 24 (disabili) e 25 (rosa) a OCCUPATO una sola volta (§3, TF-API-WS-33…38).
     await portaAOccupato(24);
     await portaAOccupato(25);
+  });
+
+  // COD-23 (RF_IOT_2): rilevazioni all'istante corrente prima di ogni frame, così l'allineamento
+  // delle route non porta gli stalli a Sconosciuto (§3).
+  beforeEach(async () => {
+    await rilevazioniAllIstante(poolDiTest(), new Date());
   });
 
   afterAll(async () => {

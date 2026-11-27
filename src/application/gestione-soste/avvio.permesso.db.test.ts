@@ -1,4 +1,4 @@
-import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
 import { creaFacadeGestioneStalli } from "../gestione-stalli/facade";
 import { calcolaHashPassword } from "../utenti-accessi/crittografia";
 import { creaFacadeWallet } from "../wallet/facade";
@@ -24,6 +24,7 @@ import {
   poolDiTest,
   preparaDatabaseDiTest,
 } from "../../persistence/test/databaseDiTest";
+import { rilevazioniAllIstante } from "../../persistence/test/datiDiProva";
 import { SimulatorePagamento } from "../../simulators/pagamento/simulatorePagamento";
 import {
   creaFacadeGestioneSoste,
@@ -45,7 +46,7 @@ import {
 const T = new Date("2026-11-20T10:00:00+01:00");
 const T_SECONDA_FACADE = new Date("2026-11-20T10:16:00+01:00");
 const ISTANTE_RICARICA = new Date("2026-11-20T08:00:00+01:00");
-const ISTANTE_RILEVAZIONE = new Date("2026-11-20T09:00:00+01:00");
+const ISTANTE_RILEVAZIONE = T; // COD-23: entro 60 s da T (RF_IOT_2)
 const DICHIARAZIONE = "Dichiaro di esporre il permesso previsto per lo stallo";
 const STALLI_PORTATI_A_OCCUPATO = [2, 14, 24, 25, 30];
 
@@ -140,6 +141,12 @@ describe("OMP-61 · cp_avvioSosta · permesso", () => {
     for (const stallo of STALLI_PORTATI_A_OCCUPATO) {
       await portaAOccupato(stallo);
     }
+  });
+
+  // COD-23 (RF_IOT_2): rilevazioni recenti rispetto all'orologio dei test, prima di ogni frame
+  // perché TF-AVV-40 e 41 le portano alle 10:16 (§3).
+  beforeEach(async () => {
+    await rilevazioniAllIstante(poolDiTest(), T);
   });
 
   afterAll(async () => {
@@ -489,6 +496,7 @@ describe("OMP-61 · cp_avvioSosta · permesso", () => {
       foto: jpeg(1024),
     });
 
+    await rilevazioniAllIstante(poolDiTest(), T_SECONDA_FACADE); // COD-23 (§3)
     await secondaFacade().sosteDellAutomobilista(p.id);
 
     const scaduta = await leggiSosta(avviata.sosta);
@@ -538,6 +546,7 @@ describe("OMP-61 · cp_avvioSosta · permesso", () => {
     expect(attiva.fotoDelPermesso).not.toBeNull();
     expect(Buffer.compare(attiva.fotoDelPermesso!, jpeg(1024))).toBe(0);
 
+    await rilevazioniAllIstante(poolDiTest(), T_SECONDA_FACADE); // COD-23 (§3)
     await secondaFacade().sosteDellAutomobilista(p.id);
 
     expect(await statoStallo(4)).toBe("LIBERO");

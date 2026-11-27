@@ -67,6 +67,44 @@ export function etichettaDurata(minuti: number): string {
   return resto === 0 ? `${ore} h` : `${ore} h ${resto} min`;
 }
 
+/** Tariffa dello stallo come la restituisce GET /api/stalli/<id> (orari HH:MM:SS, importi in centesimi). */
+export type TariffaDelloStallo = {
+  costoOrario: number;
+  orarioInizioVigenza: string;
+  orarioFineVigenza: string;
+  durataMassima: number;
+};
+
+// UC_STALLI_2 2.a1: permesso richiesto sugli stalli riservati (VD_8) e, per il contrassegno, la
+// gratuità nella riga della tariffa (RD_06, VD_10); sugli stalli rosa si paga la tariffa (RD_07).
+const PERMESSO_PER_TIPO: Readonly<Record<string, string>> = {
+  DISABILI: "Contrassegno di parcheggio, da dichiarare e fotografare all'avvio della sosta.",
+  ROSA: "Permesso rosa, da dichiarare e fotografare all'avvio; sosta a pagamento.",
+};
+const GRATUITA_CON_IL_CONTRASSEGNO =
+  "Sosta gratuita con il contrassegno esposto · tariffa dello stallo";
+
+/**
+ * Righe «Tariffa», «Durata massima» e «Permesso» della scheda dello stallo, prima di «Avvia sosta»
+ * (RF_STALLI_2, UC_STALLI_2 passo 2 e 2.a1). Senza permesso richiesto, permesso è null.
+ */
+export function condizioniDelloStallo(
+  tipoDiStallo: string,
+  tariffa: TariffaDelloStallo,
+): { tariffa: string; durataMassima: string; permesso: string | null } {
+  const inizio = tariffa.orarioInizioVigenza.slice(0, 5);
+  const fine = tariffa.orarioFineVigenza.slice(0, 5);
+  const base = `${formattaEuro(tariffa.costoOrario)} l'ora, dalle ${inizio} alle ${fine}`;
+  return {
+    // Con il contrassegno prima la gratuità, poi costo orario e fascia (UC_STALLI_2 passo 2).
+    tariffa: tipoDiStallo === "DISABILI" ? `${GRATUITA_CON_IL_CONTRASSEGNO} ${base}` : base,
+    durataMassima: etichettaDurata(tariffa.durataMassima),
+    permesso: Object.hasOwn(PERMESSO_PER_TIPO, tipoDiStallo)
+      ? PERMESSO_PER_TIPO[tipoDiStallo]
+      : null,
+  };
+}
+
 /** Controllo anticipato del credito (UC_SOSTA_1 5.a1); CREDITO_INSUFFICIENTE resta del server. */
 export function creditoSufficiente(saldo: number, importo: number): boolean {
   return saldo >= importo;

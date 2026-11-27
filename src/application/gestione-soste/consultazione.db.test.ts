@@ -18,7 +18,7 @@ import {
   poolDiTest,
   preparaDatabaseDiTest,
 } from "../../persistence/test/databaseDiTest";
-import { creaEnteDiProva } from "../../persistence/test/datiDiProva";
+import { creaEnteDiProva, rilevazioniAllIstante } from "../../persistence/test/datiDiProva";
 import { SimulatorePagamento } from "../../simulators/pagamento/simulatorePagamento";
 import {
   creaFacadeGestioneSoste,
@@ -41,6 +41,8 @@ function ora(hhmm: string): Date {
 describe("OMP-45 · cp_consultazione", () => {
   beforeAll(async () => {
     await preparaDatabaseDiTest();
+    // COD-23 (RF_IOT_2): rilevazioni recenti rispetto all'orologio dei test (§3).
+    await rilevazioniAllIstante(poolDiTest(), ADESSO);
   });
 
   afterAll(async () => {
@@ -227,7 +229,7 @@ describe("OMP-45 · cp_consultazione", () => {
     const stato28 = await gestioneStalli().registraRilevazione({
       stallo: 28,
       presenza: true,
-      dataOra: ora("09:00"),
+      dataOra: ADESSO, // COD-23: entro 60 s da T (§3)
     });
     expect(stato28).toBe("OCCUPATO");
     const c9 = await automobilista("9", ["CN009AA"]);
