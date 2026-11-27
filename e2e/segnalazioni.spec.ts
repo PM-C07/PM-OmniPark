@@ -125,7 +125,7 @@ test("TS-17 · RF_OP_3 · presa in carico vista da Sara Galli, stato del pagamen
       const [riga] = await inviaLetture(
         url,
         [{ targa, stallo: STALLI_PER_LE_LETTURE.b }],
-        testInfo.outputPath("ts16-lettura.json"),
+        testInfo.outputPath("ts17-lettura.json"),
       );
       expect(riga.risposta?.esito).toBe("SEGNALAZIONE_CREATA");
       id = riga.risposta?.segnalazione;

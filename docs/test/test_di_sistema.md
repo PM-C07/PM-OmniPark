@@ -1,7 +1,7 @@
 # Piano dei test di sistema
 
 Test di sistema di OmniPark: flussi principali da capo a capo, come li usano Automobilista e Ausiliario del Traffico, sull'anteprima pubblicata, con i simulatori che inviano rilevazioni e letture attraverso le API. Comprende i casi di test per le misure di NRF_PER_3 e NRF_USA_2.
-Task OMP-60 (issue #32, COD-19); TS-09 automatizzato e TS-13 aggiunti con OMP-62 (issue #39, COD-21); TS-06 aggiornato e TS-17 aggiunto con OMP-63 (issue #40, COD-22). Gli esiti delle misure sono in `docs/test/report_requisiti_non_funzionali.md`. Aggiornato con OMP-61 (issue #33, COD-20): TS-14 e TS-15, TS-01 con le verifiche delle correzioni di DIF-02, DIF-03 e DIF-04, esecuzione in §7.
+Task OMP-60 (issue #32, COD-19); TS-09 automatizzato e TS-13 aggiunti con OMP-62 (issue #39, COD-21); TS-06 aggiornato, TS-17 e TS-18 aggiunti con OMP-63 (issue #40, COD-22). Gli esiti delle misure sono in `docs/test/report_requisiti_non_funzionali.md`. Aggiornato con OMP-61 (issue #33, COD-20): TS-14 e TS-15, TS-01 con le verifiche delle correzioni di DIF-02, DIF-03 e DIF-04, esecuzione in §7.
 
 - **Fonti dell'esito atteso:** casi d'uso a priorità Alta in `docs/rad/uc/` (UC_AUTH_1, UC_AUTH_4, UC_WALLET_1, UC_SOSTA_1, UC_SOSTA_7, UC_IOT_1, UC_STALLI_1, UC_ANPR_1, UC_OP_1, UC_OP_4), requisiti in `docs/rad/requisiti.md`, vincoli di dominio in `docs/rad/vincoli_dominio.md`, statechart `SCD_1`, `SCD_2`, `SCD_3`, scenari `docs/rad/scenari_ut.md` e `docs/rad/scenari_op_adm.md`, navigation path `np_01_automobilista` e `np_02_ausiliario`, formato delle API nelle TCS `cp_api*.md`.
 - **Strumento:** Playwright (`@playwright/test` 1.65.1), solo Chromium, profilo mobile Pixel 7, `locale` `it-IT`, fuso `Europe/Rome`. Configurazione in `playwright.config.ts`, test in `e2e/*.spec.ts`.
@@ -11,24 +11,25 @@ Task OMP-60 (issue #32, COD-19); TS-09 automatizzato e TS-13 aggiunti con OMP-62
 
 Ogni caso di test ha un identificativo `TS-NN`, i casi d'uso e i requisiti verificati. Il nome del test Playwright è `TS-NN · <requisito principale> · <descrizione> → <esito>`, per esempio `TS-06 · RF_ANPR_1 · lettura senza sosta → segnalazione nell'ente 1, chiusa con esito`. Le fasi di un caso di test che verificano altri requisiti sono `test.step` con il requisito nel nome, per esempio `RF_WALLET_1 · ricarica di 5 € dalla scheda dello stallo`.
 
-| TS    | Casi d'uso                           | Requisiti                                                              | Tipo                                            | File                          |
-| :---- | :----------------------------------- | :--------------------------------------------------------------------- | :---------------------------------------------- | :---------------------------- |
-| TS-01 | UC_AUTH_1, UC_WALLET_1, UC_SOSTA_1   | RF_SOSTA_1, RF_AUTH_1, RF_AUTH_5, RF_WALLET_1, RF_WALLET_2, RF_SOSTA_6 | automatico                                      | `e2e/sosta.spec.ts`           |
-| TS-02 | UC_SOSTA_7, UC_IOT_1 (3.a1, 3.a2)    | RF_SOSTA_7, RF_SOSTA_6                                                 | automatico, lento                               | `e2e/sosta.spec.ts`           |
-| TS-03 | UC_IOT_1, UC_STALLI_1                | RF_IOT_1, RF_STALLI_1                                                  | automatico                                      | `e2e/mappa.spec.ts`           |
-| TS-04 | UC_IOT_1 (3.a1)                      | RF_SOSTA_6                                                             | automatico                                      | `e2e/sosta.spec.ts`           |
-| TS-05 | UC_STALLI_1 (4.a1)                   | RF_STALLI_1                                                            | automatico                                      | `e2e/mappa.spec.ts`           |
-| TS-06 | UC_ANPR_1, UC_OP_1, UC_OP_2, UC_OP_4 | RF_ANPR_1, RF_OP_1, RF_OP_3, RF_OP_6                                   | automatico                                      | `e2e/segnalazioni.spec.ts`    |
-| TS-07 | UC_ANPR_1 (2.a1, 4.a1)               | RF_ANPR_1, NRF_AFF_2 (riscontro)                                       | automatico                                      | `e2e/sosta.spec.ts`           |
-| TS-08 | UC_AUTH_4                            | RF_AUTH_4, NRF_SIC_1                                                   | automatico                                      | `e2e/accesso.spec.ts`         |
-| TS-09 | UC_AUTH_4                            | RF_AUTH_4                                                              | automatico, con la password dell'Amministratore | `e2e/amministrazione.spec.ts` |
-| TS-10 | UC_OP_1, UC_OP_4                     | NRF_SIC_1                                                              | automatico                                      | `e2e/accesso.spec.ts`         |
-| TS-11 | UC_IOT_1, UC_STALLI_1                | NRF_PER_3                                                              | automatico, misura                              | `e2e/misure.spec.ts`          |
-| TS-12 | UC_SOSTA_1                           | NRF_USA_2                                                              | automatico, misura                              | `e2e/misure.spec.ts`          |
-| TS-13 | UC_ADM_2, UC_AUTH_4 (2.a2)           | RF_ADM_2, RF_AUTH_4, VD_19                                             | automatico, con la password dell'Amministratore | `e2e/amministrazione.spec.ts` |
-| TS-14 | UC_SOSTA_1 (4.a3), UC_SOSTA_5        | RF_SOSTA_5                                                             | automatico                                      | `e2e/permesso.spec.ts`        |
-| TS-15 | UC_SOSTA_2                           | RF_SOSTA_2, RF_WALLET_2                                                | automatico                                      | `e2e/sosta.spec.ts`           |
-| TS-17 | UC_OP_2, UC_OP_3, UC_OP_4            | RF_OP_3, RF_OP_4, RF_OP_6, NRF_SIC_1                                   | automatico                                      | `e2e/segnalazioni.spec.ts`    |
+| TS    | Casi d'uso                           | Requisiti                                                              | Tipo                                            | File                           |
+| :---- | :----------------------------------- | :--------------------------------------------------------------------- | :---------------------------------------------- | :----------------------------- |
+| TS-01 | UC_AUTH_1, UC_WALLET_1, UC_SOSTA_1   | RF_SOSTA_1, RF_AUTH_1, RF_AUTH_5, RF_WALLET_1, RF_WALLET_2, RF_SOSTA_6 | automatico                                      | `e2e/sosta.spec.ts`            |
+| TS-02 | UC_SOSTA_7, UC_IOT_1 (3.a1, 3.a2)    | RF_SOSTA_7, RF_SOSTA_6                                                 | automatico, lento                               | `e2e/sosta.spec.ts`            |
+| TS-03 | UC_IOT_1, UC_STALLI_1                | RF_IOT_1, RF_STALLI_1                                                  | automatico                                      | `e2e/mappa.spec.ts`            |
+| TS-04 | UC_IOT_1 (3.a1)                      | RF_SOSTA_6                                                             | automatico                                      | `e2e/sosta.spec.ts`            |
+| TS-05 | UC_STALLI_1 (4.a1)                   | RF_STALLI_1                                                            | automatico                                      | `e2e/mappa.spec.ts`            |
+| TS-06 | UC_ANPR_1, UC_OP_1, UC_OP_2, UC_OP_4 | RF_ANPR_1, RF_OP_1, RF_OP_3, RF_OP_6                                   | automatico                                      | `e2e/segnalazioni.spec.ts`     |
+| TS-07 | UC_ANPR_1 (2.a1, 4.a1)               | RF_ANPR_1, NRF_AFF_2 (riscontro)                                       | automatico                                      | `e2e/sosta.spec.ts`            |
+| TS-08 | UC_AUTH_4                            | RF_AUTH_4, NRF_SIC_1                                                   | automatico                                      | `e2e/accesso.spec.ts`          |
+| TS-09 | UC_AUTH_4                            | RF_AUTH_4                                                              | automatico, con la password dell'Amministratore | `e2e/amministrazione.spec.ts`  |
+| TS-10 | UC_OP_1, UC_OP_4                     | NRF_SIC_1                                                              | automatico                                      | `e2e/accesso.spec.ts`          |
+| TS-11 | UC_IOT_1, UC_STALLI_1                | NRF_PER_3                                                              | automatico, misura                              | `e2e/misure.spec.ts`           |
+| TS-12 | UC_SOSTA_1                           | NRF_USA_2                                                              | automatico, misura                              | `e2e/misure.spec.ts`           |
+| TS-13 | UC_ADM_2, UC_AUTH_4 (2.a2)           | RF_ADM_2, RF_AUTH_4, VD_19                                             | automatico, con la password dell'Amministratore | `e2e/amministrazione.spec.ts`  |
+| TS-14 | UC_SOSTA_1 (4.a3), UC_SOSTA_5        | RF_SOSTA_5                                                             | automatico                                      | `e2e/permesso.spec.ts`         |
+| TS-15 | UC_SOSTA_2                           | RF_SOSTA_2, RF_WALLET_2                                                | automatico                                      | `e2e/sosta.spec.ts`            |
+| TS-17 | UC_OP_2, UC_OP_3, UC_OP_4            | RF_OP_3, RF_OP_4, RF_OP_6, NRF_SIC_1                                   | automatico                                      | `e2e/segnalazioni.spec.ts`     |
+| TS-18 | UC_OP_1 (3.a1), UC_OP_5 (4.a1)       | RF_OP_2, RF_OP_5, NRF_LEG_2                                            | automatico                                      | `e2e/verificaPermesso.spec.ts` |
 
 Corrispondenza con gli scenari dell'issue #32:
 
@@ -38,6 +39,7 @@ Corrispondenza con gli scenari dell'issue #32:
 | Rilevazione del sensore, variazione sulla mappa, stallo Non disponibile e ripristino alla fine | TS-03, TS-04, TS-02, TS-05 |
 | Lettura ANPR, segnalazione nell'ente corretto, chiusura con esito                              | TS-06, TS-07               |
 | Presa in carico, stato del pagamento e chiusura con due Ausiliari (OMP-63)                     | TS-17                      |
+| Verifica del permesso con esito non conforme (OMP-63, parte B)                                 | TS-18                      |
 | Accesso per ruolo e rifiuto dell'accesso ai dati di un altro ente                              | TS-08, TS-09, TS-10        |
 | Gestione degli account degli Ausiliari (OMP-62)                                                | TS-13                      |
 
@@ -56,8 +58,8 @@ Si impostano nel terminale; i test non leggono il file `.env` e nessun valore è
 | Variabile                              | Uso                                                                                                | Obbligatoria                                        |
 | :------------------------------------- | :------------------------------------------------------------------------------------------------- | :-------------------------------------------------- |
 | `OMNIPARK_E2E_URL`                     | indirizzo dell'applicazione: alias di branch dell'anteprima o `http://localhost:3000`              | no (predefinito localhost)                          |
-| `SIMULATORE_TOKEN`                     | token dei simulatori configurato nell'ambiente di destinazione                                     | sì (TS-02…07, TS-11, TS-12)                         |
-| `OMNIPARK_E2E_PASSWORD_AUSILIARIO`     | password dimostrativa degli Ausiliari del README                                                   | sì (TS-06, TS-07, TS-08, TS-10)                     |
+| `SIMULATORE_TOKEN`                     | token dei simulatori configurato nell'ambiente di destinazione                                     | sì (TS-02…07, TS-11, TS-12, TS-17, TS-18)           |
+| `OMNIPARK_E2E_PASSWORD_AUSILIARIO`     | password dimostrativa degli Ausiliari del README                                                   | sì (TS-06, TS-07, TS-08, TS-10, TS-17, TS-18)       |
 | `OMNIPARK_E2E_ANTICIPO_MS`             | millisecondi sottratti al `dataOra` di rilevazioni e letture, per un orologio del PC in anticipo   | no (predefinito 1000)                               |
 | `OMNIPARK_E2E_PASSWORD_AMMINISTRATORE` | password dell'Amministratore, da impostare con `read -rs` (non resta nella cronologia della shell) | no: senza, TS-09 e TS-13 sono saltati con il motivo |
 
@@ -65,11 +67,11 @@ La password dell'Amministratore non compare in nessun file: la usano solo TS-09 
 
 ### Comandi
 
-| Comando                  | Casi di test                                                                                   | Durata indicativa |
-| :----------------------- | :--------------------------------------------------------------------------------------------- | :---------------- |
-| `npm run test:e2e`       | TS-01, TS-03…08, TS-10, TS-14, TS-15, TS-17; TS-09 e TS-13 con la password dell'Amministratore | qualche minuto    |
-| `npm run test:e2e:lenta` | TS-02                                                                                          | circa 17 minuti   |
-| `npm run misura:e2e`     | TS-11, TS-12 (scrivono i file delle misure)                                                    | circa 3 minuti    |
+| Comando                  | Casi di test                                                                                          | Durata indicativa |
+| :----------------------- | :---------------------------------------------------------------------------------------------------- | :---------------- |
+| `npm run test:e2e`       | TS-01, TS-03…08, TS-10, TS-14, TS-15, TS-17, TS-18; TS-09 e TS-13 con la password dell'Amministratore | qualche minuto    |
+| `npm run test:e2e:lenta` | TS-02                                                                                                 | circa 17 minuti   |
+| `npm run misura:e2e`     | TS-11, TS-12 (scrivono i file delle misure)                                                           | circa 3 minuti    |
 
 Esecuzione seriale (`workers: 1`), nessun nuovo tentativo automatico (`retries: 0`): un fallimento intermittente resta visibile. Report HTML in `e2e-report/`, tracce e schermate dei fallimenti in `e2e-risultati/` (entrambe ignorate da Git).
 
@@ -96,12 +98,13 @@ Il database delle anteprime è condiviso: nessun reset, nessuna scrittura dirett
 
 Tutti di Gragnano (ente 1) e nella vista iniziale della mappa, tranne quelli delle letture ANPR.
 
-| Uso                                          | Stalli                                                         | Regola                                                                                                                                                                                                                                                                               |
-| :------------------------------------------- | :------------------------------------------------------------- | :----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Variazioni dei sensori (TS-03, TS-05, TS-11) | 1, 3 (Via Tommaso Sorrentino), 16 (Piazza Aubry n. 3)          | nessun test vi avvia soste; ogni rilevazione porta lo stallo nello stato opposto a quello letto                                                                                                                                                                                      |
-| Soste (TS-01, TS-02, TS-04, TS-12, TS-15)    | candidati 17…21 (Piazza Aubry n. 4…8)                          | all'inizio il test legge `GET /api/stalli` e prende il primo candidato non `Non disponibile`, poi invia «veicolo presente» per portarlo a `Occupato`. Se tutti hanno una sosta in corso, il test si ferma con il messaggio «nessuno stallo candidato senza sosta: riprova più tardi» |
-| Soste con permesso (TS-14)                   | 15 (rosa, Piazza Aubry n. 2), 14 (disabili, Piazza Aubry n. 1) | dalla OMP-61; il test porta lo stallo a `Occupato` con «veicolo presente»; se ha una sosta in corso (Non disponibile) si ferma con «nessuno stallo candidato senza sosta in corso: riprova più tardi»                                                                                |
-| Letture ANPR (TS-06, TS-07, TS-10, TS-17)    | 7, 8, 9 (Via Raffaele Viviani)                                 | lo stato dello stallo non conta per il riscontro                                                                                                                                                                                                                                     |
+| Uso                                          | Stalli                                                                                                                       | Regola                                                                                                                                                                                                                                                                                                                                                                                                    |
+| :------------------------------------------- | :--------------------------------------------------------------------------------------------------------------------------- | :-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Variazioni dei sensori (TS-03, TS-05, TS-11) | 1, 3 (Via Tommaso Sorrentino), 16 (Piazza Aubry n. 3)                                                                        | nessun test vi avvia soste; ogni rilevazione porta lo stallo nello stato opposto a quello letto                                                                                                                                                                                                                                                                                                           |
+| Soste (TS-01, TS-02, TS-04, TS-12, TS-15)    | candidati 17…21 (Piazza Aubry n. 4…8)                                                                                        | all'inizio il test legge `GET /api/stalli` e prende il primo candidato non `Non disponibile`, poi invia «veicolo presente» per portarlo a `Occupato`. Se tutti hanno una sosta in corso, il test si ferma con il messaggio «nessuno stallo candidato senza sosta: riprova più tardi»                                                                                                                      |
+| Soste con permesso (TS-14)                   | 15 (rosa, Piazza Aubry n. 2), 14 (disabili, Piazza Aubry n. 1)                                                               | dalla OMP-61; il test porta lo stallo a `Occupato` con «veicolo presente»; se ha una sosta in corso (Non disponibile) si ferma con «nessuno stallo candidato senza sosta in corso: riprova più tardi»                                                                                                                                                                                                     |
+| Letture ANPR (TS-06, TS-07, TS-10, TS-17)    | 7, 8, 9 (Via Raffaele Viviani)                                                                                               | lo stato dello stallo non conta per il riscontro                                                                                                                                                                                                                                                                                                                                                          |
+| Verifica del permesso (TS-18)                | candidati 4 (rosa, Piazza San Leone n. 1, fuori dalla zona iniziale della mappa) e 2 (disabili, Via Tommaso Sorrentino n. 2) | dalla OMP-63, diversi da quelli di TS-14; il test legge lo stato con `GET /api/stalli/<id>`, prende il primo senza sosta in corso, invia «veicolo presente» e avvia dalle API una sosta di 15 minuti con permesso. La sosta resta Attiva 15 minuti: con due candidati si possono fare due esecuzioni di fila, poi il test si ferma con «nessuno stallo candidato senza sosta in corso: riprova più tardi» |
 
 ### Timeout di 60 secondi (RF_IOT_2)
 
@@ -261,6 +264,23 @@ La sosta di TS-01 resta Attiva per 15 minuti e serve a TS-04 e TS-07, che sono n
 | 6   | Paolo Ferri chiude con «Non confermata», poi «Conferma»                                    | La segnalazione esce dalla mappa di Paolo Ferri e, con il polling, da quella di Sara Galli (UC_OP_4 passo 4)                                                            |
 
 Gli stati della sosta (Attiva, Scaduta, Terminata, pagata o gratuita) sono coperti dai test sul database (`cp_statoDelPagamento.md`): sull'anteprima condivisa non si prepara una sosta già scaduta o terminata senza attese.
+
+### TS-18 · Verifica del permesso con esito non conforme
+
+- **Casi d'uso e requisiti:** UC_OP_1 (3.a1), UC_OP_5 (passi 1–4, 3.a1, 4.a1); RF_OP_2, RF_OP_5, NRF_LEG_2, NRF_SIC_1. Aggiunto con OMP-63 (issue #40, parte B).
+- **Tipo:** automatico (`e2e/verificaPermesso.spec.ts`). La sosta con permesso si avvia dalle API (`POST /api/soste` multipart): l'avvio dalla schermata è già in TS-14.
+- **Precondizioni:** un Automobilista nuovo con una ricarica di 5 €; uno dei candidati 4 e 2 senza sosta in corso (§3), portato a `Occupato` con una rilevazione fresca.
+- **Passi ed esito atteso:**
+
+| #   | Passo                                                                                                                                 | Esito atteso                                                                                                                                                                                                         |
+| :-- | :------------------------------------------------------------------------------------------------------------------------------------ | :------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 1   | L'Automobilista avvia dalle API una sosta di 15 minuti sullo stallo candidato, con la dichiarazione del tipo di stallo e una foto PNG | 201 con l'id della sosta                                                                                                                                                                                             |
+| 2   | Paolo Ferri (ente 1) accede                                                                                                           | Si apre `/ausiliario`; nella sezione «Permessi da verificare» c'è la riga della sosta con numero dello stallo e targa; nessun marker nuovo sulla mappa (UC_OP_1 passo 2)                                             |
+| 3   | Seleziona il permesso                                                                                                                 | Il pannello mostra targa, dichiarazione e foto del permesso (UC_OP_1 3.a1); la foto è servita con `Content-Type` `image/png` e `Cache-Control: no-store` (NRF_LEG_2)                                                 |
+| 4   | «Non conforme», poi «Annulla»                                                                                                         | Nessun esito registrato, si torna ai due pulsanti (UC_OP_5 3.a1)                                                                                                                                                     |
+| 5   | «Non conforme», poi «Conferma»                                                                                                        | Messaggio «Esito registrato: permesso non conforme. È stata registrata una segnalazione di sosta irregolare accertata, già chiusa.»; il permesso esce dall'elenco e da `GET /api/ausiliario/permessi` (UC_OP_5 4.a1) |
+
+La segnalazione nasce `Chiusa` e non compare sulla mappa delle segnalazioni; il suo contenuto (esito accertato, assegnata a Paolo Ferri, senza targa rilevata) è verificato dai test sul database (`cp_verificaPermesso.md` TF-VP-02, `cp_apiPermessi.md` TF-API-PER-12).
 
 ### TS-07 · Lettura ANPR con sosta attiva e lettura duplicata
 
