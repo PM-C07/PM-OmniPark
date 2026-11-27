@@ -30,6 +30,7 @@ import { descriviTipo, type StalloDellaMappa } from "./logica/mappaStalli.ts";
 import { richiedePermesso } from "./logica/permesso.ts";
 import { chiamaApi, type EsitoRisposta } from "./logica/risposteApi.ts";
 import { messaggioRicaricaApprovata, riquadroRicarica } from "./logica/wallet.ts";
+import { NavigaVersoStallo } from "./NavigaVersoStallo.tsx";
 import { PermessoStallo } from "./PermessoStallo.tsx";
 import { Ricarica } from "./Ricarica.tsx";
 
@@ -308,6 +309,7 @@ export function SchedaStallo({
       {dettaglioAssente ? (
         <Avviso tipo="errore">I dettagli dello stallo non sono disponibili.</Avviso>
       ) : null}
+      <NavigaVersoStallo stallo={stallo} />
 
       {!disponibilita.disponibile ? (
         <p className="rounded-md border border-zinc-300 bg-zinc-50 p-3 text-base text-zinc-900">

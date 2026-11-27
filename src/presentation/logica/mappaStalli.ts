@@ -168,6 +168,15 @@ export function elementoDelloStallo(stallo: StalloDellaMappa): ElementoMappa {
   };
 }
 
+/**
+ * Link all'app di mappe con lo stallo come destinazione (RF_NAV_1, UC_NAV_1 passo 2, OMP-67): il
+ * Sistema non calcola percorsi. String() scrive sempre il punto decimale, qualunque sia la lingua.
+ */
+export function linkDiNavigazione(latitudine: number, longitudine: number): string {
+  const destinazione = `${String(latitudine)},${String(longitudine)}`;
+  return `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(destinazione)}`;
+}
+
 /** Legenda della mappa degli stalli: stati (colore e simbolo) e tipi. */
 export const LEGENDA_STALLI = [
   { tono: "verde", simbolo: "✓", testo: "Libero" },
