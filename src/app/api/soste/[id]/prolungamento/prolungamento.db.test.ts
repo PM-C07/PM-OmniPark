@@ -24,7 +24,7 @@ import { POST as registrazione } from "../../../auth/registrazione/route.ts";
 import { GET as saldoWallet } from "../../../wallet/route.ts";
 import { GET as anteprimaProlungamento, POST as confermaProlungamento } from "./route.ts";
 
-// Test frame TF-API-PRO-01…19 di docs/test/cp_apiProlungamento.md (OMP-61, blocco A).
+// Test frame TF-API-PRO-01…20 di docs/test/cp_apiProlungamento.md (OMP-61, blocco A; 20 da OMP-66).
 // Orologio di sistema: A = Date.now() all'inizio della preparazione del frame; S + m è la scadenza
 // della sosta di prova della preparazione più m minuti. TF-API-PRO-15, 17, 18 e 19 riusano la
 // sosta di TF-API-PRO-14, 16, 16 e 04.
@@ -664,6 +664,19 @@ describe("OMP-61 · cp_apiProlungamento", () => {
       404,
       "SOSTA_INESISTENTE",
     );
+    expect(await fotografa(dati)).toEqual(prima);
+  });
+
+  // ---- Anteprima con un ruolo non ammesso (OMP-66, docs/test/matrice_accessi.md) ----
+
+  it("NRF_SIC_1 · TF-API-PRO-20 · anteprima con la sessione di Paolo Ferri su una sosta preparata come in TF-API-PRO-16 → 403 RUOLO_NON_AMMESSO, nessun effetto", async () => {
+    const a = Date.now();
+    const automobilista = await automobilistaDelFrame("20");
+    const sosta = await sostaDiProva(a, automobilista, 29);
+    const dati = { sosta: sosta.id, automobilisti: [automobilista.id], stallo: 29 };
+    const prima = await fotografa(dati);
+
+    await verificaErrore(await anteprima(sosta.id, "30", paolo), 403, "RUOLO_NON_AMMESSO");
     expect(await fotografa(dati)).toEqual(prima);
   });
 });

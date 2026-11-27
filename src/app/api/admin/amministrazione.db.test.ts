@@ -25,7 +25,7 @@ import { GET as elencoAusiliari, POST as nuovoAusiliario } from "./ausiliari/rou
 import { GET as riepilogoEnte } from "./enti/[id]/riepilogo/route.ts";
 import { GET as elencoEnti } from "./enti/route.ts";
 
-// Test frame TF-API-ADM-01…34 di docs/test/cp_apiAmministrazione.md (OMP-62).
+// Test frame TF-API-ADM-01…35 di docs/test/cp_apiAmministrazione.md (OMP-62; 35 da OMP-66).
 // I frame si eseguono nell'ordine della tabella e le scritture vanno in commit (§3).
 
 const BASE = "http://localhost";
@@ -580,6 +580,15 @@ describe("OMP-62 · cp_apiAmministrazione", () => {
 
     const corpo34 = { ...CORPO_23, nome: "Giorgio Luigi" }; // diverso dai dati salvati da TF-23
     await verificaErrore(await modifica("6", corpo34, marco), 403, "RUOLO_NON_AMMESSO");
+    expect(await datiAusiliario(6)).toEqual(prima);
+  });
+
+  it("NRF_SIC_1 · TF-API-ADM-35 · modifica di Giorgio Marino (6) senza sessione → 401 SESSIONE_NON_VALIDA, invariato", async () => {
+    const prima = await datiAusiliario(6);
+
+    // Nome diverso da quelli del dataset e di TF-API-ADM-23 e 34: la modifica cambierebbe i dati.
+    const corpo35 = { ...CORPO_23, nome: "Giorgio Paolo" };
+    await verificaErrore(await modifica("6", corpo35), 401, "SESSIONE_NON_VALIDA");
     expect(await datiAusiliario(6)).toEqual(prima);
   });
 });
