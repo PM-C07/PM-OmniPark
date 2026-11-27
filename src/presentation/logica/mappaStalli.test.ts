@@ -1,14 +1,15 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import {
   applicaModifiche,
   descrizioneStallo,
   elementoDelloStallo,
+  linkDiNavigazione,
   ricordaStalli,
   zonaDallaVista,
   type StalloDellaMappa,
 } from "./mappaStalli.ts";
 
-// Specifica: docs/test/cp_mappaInterfaccia.md (TF-MAPUI-01…25)
+// Specifica: docs/test/cp_mappaInterfaccia.md (TF-MAPUI-01…29)
 
 const T1 = "2026-11-20T09:00:00.000Z";
 const T2 = "2026-11-20T09:00:05.000Z";
@@ -212,5 +213,43 @@ describe("cp_mappaInterfaccia", () => {
   it('RF_SOSTA_1 · TF-MAPUI-25 · stallo noto da una zona precedente → "Stallo n. 6, Piazza Aubry"', () => {
     const noti = ricordaStalli(ricordaStalli(new Map(), [S6()]), [S(1, "LIBERO", T1)]);
     expect(descrizioneStallo(19, noti)).toBe("Stallo n. 6, Piazza Aubry");
+  });
+});
+
+// Dalla OMP-67 (RF_NAV_1, UC_NAV_1): TF-MAPUI-26…29.
+describe("linkDiNavigazione", () => {
+  it("RF_NAV_1 · TF-MAPUI-26 · coordinate positive → destination con la virgola codificata %2C", () => {
+    expect(linkDiNavigazione(40.68824, 14.52214)).toBe(
+      "https://www.google.com/maps/dir/?api=1&destination=40.68824%2C14.52214",
+    );
+  });
+
+  it("RF_NAV_1 · TF-MAPUI-27 · coordinate negative → segno meno e punto decimale nell'URL", () => {
+    expect(linkDiNavigazione(-33.86882, -151.20929)).toBe(
+      "https://www.google.com/maps/dir/?api=1&destination=-33.86882%2C-151.20929",
+    );
+  });
+
+  it("RF_NAV_1 · TF-MAPUI-28 · coordinate con molti decimali → tutti i decimali senza arrotondamento", () => {
+    expect(linkDiNavigazione(40.688241234567, 14.522141234567)).toBe(
+      "https://www.google.com/maps/dir/?api=1&destination=40.688241234567%2C14.522141234567",
+    );
+  });
+
+  it("RF_NAV_1 · TF-MAPUI-29 · lingua del dispositivo italiana → stesso URL con il punto decimale", () => {
+    const spia = vi.spyOn(Number.prototype, "toLocaleString");
+    spia.mockImplementation(function (this: number) {
+      return new Intl.NumberFormat("it-IT", { maximumFractionDigits: 20 }).format(this);
+    });
+    try {
+      // Precondizione: la lingua italiana è attiva e userebbe la virgola decimale.
+      expect((40.68824).toLocaleString()).toBe("40,68824");
+      const url = linkDiNavigazione(40.68824, 14.52214);
+      expect(url).toBe("https://www.google.com/maps/dir/?api=1&destination=40.68824%2C14.52214");
+      // Nessuna virgola decimale, neppure codificata: l'unica virgola separa lat e lng.
+      expect(new URL(url).searchParams.get("destination")).toBe("40.68824,14.52214");
+    } finally {
+      spia.mockRestore();
+    }
   });
 });

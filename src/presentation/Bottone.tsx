@@ -9,6 +9,11 @@ const CLASSI: Readonly<Record<Variante, string>> = {
   pericolo: "border border-red-800 bg-white text-red-800 hover:bg-red-50",
 };
 
+/** Classi del bottone, anche per i link con l'aspetto di un bottone (OMP-67). */
+export function classiBottone(variante: Variante = "primario"): string {
+  return `min-h-11 rounded-md px-4 py-2 text-base font-semibold disabled:cursor-not-allowed disabled:opacity-60 ${CLASSI[variante]}`;
+}
+
 export function Bottone({
   variante = "primario",
   inCorso = false,
@@ -29,7 +34,7 @@ export function Bottone({
       type={type}
       disabled={disabled || inCorso}
       aria-busy={inCorso || undefined}
-      className={`min-h-11 rounded-md px-4 py-2 text-base font-semibold disabled:cursor-not-allowed disabled:opacity-60 ${CLASSI[variante]} ${className}`}
+      className={`${classiBottone(variante)} ${className}`}
       {...altri}
     >
       {inCorso ? testoInCorso : children}
