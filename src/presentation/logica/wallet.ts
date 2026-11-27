@@ -1,7 +1,8 @@
 // Logica del wallet nell'interfaccia (OMP-58, docs/test/cp_walletInterfaccia.md, UC_WALLET_1):
 // tagli della ricarica ed esito di POST /api/wallet/ricarica; dalla OMP-61 messaggio della ricarica
-// approvata e riquadro della ricarica nei flussi di avvio e prolungamento (DIF-03).
-import { formattaEuro } from "./importi.ts";
+// approvata e riquadro della ricarica nei flussi di avvio e prolungamento (DIF-03); dalla OMP-65 riga
+// della cronologia dei movimenti (UC_WALLET_3).
+import { formattaDataOra, formattaEuro } from "./importi.ts";
 import { interpretaRisposta, type EsitoRisposta } from "./risposteApi.ts";
 
 /**
@@ -69,4 +70,39 @@ export function riquadroRicarica(stato: {
     return "proposta";
   }
   return stato.ricaricaApprovata ? "approvata" : "nessuno";
+}
+
+/** Un movimento come arriva da GET /api/wallet/movimenti (importo in centesimi, data ISO 8601). */
+export type MovimentoApi = {
+  id: number;
+  tipoDiMovimento: "RICARICA" | "ADDEBITO";
+  importo: number;
+  dataEOra: string;
+  sosta: { id: number; targa: string; numeroStallo: number; area: string } | null;
+};
+
+export type RigaMovimento = {
+  tipo: string;
+  importo: string;
+  dataEOra: string;
+  targa: string | null;
+  stallo: string | null;
+};
+
+/**
+ * Riga della cronologia (UC_WALLET_3 passo 2): tipo, importo con il segno (U+2212 per gli
+ * addebiti), data e ora, e per gli addebiti targa e stallo. Un prolungamento è un altro addebito
+ * della stessa sosta.
+ */
+export function rigaMovimento(movimento: MovimentoApi): RigaMovimento {
+  const ricarica = movimento.tipoDiMovimento === "RICARICA";
+  return {
+    tipo: ricarica ? "Ricarica" : "Addebito",
+    importo: `${ricarica ? "+" : "−"}${formattaEuro(movimento.importo)}`,
+    dataEOra: formattaDataOra(movimento.dataEOra),
+    targa: movimento.sosta?.targa ?? null,
+    stallo: movimento.sosta
+      ? `Stallo ${movimento.sosta.numeroStallo} · ${movimento.sosta.area}`
+      : null,
+  };
 }

@@ -3,8 +3,10 @@ import {
   eTaglioPrevisto,
   esitoRicarica,
   messaggioRicaricaApprovata,
+  rigaMovimento,
   riquadroRicarica,
   TAGLI_RICARICA,
+  type MovimentoApi,
 } from "./wallet.ts";
 
 describe("logica del wallet nell'interfaccia (cp_walletInterfaccia)", () => {
@@ -126,5 +128,41 @@ describe("logica del wallet nell'interfaccia (cp_walletInterfaccia)", () => {
     expect(
       riquadroRicarica({ creditoScarso: false, erroreCredito: false, ricaricaApprovata: false }),
     ).toBe("nessuno");
+  });
+
+  it("RF_WALLET_3 · TF-WALUI-20 · riga di una ricarica → Ricarica, importo con +, data e ora locali, senza targa né stallo", () => {
+    const movimento: MovimentoApi = {
+      id: 4,
+      tipoDiMovimento: "RICARICA",
+      importo: 1000,
+      dataEOra: "2026-11-02T09:18:00.000Z",
+      sosta: null,
+    };
+
+    expect(rigaMovimento(movimento)).toEqual({
+      tipo: "Ricarica",
+      importo: "+10,00\u00a0€",
+      dataEOra: "02/11/2026 10:18",
+      targa: null,
+      stallo: null,
+    });
+  });
+
+  it("RF_WALLET_3 · TF-WALUI-21 · riga di un addebito → Addebito, importo con il segno meno, data e ora locali, targa e stallo", () => {
+    const movimento: MovimentoApi = {
+      id: 6,
+      tipoDiMovimento: "ADDEBITO",
+      importo: 300,
+      dataEOra: "2026-11-09T15:00:00.000Z",
+      sosta: { id: 9, targa: "MN234PQ", numeroStallo: 102, area: "Via Roma" },
+    };
+
+    expect(rigaMovimento(movimento)).toEqual({
+      tipo: "Addebito",
+      importo: "\u22123,00\u00a0€",
+      dataEOra: "09/11/2026 16:00",
+      targa: "MN234PQ",
+      stallo: "Stallo 102 \u00b7 Via Roma",
+    });
   });
 });

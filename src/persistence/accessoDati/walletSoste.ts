@@ -168,25 +168,44 @@ export async function registraRicarica(
   return movimentoDa(r.rows[0]);
 }
 
+export type MovimentoConSosta = MovimentoDelWallet & {
+  targa: string | null;
+  numeroStallo: number | null;
+  area: string | null;
+};
+
 /**
- * Cronologia del wallet dal più recente (data e ora decrescente, poi id decrescente), con la
- * targa della sosta per gli addebiti (null per le ricariche).
+ * Cronologia del wallet dal più recente (data e ora decrescente, poi id decrescente), con targa,
+ * numero dello stallo e nome dell'area della sosta per gli addebiti (null per le ricariche).
+ * Senza `limite` restituisce tutti i movimenti (LIMIT NULL).
  */
 export async function movimenti(
   es: Esecutore,
   walletVirtualeId: number,
-): Promise<(MovimentoDelWallet & { targa: string | null })[]> {
-  const r = await interroga<RigaMovimento & { targa: string | null }>(
+  limite?: number,
+): Promise<MovimentoConSosta[]> {
+  const r = await interroga<
+    RigaMovimento & { targa: string | null; numero_stallo: number | null; area: string | null }
+  >(
     es,
-    `SELECT m.id, m.wallet_virtuale_id, m.tipo_di_movimento, m.importo, m.data_e_ora, m.sosta_id, v.targa
+    `SELECT m.id, m.wallet_virtuale_id, m.tipo_di_movimento, m.importo, m.data_e_ora, m.sosta_id,
+            v.targa, st.numero AS numero_stallo, a.nome AS area
      FROM movimento_del_wallet AS m
      LEFT JOIN sosta AS so ON so.id = m.sosta_id
      LEFT JOIN veicolo AS v ON v.id = so.veicolo_id
+     LEFT JOIN stallo AS st ON st.id = so.stallo_id
+     LEFT JOIN area_di_sosta AS a ON a.id = st.area_di_sosta_id
      WHERE m.wallet_virtuale_id = $1
-     ORDER BY m.data_e_ora DESC, m.id DESC`,
-    [walletVirtualeId],
+     ORDER BY m.data_e_ora DESC, m.id DESC
+     LIMIT $2`,
+    [walletVirtualeId, limite ?? null],
   );
-  return r.rows.map((riga) => ({ ...movimentoDa(riga), targa: riga.targa }));
+  return r.rows.map((riga) => ({
+    ...movimentoDa(riga),
+    targa: riga.targa,
+    numeroStallo: riga.numero_stallo,
+    area: riga.area,
+  }));
 }
 
 // --- Soste (SD_SOSTA_1, SD_SOSTA_2, SD_SOSTA_7, SD_IOT_1, SD_IOT_2, SD_ANPR_1, SD_OP_3, SD_OP_5)

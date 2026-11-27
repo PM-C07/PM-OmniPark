@@ -29,12 +29,14 @@ import {
 import { rilevazioniAllIstante } from "../../../persistence/test/datiDiProva.ts";
 import { POST as accesso } from "../auth/accesso/route.ts";
 import { POST as registrazione } from "../auth/registrazione/route.ts";
+import { GET as movimentiWallet } from "../wallet/movimenti/route.ts";
 import { POST as ricarica } from "../wallet/ricarica/route.ts";
 import { GET as saldoWallet } from "../wallet/route.ts";
 import { GET as sosteDellAutomobilista, POST as avviaSosta } from "./route.ts";
 
-// Test frame TF-API-WS-01…43 di docs/test/cp_apiWalletSoste.md (OMP-48; con la OMP-61
-// TF-API-WS-20…23 aggiornati e TF-API-WS-32…43 aggiunti).
+// Test frame TF-API-WS-01…46 di docs/test/cp_apiWalletSoste.md (OMP-48; con la OMP-61
+// TF-API-WS-20…23 aggiornati e TF-API-WS-32…43 aggiunti; con la OMP-65 TF-API-WS-44…46
+// aggiunti).
 
 const BASE = "http://localhost";
 const NOME_COOKIE = "omnipark_sessione";
@@ -107,6 +109,10 @@ function richiesta(
 
 function chiediSaldo(cookie?: string): Promise<Response> {
   return saldoWallet(richiesta("/api/wallet", "GET", { cookie }));
+}
+
+function chiediMovimenti(cookie?: string): Promise<Response> {
+  return movimentiWallet(richiesta("/api/wallet/movimenti", "GET", { cookie }));
 }
 
 function ricaricaWallet(corpo: unknown, cookie?: string): Promise<Response> {
@@ -955,5 +961,37 @@ describe("OMP-48 · cp_apiWalletSoste", () => {
       "SESSIONE_NON_VALIDA",
     );
     expect(await sostaAttivaSuStallo(poolDiTest(), 22)).toBeNull();
+  });
+
+  // ---- Cronologia: GET /api/wallet/movimenti (OMP-65) ----
+
+  it("RF_WALLET_3 · TF-API-WS-44 · cronologia di Marco Rossi → 200 { movimenti } con 6 elementi dal più recente", async () => {
+    const risposta = await chiediMovimenti(marco);
+
+    expect(risposta.status).toBe(200);
+    const corpo = (await risposta.json()) as { movimenti: { id: number }[] };
+    expect(corpo.movimenti.map((m) => m.id)).toEqual([6, 5, 4, 3, 2, 1]);
+    expect(corpo.movimenti[0]).toEqual({
+      id: 6,
+      tipoDiMovimento: "ADDEBITO",
+      importo: 300,
+      dataEOra: "2026-11-09T15:00:00.000Z",
+      sosta: { id: 9, targa: TARGA_MARCO_ROSSI, numeroStallo: 102, area: "Via Roma" },
+    });
+    expect(corpo.movimenti[2]).toEqual({
+      id: 4,
+      tipoDiMovimento: "RICARICA",
+      importo: 1000,
+      dataEOra: "2026-11-02T09:18:00.000Z",
+      sosta: null,
+    });
+  });
+
+  it("NRF_SIC_1 · TF-API-WS-45 · cronologia senza cookie → 401 SESSIONE_NON_VALIDA", async () => {
+    await verificaErrore(await chiediMovimenti(), 401, "SESSIONE_NON_VALIDA");
+  });
+
+  it("NRF_SIC_1 · TF-API-WS-46 · cronologia con la sessione di Paolo Ferri → 403 RUOLO_NON_AMMESSO", async () => {
+    await verificaErrore(await chiediMovimenti(paolo), 403, "RUOLO_NON_AMMESSO");
   });
 });
