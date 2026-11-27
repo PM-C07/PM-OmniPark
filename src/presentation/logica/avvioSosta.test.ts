@@ -286,7 +286,7 @@ describe("logica dell'avvio della sosta nell'interfaccia", () => {
     });
   });
 
-  it("RF_STALLI_2 · TF-AVVUI-59 · stallo per disabili → permesso da dichiarare e sosta gratuita", () => {
+  it("RF_STALLI_2 · TF-AVVUI-59 · stallo per disabili → gratuità con il contrassegno, tariffa dello stallo e contrassegno da dichiarare", () => {
     expect(
       condizioniDelloStallo("DISABILI", {
         costoOrario: 150,
@@ -295,10 +295,10 @@ describe("logica dell'avvio della sosta nell'interfaccia", () => {
         durataMassima: 180,
       }),
     ).toEqual({
-      tariffa: "1,50\u00a0€ l'ora, dalle 08:00 alle 20:00",
+      tariffa:
+        "Sosta gratuita con il contrassegno esposto · tariffa dello stallo 1,50\u00a0€ l'ora, dalle 08:00 alle 20:00",
       durataMassima: "3 h",
-      permesso:
-        "Contrassegno per persone con disabilità, da dichiarare e fotografare all'avvio; sosta gratuita.",
+      permesso: "Contrassegno di parcheggio, da dichiarare e fotografare all'avvio della sosta.",
     });
   });
 

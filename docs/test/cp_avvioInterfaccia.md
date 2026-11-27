@@ -64,9 +64,9 @@ dimensioniRidotte(larghezza: number, altezza: number): { larghezza: number; alte
 
 **`condizioniDelloStallo`** (dalla COD-23, `UC_STALLI_2` passo 2 e flusso 2.a1): i testi delle righe «Tariffa», «Durata massima» e «Permesso» della scheda, mostrati prima di «Avvia sosta».
 
-- `tariffa`: `formattaEuro(costoOrario) + " l'ora, dalle " + HH:MM di inizio + " alle " + HH:MM di fine` (gli orari arrivano come `HH:MM:SS`);
+- `tariffa`: `formattaEuro(costoOrario) + " l'ora, dalle " + HH:MM di inizio + " alle " + HH:MM di fine` (gli orari arrivano come `HH:MM:SS`); per `DISABILI` lo stesso testo è preceduto da `"Sosta gratuita con il contrassegno esposto · tariffa dello stallo "`: prima la gratuità (RD_06), poi costo orario e fascia, che restano (`UC_STALLI_2` passo 2);
 - `durataMassima`: `etichettaDurata(durataMassima)`;
-- `permesso`: `DISABILI` → `"Contrassegno per persone con disabilità, da dichiarare e fotografare all'avvio; sosta gratuita."`; `ROSA` → `"Permesso rosa, da dichiarare e fotografare all'avvio; sosta a pagamento."`; ogni altro tipo → `null` (la riga non compare).
+- `permesso`: `DISABILI` → `"Contrassegno di parcheggio, da dichiarare e fotografare all'avvio della sosta."` (la gratuità è già nella riga «Tariffa»); `ROSA` → `"Permesso rosa, da dichiarare e fotografare all'avvio; sosta a pagamento."`; ogni altro tipo → `null` (la riga non compare).
 
 **`richiedePermesso`:** `true` per `DISABILI` e `ROSA`, `false` per ogni altro tipo (RF_SOSTA_5, VD_8).
 
@@ -111,7 +111,7 @@ Funzioni pure: nessun database, nessuna rete, nessun DOM. `Blob` e `FormData` so
 
 **Foto del permesso (controllo anticipato):** JPEG entro il limite · PNG entro il limite · esattamente 2 MB [single] · vuota [error] · altro formato [error] (HEIC, GIF) · oltre 2 MB [error] · più errori insieme [single] → vale il primo.
 
-**Condizioni nella scheda** (dalla COD-23): stallo a pagamento → nessun permesso · per persone con disabilità → permesso e sosta gratuita · rosa → permesso e sosta a pagamento.
+**Condizioni nella scheda** (dalla COD-23): stallo a pagamento → nessun permesso · per persone con disabilità → sosta gratuita con il contrassegno, tariffa dello stallo e contrassegno da dichiarare · rosa → permesso e sosta a pagamento.
 
 **Dimensioni della foto:** orizzontale oltre 1600 · verticale oltre 1600 · lato maggiore uguale a 1600 [single] · entro il limite → invariate · proporzioni estreme [single].
 
@@ -177,7 +177,7 @@ Funzioni pure: nessun database, nessuna rete, nessun DOM. `Blob` e `FormData` so
 | TF-AVVUI-56 | `dimensioniRidotte(800, 600)`                                                                                                                                                           | `{ larghezza: 800, altezza: 600 }`                                                                                                                                                                                                                        | ISSUE_33    |
 | TF-AVVUI-57 | `dimensioniRidotte(1000, 5000)`                                                                                                                                                         | `{ larghezza: 320, altezza: 1600 }`                                                                                                                                                                                                                       | ISSUE_33    |
 | TF-AVVUI-58 | `condizioniDelloStallo("ORDINARIO_A_PAGAMENTO", { costoOrario: 150, orarioInizioVigenza: "08:00:00", orarioFineVigenza: "20:00:00", durataMassima: 180 })`                              | `{ tariffa: "1,50 € l'ora, dalle 08:00 alle 20:00", durataMassima: "3 h", permesso: null }`                                                                                                                                                               | RF_STALLI_2 |
-| TF-AVVUI-59 | `condizioniDelloStallo("DISABILI", { costoOrario: 150, orarioInizioVigenza: "08:00:00", orarioFineVigenza: "20:00:00", durataMassima: 180 })`                                           | `{ tariffa: "1,50 € l'ora, dalle 08:00 alle 20:00", durataMassima: "3 h", permesso: "Contrassegno per persone con disabilità, da dichiarare e fotografare all'avvio; sosta gratuita." }`                                                                  | RF_STALLI_2 |
+| TF-AVVUI-59 | `condizioniDelloStallo("DISABILI", { costoOrario: 150, orarioInizioVigenza: "08:00:00", orarioFineVigenza: "20:00:00", durataMassima: 180 })`                                           | `{ tariffa: "Sosta gratuita con il contrassegno esposto · tariffa dello stallo 1,50 € l'ora, dalle 08:00 alle 20:00", durataMassima: "3 h", permesso: "Contrassegno di parcheggio, da dichiarare e fotografare all'avvio della sosta." }`                 | RF_STALLI_2 |
 | TF-AVVUI-60 | `condizioniDelloStallo("ROSA", { costoOrario: 100, orarioInizioVigenza: "08:30:00", orarioFineVigenza: "19:30:00", durataMassima: 90 })`                                                | `{ tariffa: "1,00 € l'ora, dalle 08:30 alle 19:30", durataMassima: "1 h 30 min", permesso: "Permesso rosa, da dichiarare e fotografare all'avvio; sosta a pagamento." }`                                                                                  | RF_STALLI_2 |
 
 Totale 60: 9 sulla disponibilità di «Avvia sosta» (stato e tipo), 9 sulla durata, 4 sul credito, 2 sul pulsante di conferma (TF-AVVUI-23, 31), 10 sull'esito dell'avvio (TF-AVVUI-24…30, 32…34), 3 sul corpo della richiesta (TF-AVVUI-35…37), 3 sulle condizioni nella scheda (TF-AVVUI-58…60) in `avvioSosta.test.ts`; 20 sul permesso (TF-AVVUI-38…57) in `permesso.test.ts`.
@@ -195,7 +195,7 @@ Note sui riferimenti:
 - TF-AVVUI-38…44: RF_SOSTA_5 e VD_8; i testi della dichiarazione seguono `SC_UT_3` («dichiarare di esporre il contrassegno») e `SC_UT_6` («la dichiarazione … del permesso rosa»).
 - TF-AVVUI-45…52: controllo anticipato con i limiti del servizio (`cp_avvioSosta.md` §2, issue #33); HEIC (TF-AVVUI-49) è il formato delle foto di molti telefoni, che il browser invia così quando non riesce a ridurlo. TF-AVVUI-52: ordine delle regole.
 - TF-AVVUI-53…57: decisione D5 (lato massimo 1600 px), per stare sotto i 2 MB con le foto della fotocamera del telefono.
-- TF-AVVUI-58…60: RF_STALLI_2 e `UC_STALLI_2` (costo orario, fascia a pagamento e durata massima; 2.a1: permesso richiesto e se la sosta è gratuita, VD_10). Tipo e stato hanno già le loro righe nella scheda (`descriviTipo`, `BadgeStato`); i dati arrivano da `GET /api/stalli/<id>` (`cp_apiStalli.md` TF-API-STA-18).
+- TF-AVVUI-58…60: RF_STALLI_2 e `UC_STALLI_2` (costo orario, fascia a pagamento e durata massima; 2.a1: permesso richiesto e se la sosta è gratuita, RD_06, RD_07, VD_10). In TF-AVVUI-59 la gratuità precede la tariffa dello stallo, che resta visibile; il testo parla del contrassegno, non della persona. Tipo e stato hanno già le loro righe nella scheda (`descriviTipo`, `BadgeStato`); i dati arrivano da `GET /api/stalli/<id>` (`cp_apiStalli.md` TF-API-STA-18).
 
 ## 6. Note
 

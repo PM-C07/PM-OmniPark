@@ -75,12 +75,14 @@ export type TariffaDelloStallo = {
   durataMassima: number;
 };
 
-// UC_STALLI_2 2.a1: permesso richiesto sugli stalli riservati e gratuità della sosta (VD_10).
+// UC_STALLI_2 2.a1: permesso richiesto sugli stalli riservati (VD_8) e, per il contrassegno, la
+// gratuità nella riga della tariffa (RD_06, VD_10); sugli stalli rosa si paga la tariffa (RD_07).
 const PERMESSO_PER_TIPO: Readonly<Record<string, string>> = {
-  DISABILI:
-    "Contrassegno per persone con disabilità, da dichiarare e fotografare all'avvio; sosta gratuita.",
+  DISABILI: "Contrassegno di parcheggio, da dichiarare e fotografare all'avvio della sosta.",
   ROSA: "Permesso rosa, da dichiarare e fotografare all'avvio; sosta a pagamento.",
 };
+const GRATUITA_CON_IL_CONTRASSEGNO =
+  "Sosta gratuita con il contrassegno esposto · tariffa dello stallo";
 
 /**
  * Righe «Tariffa», «Durata massima» e «Permesso» della scheda dello stallo, prima di «Avvia sosta»
@@ -92,8 +94,10 @@ export function condizioniDelloStallo(
 ): { tariffa: string; durataMassima: string; permesso: string | null } {
   const inizio = tariffa.orarioInizioVigenza.slice(0, 5);
   const fine = tariffa.orarioFineVigenza.slice(0, 5);
+  const base = `${formattaEuro(tariffa.costoOrario)} l'ora, dalle ${inizio} alle ${fine}`;
   return {
-    tariffa: `${formattaEuro(tariffa.costoOrario)} l'ora, dalle ${inizio} alle ${fine}`,
+    // Con il contrassegno prima la gratuità, poi costo orario e fascia (UC_STALLI_2 passo 2).
+    tariffa: tipoDiStallo === "DISABILI" ? `${GRATUITA_CON_IL_CONTRASSEGNO} ${base}` : base,
     durataMassima: etichettaDurata(tariffa.durataMassima),
     permesso: Object.hasOwn(PERMESSO_PER_TIPO, tipoDiStallo)
       ? PERMESSO_PER_TIPO[tipoDiStallo]
