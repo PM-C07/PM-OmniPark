@@ -1,20 +1,24 @@
 "use client";
-// Wallet del profilo (MU_3, UC_WALLET_3 per il saldo, UC_WALLET_1 per la ricarica): saldo in
-// evidenza da GET /api/wallet e ricarica con i tagli previsti. La cronologia arriva con COD-23.
+// Wallet del profilo (MU_3, UC_WALLET_3 per saldo e cronologia, UC_WALLET_1 per la ricarica): saldo
+// in evidenza da GET /api/wallet, ricarica con i tagli previsti e, dalla OMP-65 (COD-24), la sezione
+// «Movimenti», aggiornata dopo ogni ricarica approvata.
 import { useEffect, useState } from "react";
 import { Avviso } from "./Avviso.tsx";
 import { formattaEuro } from "./logica/importi.ts";
 import { chiamaApi } from "./logica/risposteApi.ts";
+import { MovimentiWallet } from "./MovimentiWallet.tsx";
 import { Ricarica } from "./Ricarica.tsx";
 import { vaiAllAccesso } from "./vaiAllAccesso.ts";
 
 export function PannelloWallet() {
   const [saldo, setSaldo] = useState<number | null>(null);
   const [errore, setErrore] = useState<string | null>(null);
+  // Cresce a ogni ricarica approvata: la sezione «Movimenti» rilegge la cronologia.
+  const [versioneMovimenti, setVersioneMovimenti] = useState(0);
 
   useEffect(() => {
     let attivo = true;
-    // richiediWallet() di SD_WALLET_3: solo il saldo.
+    // richiediWallet() di SD_WALLET_3, saldo; i movimenti li legge MovimentiWallet.
     void chiamaApi("/api/wallet", { method: "GET" }, {}).then((esito) => {
       if (!attivo) {
         return;
@@ -43,9 +47,13 @@ export function PannelloWallet() {
       </div>
       <Ricarica
         idTitolo="titolo-ricarica-profilo"
-        onRicaricata={setSaldo}
+        onRicaricata={(nuovoSaldo) => {
+          setSaldo(nuovoSaldo);
+          setVersioneMovimenti((v) => v + 1);
+        }}
         onSessioneScaduta={() => vaiAllAccesso("/profilo")}
       />
+      <MovimentiWallet versione={versioneMovimenti} />
     </div>
   );
 }

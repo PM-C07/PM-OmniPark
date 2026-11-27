@@ -28,8 +28,11 @@ type MovimentoDelWallet = { id; walletVirtualeId; tipoDiMovimento: "RICARICA" | 
 creaWallet(es, automobilistaId: number): Promise<number>;                         // id del wallet
 trovaWalletDiAutomobilista(es, automobilistaId: number): Promise<{ id: number; saldo: number } | null>;
 registraRicarica(es, dati: { walletVirtualeId; importo; dataEOra }): Promise<MovimentoDelWallet>;
-movimenti(es, walletVirtualeId: number): Promise<(MovimentoDelWallet & { targa: string | null })[]>;
-// dal più recente (data_e_ora decrescente, poi id decrescente); targa della sosta per gli addebiti, null per le ricariche
+movimenti(es, walletVirtualeId: number, limite?: number): Promise<(MovimentoDelWallet & { targa: string | null; numeroStallo: number | null; area: string | null })[]>;
+// dal più recente (data_e_ora decrescente, poi id decrescente); targa della sosta per gli addebiti, null per le ricariche.
+// OMP-65: numero dello stallo della sosta e nome della sua area (null per le ricariche); `limite` facoltativo, senza
+// limite tutti i movimenti. I nuovi campi e il limite sono verificati attraverso il Wallet (cp_movimenti.md);
+// TF-WS-10…12 sono invariati
 creaSosta(es, dati: { automobilistaId; veicoloId; stalloId; orarioDiAvvio; orarioDiScadenza; pagamento;
   dichiarazioneDiPermesso?: string; fotoDelPermesso?: Buffer }): Promise<number>; // la sosta nasce ATTIVA
 trovaSosta(es, id: number): Promise<Sosta | null>;
