@@ -52,6 +52,9 @@ export function ProlungamentoSosta({
     saldo: number;
   } | null>(null);
   const [invio, setInvio] = useState(false);
+  // Vero solo dopo una ricarica approvata in questo prolungamento, fino al primo rendering che la
+  // applica.
+  const focusDopoRicarica = useRef(false);
   const sessione = useRef(onSessioneScaduta);
   useEffect(() => {
     sessione.current = onSessioneScaduta;
@@ -104,6 +107,28 @@ export function ProlungamentoSosta({
     };
   }, [aperto, tempo, sosta.id, sosta.orarioDiScadenza]);
 
+  // Calcolati prima dei return anticipati: servono anche all'effetto del focus dopo la ricarica.
+  const anteprima = calcolata !== null && calcolata.tempo === tempo ? calcolata.anteprima : null;
+  const calcolo =
+    aperto && tempo !== null && anteprima === null && !errori.tempo && !errori.generale;
+  const creditoScarso =
+    saldo !== null && anteprima !== null && !creditoSufficiente(saldo, anteprima.importo);
+  // Condizione di «Conferma e paga» disabilitato, usata dal bottone e dal focus dopo la ricarica.
+  const confermaDisabilitata = !anteprima || calcolo || creditoScarso || invio;
+
+  // Dopo la ricarica il focus va su «Conferma e paga», ma solo quando lo stato con il nuovo saldo è
+  // applicato e il bottone è abilitato (OMP-68, stessa correzione della scheda dello stallo). Il ref
+  // si consuma al primo rendering dopo la ricarica.
+  useEffect(() => {
+    if (!focusDopoRicarica.current) {
+      return;
+    }
+    focusDopoRicarica.current = false;
+    if (!confermaDisabilitata) {
+      document.getElementById(`prolunga-conferma-${sosta.id}`)?.focus();
+    }
+  }, [confermaDisabilitata, ricaricaApprovata, sosta.id]);
+
   if (durataMassima === null) {
     return null;
   }
@@ -115,11 +140,6 @@ export function ProlungamentoSosta({
     ) : null;
   }
 
-  const anteprima = calcolata !== null && calcolata.tempo === tempo ? calcolata.anteprima : null;
-  const calcolo =
-    aperto && tempo !== null && anteprima === null && !errori.tempo && !errori.generale;
-  const creditoScarso =
-    saldo !== null && anteprima !== null && !creditoSufficiente(saldo, anteprima.importo);
   const riquadro = riquadroRicarica({
     creditoScarso,
     erroreCredito: errori.credito !== undefined,
@@ -176,7 +196,7 @@ export function ProlungamentoSosta({
     setSaldo(nuovoSaldo);
     setRicaricaApprovata({ importo: importoRicaricato, saldo: nuovoSaldo });
     setErrori((attuali) => ({ ...attuali, credito: undefined }));
-    requestAnimationFrame(() => document.getElementById(`prolunga-conferma-${sosta.id}`)?.focus());
+    focusDopoRicarica.current = true;
   }
 
   // «Annulla» (4.a1): il pannello si chiude e il focus torna su «Prolunga» (OMP-68, WCAG 2.4.3).
@@ -268,7 +288,7 @@ export function ProlungamentoSosta({
           type="submit"
           inCorso={invio}
           testoInCorso="Pagamento in corso…"
-          disabled={!anteprima || calcolo || creditoScarso}
+          disabled={confermaDisabilitata}
         >
           {anteprima ? etichettaConferma(anteprima.importo) : "Calcolo dell'importo…"}
         </Bottone>

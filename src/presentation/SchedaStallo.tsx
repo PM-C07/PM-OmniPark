@@ -123,6 +123,8 @@ export function SchedaStallo({
   } | null>(null);
   const titolo = useRef<HTMLHeadingElement>(null);
   const titoloModulo = useRef<HTMLHeadingElement>(null);
+  // Vero solo dopo una ricarica approvata in questo avvio, fino al primo rendering che la applica.
+  const focusDopoRicarica = useRef(false);
   const sessione = useRef(onSessioneScaduta);
   useEffect(() => {
     sessione.current = onSessioneScaduta;
@@ -209,6 +211,23 @@ export function SchedaStallo({
     ricaricaApprovata: ricaricaApprovata !== null,
   });
   const conPermesso = richiedePermesso(stallo.tipoDiStallo);
+  // Condizione di «Conferma e paga» disabilitato, usata dal bottone e dal focus dopo la ricarica.
+  const confermaDisabilitata =
+    !importo || calcolo || creditoScarso || (conPermesso && !permesso) || invio;
+
+  // Dopo la ricarica il focus va su «Conferma e paga» (DIF-03), ma solo quando lo stato con il
+  // nuovo saldo è applicato e il bottone è abilitato: con un requestAnimationFrame il fotogramma
+  // poteva arrivare prima e il focus restava perso (OMP-68, TS-01 intermittente). Il ref si consuma
+  // al primo rendering dopo la ricarica: se il credito non basta ancora, il focus non si sposta più.
+  useEffect(() => {
+    if (!focusDopoRicarica.current) {
+      return;
+    }
+    focusDopoRicarica.current = false;
+    if (!confermaDisabilitata) {
+      document.getElementById("avvio-conferma")?.focus();
+    }
+  }, [confermaDisabilitata, ricaricaApprovata]);
 
   // Interazione 2: modulo già compilato con la prima targa e la durata proposta.
   function avviaSosta() {
@@ -262,7 +281,7 @@ export function SchedaStallo({
     setSaldo(nuovoSaldo);
     setRicaricaApprovata({ importo: importoRicaricato, saldo: nuovoSaldo });
     setErrori((attuali) => senza(attuali, "credito"));
-    requestAnimationFrame(() => document.getElementById("avvio-conferma")?.focus());
+    focusDopoRicarica.current = true;
   }
 
   return (
@@ -409,7 +428,7 @@ export function SchedaStallo({
               type="submit"
               inCorso={invio}
               testoInCorso="Pagamento in corso…"
-              disabled={!importo || calcolo || creditoScarso || (conPermesso && !permesso)}
+              disabled={confermaDisabilitata}
             >
               {importo ? etichettaConferma(importo.importo) : "Calcolo dell'importo…"}
             </Bottone>
