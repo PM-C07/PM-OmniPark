@@ -86,9 +86,16 @@ export function PanoramicaEnti() {
         <p className="text-base text-zinc-800">Caricamento degli enti…</p>
       ) : null}
       {righe.length > 0 ? (
-        <div className="overflow-x-auto rounded-lg border border-zinc-300 bg-white">
+        // Contenitore che scorre in orizzontale sul telefono: raggiungibile con Tab, così si scorre
+        // anche con le frecce (OMP-68, WCAG 2.1.1).
+        <div
+          tabIndex={0}
+          role="region"
+          aria-labelledby="titolo-tabella-enti"
+          className="overflow-x-auto rounded-lg border border-zinc-300 bg-white"
+        >
           <table className="w-full min-w-[32rem] border-collapse text-left text-base text-zinc-900">
-            <caption className="px-4 pt-3 text-left text-sm text-zinc-800">
+            <caption id="titolo-tabella-enti" className="px-4 pt-3 text-left text-sm text-zinc-800">
               Riepilogo per ente cliente: stalli gestiti, soste attive e segnalazioni non ancora
               chiuse (aperte o prese in carico).
             </caption>

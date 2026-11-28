@@ -1,6 +1,6 @@
 @import "tailwindcss";
 
-/* Tema chiaro soltanto: il tema scuro torna con COD-27 (OMP-57, decisione D3). */
+/* Solo tema chiaro (OMP-57, decisione D3): il tema scuro è fuori ambito, anche per COD-27 (issue #48). */
 :root {
   color-scheme: light;
   --background: #fafafa;

@@ -14,6 +14,14 @@ import {
   TAGLI_RICARICA,
 } from "./logica/wallet.ts";
 
+/**
+ * Id del bottone di un taglio, ricavato dall'id del titolo, unico per ogni Ricarica della pagina
+ * (OMP-68): lo usano l'«Annulla» del riepilogo e il wallet del profilo per riportare il focus.
+ */
+export function idTaglioRicarica(idTitolo: string, taglio: number): string {
+  return `${idTitolo}-taglio-${taglio}`;
+}
+
 export function Ricarica({
   onRicaricata,
   onSessioneScaduta,
@@ -26,6 +34,7 @@ export function Ricarica({
   const [scelto, setScelto] = useState<number | null>(null);
   const [inCorso, setInCorso] = useState(false);
   const [esito, setEsito] = useState<{ tipo: "successo" | "errore"; testo: string } | null>(null);
+  const idTaglio = (taglio: number) => idTaglioRicarica(idTitolo, taglio);
 
   function scegliImporto(importo: number) {
     setEsito(null);
@@ -62,6 +71,16 @@ export function Ricarica({
     setEsito({ tipo: "errore", testo: risultato.messaggio });
   }
 
+  // «Annulla» (3.a1): il riepilogo si chiude e il focus torna sul taglio che era scelto (OMP-68,
+  // WCAG 2.4.3).
+  function annulla() {
+    const taglio = scelto;
+    setScelto(null);
+    if (taglio !== null) {
+      requestAnimationFrame(() => document.getElementById(idTaglio(taglio))?.focus());
+    }
+  }
+
   return (
     <div className="flex flex-col gap-3">
       <h3 id={idTitolo} className="text-base font-semibold text-zinc-900">
@@ -72,6 +91,7 @@ export function Ricarica({
         {TAGLI_RICARICA.map((taglio) => (
           <Bottone
             key={taglio}
+            id={idTaglio(taglio)}
             variante={scelto === taglio ? "primario" : "secondario"}
             aria-pressed={scelto === taglio}
             disabled={inCorso}
@@ -90,7 +110,7 @@ export function Ricarica({
             <Bottone inCorso={inCorso} testoInCorso="Ricarica in corso…" onClick={conferma}>
               Conferma la ricarica
             </Bottone>
-            <Bottone variante="secondario" disabled={inCorso} onClick={() => setScelto(null)}>
+            <Bottone variante="secondario" disabled={inCorso} onClick={annulla}>
               Annulla
             </Bottone>
           </div>

@@ -133,6 +133,8 @@ export function ProlungamentoSosta({
       tempoAggiuntivoProposto(durataMassima ?? 0, sosta.orarioDiAvvio, sosta.orarioDiScadenza),
     );
     setAperto(true);
+    // «Prolunga» esce dalla pagina: il focus va sulla scelta del tempo (OMP-68, WCAG 2.4.3).
+    requestAnimationFrame(() => document.getElementById(`prolunga-tempo-${sosta.id}`)?.focus());
     void chiamaApi("/api/wallet", { method: "GET" }, {}).then((esito) => {
       if (esito.esito === "sessioneScaduta") {
         sessione.current();
@@ -177,10 +179,16 @@ export function ProlungamentoSosta({
     requestAnimationFrame(() => document.getElementById(`prolunga-conferma-${sosta.id}`)?.focus());
   }
 
+  // «Annulla» (4.a1): il pannello si chiude e il focus torna su «Prolunga» (OMP-68, WCAG 2.4.3).
+  function annulla() {
+    setAperto(false);
+    requestAnimationFrame(() => document.getElementById(`prolunga-${sosta.id}`)?.focus());
+  }
+
   if (!aperto) {
     return (
       <div>
-        <Bottone variante="secondario" onClick={apri}>
+        <Bottone id={`prolunga-${sosta.id}`} variante="secondario" onClick={apri}>
           Prolunga
         </Bottone>
       </div>
@@ -264,7 +272,7 @@ export function ProlungamentoSosta({
         >
           {anteprima ? etichettaConferma(anteprima.importo) : "Calcolo dell'importo…"}
         </Bottone>
-        <Bottone variante="secondario" disabled={invio} onClick={() => setAperto(false)}>
+        <Bottone variante="secondario" disabled={invio} onClick={annulla}>
           Annulla
         </Bottone>
       </div>

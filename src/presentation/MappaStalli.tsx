@@ -91,6 +91,18 @@ export function MappaStalli() {
     requestAnimationFrame(() => titoloSosta.current?.focus());
   }
 
+  // «Chiudi» della scheda (OMP-68, WCAG 2.4.3): il focus va sulla riga dello stallo nell'elenco, o
+  // sul titolo dell'elenco se nel frattempo la riga non c'è più, come per le segnalazioni.
+  function chiudiScheda(id: number) {
+    setSelezionato(null);
+    requestAnimationFrame(() => {
+      const riga = document
+        .querySelector(`[data-riga-stallo="${id}"]`)
+        ?.closest<HTMLButtonElement>("button");
+      (riga ?? document.getElementById("titolo-elenco-mappa"))?.focus();
+    });
+  }
+
   const contenutoRiga = useCallback(
     (elemento: ElementoMappa) => {
       const s = perId.get(elemento.id);
@@ -103,7 +115,7 @@ export function MappaStalli() {
           <span aria-hidden="true" className="legenda-simbolo" data-tono={elemento.tono}>
             {elemento.simbolo}
           </span>
-          <span className="flex-1">
+          <span className="flex-1" data-riga-stallo={s.id}>
             Stallo n. {s.numero} <span className="text-zinc-700">· {tipo.testo}</span>
           </span>
           <BadgeStato tipo="stallo" stato={s.stato} />
@@ -158,7 +170,7 @@ export function MappaStalli() {
             <SchedaStallo
               key={stallo.id}
               stallo={stallo}
-              onChiudi={() => setSelezionato(null)}
+              onChiudi={() => chiudiScheda(stallo.id)}
               onSostaAvviata={sostaAvviata}
               onSessioneScaduta={sessioneScaduta}
             />

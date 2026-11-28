@@ -224,6 +224,12 @@ export function SchedaStallo({
     requestAnimationFrame(() => titoloModulo.current?.focus());
   }
 
+  // «Annulla» (4.a1): il modulo si chiude e il focus torna su «Avvia sosta» (OMP-68, WCAG 2.4.3).
+  function annullaAvvio() {
+    setModulo(false);
+    requestAnimationFrame(() => document.getElementById("avvio-avvia")?.focus());
+  }
+
   // Interazione 3: conferma e pagamento (POST /api/soste).
   async function conferma(evento: FormEvent<HTMLFormElement>) {
     evento.preventDefault();
@@ -317,6 +323,7 @@ export function SchedaStallo({
         </p>
       ) : !modulo ? (
         <Bottone
+          id="avvio-avvia"
           onClick={avviaSosta}
           inCorso={!tariffa || !targhe}
           testoInCorso="Caricamento…"
@@ -406,7 +413,7 @@ export function SchedaStallo({
             >
               {importo ? etichettaConferma(importo.importo) : "Calcolo dell'importo…"}
             </Bottone>
-            <Bottone variante="secondario" disabled={invio} onClick={() => setModulo(false)}>
+            <Bottone variante="secondario" disabled={invio} onClick={annullaAvvio}>
               Annulla
             </Bottone>
           </div>

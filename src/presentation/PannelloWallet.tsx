@@ -7,7 +7,7 @@ import { Avviso } from "./Avviso.tsx";
 import { formattaEuro } from "./logica/importi.ts";
 import { chiamaApi } from "./logica/risposteApi.ts";
 import { MovimentiWallet } from "./MovimentiWallet.tsx";
-import { Ricarica } from "./Ricarica.tsx";
+import { idTaglioRicarica, Ricarica } from "./Ricarica.tsx";
 import { vaiAllAccesso } from "./vaiAllAccesso.ts";
 
 export function PannelloWallet() {
@@ -47,9 +47,14 @@ export function PannelloWallet() {
       </div>
       <Ricarica
         idTitolo="titolo-ricarica-profilo"
-        onRicaricata={(nuovoSaldo) => {
+        onRicaricata={(nuovoSaldo, importo) => {
           setSaldo(nuovoSaldo);
           setVersioneMovimenti((v) => v + 1);
+          // «Conferma la ricarica» esce dalla pagina: il focus va sul taglio ricaricato (OMP-68,
+          // WCAG 2.4.3); il messaggio con il nuovo saldo resta sopra i tagli.
+          requestAnimationFrame(() =>
+            document.getElementById(idTaglioRicarica("titolo-ricarica-profilo", importo))?.focus(),
+          );
         }}
         onSessioneScaduta={() => vaiAllAccesso("/profilo")}
       />

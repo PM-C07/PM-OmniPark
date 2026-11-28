@@ -75,6 +75,18 @@ export function PermessiDaVerificare({ onSessioneScaduta }: { onSessioneScaduta(
     requestAnimationFrame(() => zonaMessaggio.current?.focus());
   }
 
+  // I bottoni premuti escono dalla pagina: dopo la scelta il focus va sull'esito scelto, dopo
+  // «Annulla» (3.a1) torna sul bottone di quell'esito (OMP-68, WCAG 2.4.3).
+  function scegliEsito(esito: EsitoVerifica) {
+    setDaConfermare(esito);
+    requestAnimationFrame(() => document.getElementById("permesso-esito-scelto")?.focus());
+  }
+
+  function annullaEsito(esito: EsitoVerifica) {
+    setDaConfermare(null);
+    requestAnimationFrame(() => document.getElementById(`permesso-esito-${esito}`)?.focus());
+  }
+
   // registraEsito (UC_OP_5 passo 4): dopo la risposta l'elenco si ricarica.
   async function conferma(sosta: number, esitoScelto: EsitoVerifica) {
     setErrore(null);
@@ -165,16 +177,20 @@ export function PermessiDaVerificare({ onSessioneScaduta }: { onSessioneScaduta(
           />
           {daConfermare === null ? (
             <div className="flex flex-wrap gap-2">
-              <Bottone onClick={() => setDaConfermare("CONFORME")}>
+              <Bottone id="permesso-esito-CONFORME" onClick={() => scegliEsito("CONFORME")}>
                 {ESITI_VERIFICA.CONFORME}
               </Bottone>
-              <Bottone variante="pericolo" onClick={() => setDaConfermare("NON_CONFORME")}>
+              <Bottone
+                id="permesso-esito-NON_CONFORME"
+                variante="pericolo"
+                onClick={() => scegliEsito("NON_CONFORME")}
+              >
                 {ESITI_VERIFICA.NON_CONFORME}
               </Bottone>
             </div>
           ) : (
             <div className="flex flex-col gap-2">
-              <p className="text-base text-zinc-900">
+              <p id="permesso-esito-scelto" tabIndex={-1} className="text-base text-zinc-900">
                 Esito scelto: <strong>{ESITI_VERIFICA[daConfermare]}</strong>
                 {daConfermare === "NON_CONFORME"
                   ? ". Verrà registrata una segnalazione di sosta irregolare accertata."
@@ -187,7 +203,7 @@ export function PermessiDaVerificare({ onSessioneScaduta }: { onSessioneScaduta(
                 <Bottone
                   variante="secondario"
                   disabled={inInvio}
-                  onClick={() => setDaConfermare(null)}
+                  onClick={() => annullaEsito(daConfermare)}
                 >
                   Annulla
                 </Bottone>
