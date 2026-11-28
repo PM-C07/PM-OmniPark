@@ -285,11 +285,8 @@ export function SchedaStallo({
   }
 
   return (
-    <section
-      aria-labelledby="titolo-scheda-stallo"
-      className="flex flex-col gap-4 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm"
-    >
-      <div className="flex items-start justify-between gap-2">
+    <section aria-labelledby="titolo-scheda-stallo" className="scheda flex flex-col gap-4 p-4">
+      <div className="-mx-4 -mt-4 flex items-start justify-between gap-2 rounded-t-2xl border-b border-slate-200 bg-marca-50 px-4 pt-4 pb-3">
         <div>
           <h2
             id="titolo-scheda-stallo"

@@ -4,7 +4,8 @@ import type { ButtonHTMLAttributes, ReactNode } from "react";
 type Variante = "primario" | "secondario" | "pericolo";
 
 const CLASSI: Readonly<Record<Variante, string>> = {
-  primario: "bg-marca-700 text-white hover:bg-marca-800",
+  primario:
+    "bg-linear-to-b from-marca-700 to-marca-800 text-white shadow-md shadow-marca-900/25 hover:from-marca-800 hover:to-marca-900",
   secondario: "border border-marca-700 bg-white text-marca-900 hover:bg-marca-50",
   pericolo: "border border-rose-700 bg-white text-rose-800 hover:bg-rose-50",
 };

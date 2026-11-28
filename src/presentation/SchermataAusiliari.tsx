@@ -218,13 +218,13 @@ export function SchermataAusiliari() {
           onSubmit={salva}
           noValidate
           aria-labelledby="titolo-modulo-ausiliario"
-          className="flex flex-col gap-4 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm lg:max-w-3xl"
+          className="scheda flex flex-col gap-4 p-4 lg:max-w-3xl"
         >
           <h2
             id="titolo-modulo-ausiliario"
             ref={titoloModulo}
             tabIndex={-1}
-            className="text-lg font-semibold text-marca-900"
+            className="-mx-4 -mt-4 rounded-t-2xl border-b border-slate-200 bg-marca-50 px-4 pt-4 pb-3 text-lg font-semibold text-marca-900"
           >
             {modulo.modalita === "creazione"
               ? "Nuovo Ausiliario del Traffico"

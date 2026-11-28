@@ -136,7 +136,8 @@ export function ProlungamentoSosta({
   const disponibilita = disponibilitaProlungamento(statoMostrato, opzioni);
   if (!disponibilita.disponibile) {
     return statoMostrato === "ATTIVA" ? (
-      <p className="text-base text-slate-700">{disponibilita.motivo}</p>
+      // Il motivo compare solo nel riquadro scuro di «La mia sosta» (OMP-68, B3).
+      <p className="text-base text-marca-50">{disponibilita.motivo}</p>
     ) : null;
   }
 

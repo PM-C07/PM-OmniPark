@@ -94,12 +94,12 @@ export function PanoramicaEnti() {
           tabIndex={0}
           role="region"
           aria-labelledby="titolo-tabella-enti"
-          className="overflow-x-auto rounded-2xl border border-slate-200 bg-white shadow-sm"
+          className="scheda overflow-x-auto"
         >
-          <table className="w-full min-w-[32rem] border-collapse text-left text-base text-slate-900">
+          <table className="w-full min-w-[32rem] border-separate border-spacing-2 text-left text-base text-slate-900">
             <caption
               id="titolo-tabella-enti"
-              className="px-4 pt-3 text-left text-sm text-slate-700"
+              className="border-b border-slate-200 bg-marca-50 px-4 pt-4 pb-3 text-left text-sm text-slate-700"
             >
               Riepilogo per ente cliente: stalli gestiti, soste attive e segnalazioni non ancora
               chiuse (aperte o prese in carico).
@@ -124,7 +124,7 @@ export function PanoramicaEnti() {
               {righe.map((riga) => {
                 const inErrore = riepiloghi.get(riga.id)?.stato === "errore";
                 return (
-                  <tr key={riga.id} className="border-b border-slate-200 last:border-b-0">
+                  <tr key={riga.id}>
                     <th scope="row" className="px-4 py-3 font-medium">
                       {riga.ente}
                       {inErrore ? (
@@ -141,7 +141,10 @@ export function PanoramicaEnti() {
                       ) : null}
                     </th>
                     {riga.celle.map((cella, i) => (
-                      <td key={i} className="px-4 py-3 text-right tabular-nums">
+                      <td
+                        key={i}
+                        className="rounded-xl bg-marca-50 px-4 py-3 text-right text-xl font-semibold text-marca-900 tabular-nums"
+                      >
                         {cella}
                       </td>
                     ))}

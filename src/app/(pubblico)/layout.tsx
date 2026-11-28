@@ -18,7 +18,7 @@ export default function LayoutPubblico({ children }: LayoutProps<"/">) {
       <main
         id="contenuto"
         tabIndex={-1}
-        className="mx-auto flex w-full max-w-md flex-col gap-6 px-4 py-8"
+        className="pagina-pubblica mx-4 my-8 flex max-w-md flex-col gap-6 rounded-2xl bg-white p-6 shadow-xl sm:mx-auto sm:w-full"
       >
         {children}
       </main>

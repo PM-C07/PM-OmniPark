@@ -144,7 +144,7 @@ export function PermessiDaVerificare({ onSessioneScaduta }: { onSessioneScaduta(
                 type="button"
                 aria-pressed={p.sostaId === selezionato}
                 onClick={() => seleziona(p.sostaId === selezionato ? null : p.sostaId)}
-                className="min-h-11 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-left text-base text-slate-900 transition-colors duration-150 hover:bg-marca-50 aria-pressed:border-2 aria-pressed:border-marca-700 aria-pressed:bg-marca-50 motion-reduce:transition-none"
+                className="riga-con-tono min-h-11 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-left text-base text-slate-900 transition-colors duration-150 hover:bg-marca-50 aria-pressed:border-2 aria-pressed:border-marca-700 aria-pressed:bg-marca-50 motion-reduce:transition-none"
                 data-permesso={p.sostaId}
               >
                 {descriviPermesso(p)}
@@ -154,11 +154,8 @@ export function PermessiDaVerificare({ onSessioneScaduta }: { onSessioneScaduta(
         </ul>
       ) : null}
       {permesso ? (
-        <div
-          className="flex flex-col gap-3 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm"
-          data-scheda-permesso={permesso.sostaId}
-        >
-          <h3 className="text-base font-semibold text-marca-900">
+        <div className="scheda flex flex-col gap-3 p-4" data-scheda-permesso={permesso.sostaId}>
+          <h3 className="-mx-4 -mt-4 rounded-t-2xl border-b border-slate-200 bg-marca-50 px-4 pt-4 pb-3 text-base font-semibold text-marca-900">
             Stallo n. {permesso.numeroStallo}, {descriviTipo(permesso.tipoDiStallo).testo}
           </h3>
           <dl className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-1 text-base text-slate-900">

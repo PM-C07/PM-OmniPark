@@ -79,7 +79,7 @@ export function VistaMappa(props: PropsVistaMappa) {
               nell&apos;elenco sotto la mappa.
             </Avviso>
           ) : null}
-          <div className="h-[55vh] min-h-72 overflow-hidden rounded-2xl border border-slate-300 bg-slate-100 shadow-sm">
+          <div className="h-[55vh] min-h-72 overflow-hidden rounded-2xl border-2 border-transparent shadow-sm [background:linear-gradient(var(--color-slate-100),var(--color-slate-100))_padding-box,linear-gradient(135deg,var(--color-marca-700),var(--color-foglia-400))_border-box]">
             <ConfineMappa>
               <Mappa
                 etichetta={props.etichettaMappa}
@@ -115,7 +115,7 @@ export function VistaMappa(props: PropsVistaMappa) {
                       type="button"
                       aria-pressed={elemento.id === selezionato}
                       onClick={() => onSeleziona(elemento.id)}
-                      className={`flex min-h-11 w-full items-center gap-3 rounded-xl border px-3 py-2 text-left text-base text-slate-900 transition-colors duration-150 hover:bg-marca-50 motion-reduce:transition-none ${
+                      className={`riga-con-tono flex min-h-11 w-full items-center gap-3 rounded-xl border px-3 py-2 text-left text-base text-slate-900 transition-colors duration-150 hover:bg-marca-50 motion-reduce:transition-none ${
                         elemento.id === selezionato
                           ? "border-2 border-marca-700 bg-marca-50"
                           : "border-slate-200 bg-white"
