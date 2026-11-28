@@ -56,7 +56,7 @@ export function MovimentiWallet({ versione }: { versione: number }) {
             return (
               <li
                 key={movimento.id}
-                className="flex flex-col gap-1 rounded-xl border border-slate-200 bg-white p-3"
+                className="flex flex-col gap-1 rounded-xl border border-slate-200 bg-velo-50 p-3"
               >
                 <div className="flex items-center justify-between gap-2">
                   <span className="font-semibold text-slate-900">{riga.tipo}</span>

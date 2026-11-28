@@ -334,7 +334,7 @@ export function SchedaStallo({
       <NavigaVersoStallo stallo={stallo} />
 
       {!disponibilita.disponibile ? (
-        <p className="rounded-xl border border-slate-200 bg-slate-50 p-3 text-base text-slate-900">
+        <p className="rounded-xl border border-slate-200 bg-velo-50 p-3 text-base text-slate-900">
           {disponibilita.motivo}
         </p>
       ) : !modulo ? (

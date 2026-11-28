@@ -102,7 +102,7 @@ export function Ricarica({
         ))}
       </div>
       {scelto !== null ? (
-        <div className="flex flex-col gap-3 rounded-xl border border-slate-200 bg-slate-50 p-3">
+        <div className="flex flex-col gap-3 rounded-xl border border-slate-200 bg-velo-50 p-3">
           <p className="text-base text-slate-900">
             Ricarica simulata di <strong>{formattaEuro(scelto)}</strong>: nessun addebito reale.
           </p>

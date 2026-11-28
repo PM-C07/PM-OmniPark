@@ -10,9 +10,13 @@ const CLASSI: Readonly<Record<Variante, string>> = {
   pericolo: "border border-rose-700 bg-white text-rose-800 hover:bg-rose-50",
 };
 
-/** Classi del bottone, anche per i link con l'aspetto di un bottone (OMP-67). */
+/**
+ * Classi del bottone, anche per i link con l'aspetto di un bottone (OMP-67). Dalla OMP-68 (B4) il
+ * bottone disabilitato è grigio pieno (slate-600 su slate-100, 6,9:1) invece che trasparente: con
+ * l'opacità il testo diventava bianco su azzurro chiaro (2,9:1) o azzurro su bianco.
+ */
 export function classiBottone(variante: Variante = "primario"): string {
-  return `min-h-11 rounded-xl px-4 py-2 text-base font-semibold transition-colors duration-150 motion-reduce:transition-none disabled:cursor-not-allowed disabled:opacity-60 ${CLASSI[variante]}`;
+  return `min-h-11 rounded-xl px-4 py-2 text-base font-semibold transition-colors duration-150 motion-reduce:transition-none disabled:cursor-not-allowed disabled:border-slate-300 disabled:bg-none disabled:bg-slate-100 disabled:text-slate-600 disabled:shadow-none ${CLASSI[variante]}`;
 }
 
 export function Bottone({

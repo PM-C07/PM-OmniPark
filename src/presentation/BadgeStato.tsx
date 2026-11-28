@@ -15,7 +15,7 @@ export function BadgeStato({ tipo, stato }: { tipo: TipoStato; stato: string }) 
   const { testo, tono } = descriviStato(tipo, stato);
   return (
     <span
-      className={`inline-flex items-center rounded-full border px-2.5 py-0.5 text-sm font-medium ${CLASSI[tono]}`}
+      className={`badge-stato inline-flex items-center rounded-full border px-2.5 py-0.5 text-sm font-medium ${CLASSI[tono]}`}
     >
       {testo}
     </span>

@@ -236,7 +236,7 @@ export function SchedaSegnalazione({
       {chiusura.fase === "inattiva" ? (
         azioni.messaggio ? (
           // segnalaNonChiudibile (UC_OP_4 2.a1): presa in carico da un altro Ausiliario.
-          <p className="rounded-xl border border-slate-200 bg-slate-50 p-3 text-base text-slate-900">
+          <p className="rounded-xl border border-slate-200 bg-velo-50 p-3 text-base text-slate-900">
             {azioni.messaggio}
           </p>
         ) : (
@@ -266,7 +266,7 @@ export function SchedaSegnalazione({
                 </div>
                 <div aria-live="polite">
                   {pagamento.fase === "pronto" ? (
-                    <p className="rounded-xl border border-slate-200 bg-slate-50 p-3 text-base text-slate-900">
+                    <p className="rounded-xl border border-slate-200 bg-velo-50 p-3 text-base text-slate-900">
                       {pagamento.testo}
                     </p>
                   ) : null}

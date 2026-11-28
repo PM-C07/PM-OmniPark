@@ -69,7 +69,7 @@ export function MenuUtente() {
             onClick={esci}
             disabled={inUscita}
             aria-busy={inUscita || undefined}
-            className="min-h-11 rounded-xl border border-white/80 px-3 text-sm font-semibold text-white transition-colors duration-150 hover:bg-white/10 disabled:opacity-60 motion-reduce:transition-none"
+            className="min-h-11 rounded-xl border border-white/80 px-3 text-sm font-semibold text-white transition-colors duration-150 hover:bg-white/10 disabled:cursor-not-allowed disabled:border-white/50 disabled:text-marca-50 motion-reduce:transition-none"
           >
             {inUscita ? "Uscita…" : "Esci"}
           </button>

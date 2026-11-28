@@ -39,7 +39,7 @@ export function PannelloWallet() {
   return (
     <div className="flex flex-col gap-4">
       {errore ? <Avviso tipo="errore">{errore}</Avviso> : null}
-      <div className="rounded-2xl bg-linear-to-br from-marca-900 to-marca-700 p-4 shadow-md">
+      <div className="riquadro-scuro rounded-2xl bg-linear-to-br from-marca-900 to-marca-700 p-4 shadow-md">
         <p className="text-sm text-marca-50">Saldo disponibile</p>
         <p className="text-3xl font-bold text-white" aria-live="polite">
           {saldo === null ? (errore ? "—" : "Caricamento…") : formattaEuro(saldo)}

@@ -222,7 +222,7 @@ export function ProlungamentoSosta({
       onSubmit={conferma}
       noValidate
       aria-label="Prolungamento della sosta"
-      className="flex flex-col gap-3 rounded-xl border border-slate-200 bg-slate-50 p-3"
+      className="flex flex-col gap-3 rounded-xl border border-slate-200 bg-velo-50 p-3"
     >
       <h3 className="text-base font-semibold text-marca-900">Prolungamento</h3>
       {errori.generale ? <Avviso tipo="errore">{errori.generale}</Avviso> : null}

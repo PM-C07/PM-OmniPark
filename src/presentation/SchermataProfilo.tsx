@@ -140,7 +140,7 @@ export function SchermataProfilo() {
               {targhe.map(({ targa }) => (
                 <li
                   key={targa}
-                  className="flex flex-col gap-1 rounded-xl border border-slate-200 bg-white p-3"
+                  className="flex flex-col gap-1 rounded-xl border border-slate-200 bg-velo-50 p-3"
                 >
                   <div className="flex items-center justify-between gap-2">
                     <span className="font-mono text-lg font-semibold text-slate-900">{targa}</span>
