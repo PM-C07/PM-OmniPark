@@ -116,7 +116,7 @@ export function MappaStalli() {
             {elemento.simbolo}
           </span>
           <span className="flex-1" data-riga-stallo={s.id}>
-            Stallo n. {s.numero} <span className="text-zinc-700">· {tipo.testo}</span>
+            Stallo n. {s.numero} <span className="text-slate-700">· {tipo.testo}</span>
           </span>
           <BadgeStato tipo="stallo" stato={s.stato} />
         </>
@@ -175,7 +175,7 @@ export function MappaStalli() {
               onSessioneScaduta={sessioneScaduta}
             />
           ) : (
-            <p className="rounded-lg border border-dashed border-zinc-400 p-4 text-base text-zinc-800">
+            <p className="rounded-xl border border-dashed border-slate-300 bg-white p-4 text-base text-slate-700">
               Seleziona uno stallo sulla mappa o nell&apos;elenco per vederne tariffa e stato e
               avviare la sosta.
             </p>

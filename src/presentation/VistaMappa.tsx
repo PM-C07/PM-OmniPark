@@ -14,7 +14,7 @@ export type { ElementoMappa, VistaGeografica, VoceLegenda };
 
 const Mappa = dynamic(() => import("./Mappa.tsx").then((modulo) => modulo.Mappa), {
   ssr: false,
-  loading: () => <p className="p-4 text-base text-zinc-800">Caricamento della mappa…</p>,
+  loading: () => <p className="p-4 text-base text-slate-700">Caricamento della mappa…</p>,
 });
 
 /** Se il codice della mappa non si carica, resta l'elenco al posto di un errore della pagina. */
@@ -79,7 +79,7 @@ export function VistaMappa(props: PropsVistaMappa) {
               nell&apos;elenco sotto la mappa.
             </Avviso>
           ) : null}
-          <div className="h-[55vh] min-h-72 overflow-hidden rounded-lg border border-zinc-400 bg-zinc-100">
+          <div className="h-[55vh] min-h-72 overflow-hidden rounded-2xl border border-slate-300 bg-slate-100 shadow-sm">
             <ConfineMappa>
               <Mappa
                 etichetta={props.etichettaMappa}
@@ -97,17 +97,17 @@ export function VistaMappa(props: PropsVistaMappa) {
         <div>{props.dettaglio}</div>
       </div>
       <section aria-labelledby="titolo-elenco-mappa" className="flex flex-col gap-3">
-        <h2 id="titolo-elenco-mappa" tabIndex={-1} className="text-lg font-semibold text-zinc-900">
+        <h2 id="titolo-elenco-mappa" tabIndex={-1} className="text-lg font-semibold text-marca-900">
           {props.titoloElenco}
         </h2>
         {gruppi.length === 0 ? (
-          <p className="text-base text-zinc-800">
+          <p className="rounded-xl border border-dashed border-slate-300 bg-white p-4 text-base text-slate-700">
             {props.testoElencoVuoto ?? "Nessun elemento in questa zona."}
           </p>
         ) : (
           gruppi.map(([gruppo, voci]) => (
             <div key={gruppo} className="flex flex-col gap-2">
-              <h3 className="text-base font-semibold text-zinc-900">{gruppo}</h3>
+              <h3 className="text-base font-semibold text-marca-900">{gruppo}</h3>
               <ul className="flex flex-col gap-2">
                 {voci.map((elemento) => (
                   <li key={elemento.id}>
@@ -115,10 +115,10 @@ export function VistaMappa(props: PropsVistaMappa) {
                       type="button"
                       aria-pressed={elemento.id === selezionato}
                       onClick={() => onSeleziona(elemento.id)}
-                      className={`flex min-h-11 w-full items-center gap-3 rounded-md border px-3 py-2 text-left text-base text-zinc-900 hover:bg-zinc-50 ${
+                      className={`flex min-h-11 w-full items-center gap-3 rounded-xl border px-3 py-2 text-left text-base text-slate-900 transition-colors duration-150 hover:bg-marca-50 motion-reduce:transition-none ${
                         elemento.id === selezionato
-                          ? "border-2 border-emerald-800 bg-emerald-50"
-                          : "border-zinc-300 bg-white"
+                          ? "border-2 border-marca-700 bg-marca-50"
+                          : "border-slate-200 bg-white"
                       }`}
                     >
                       {contenutoRiga ? contenutoRiga(elemento) : elemento.etichetta}

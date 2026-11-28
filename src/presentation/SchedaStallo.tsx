@@ -57,7 +57,7 @@ function CampoSelezione({
 }) {
   return (
     <div className="flex flex-col gap-1">
-      <label htmlFor={id} className="text-base font-medium text-zinc-900">
+      <label htmlFor={id} className="text-base font-medium text-slate-900">
         {etichetta}
       </label>
       <select
@@ -67,14 +67,14 @@ function CampoSelezione({
         onChange={(e) => onCambia(e.target.value)}
         aria-invalid={errore ? true : undefined}
         aria-describedby={errore ? `${id}-errore` : undefined}
-        className={`min-h-11 rounded-md border bg-white px-3 py-2 text-base text-zinc-900 ${
-          errore ? "border-2 border-red-700" : "border-zinc-500"
+        className={`min-h-11 rounded-xl border bg-white px-3 py-2 text-base text-slate-900 ${
+          errore ? "border-2 border-rose-700" : "border-slate-500"
         }`}
       >
         {children}
       </select>
       {errore ? (
-        <p id={`${id}-errore`} className="text-sm font-medium text-red-800">
+        <p id={`${id}-errore`} className="text-sm font-medium text-rose-800">
           Errore: {errore}
         </p>
       ) : null}
@@ -287,7 +287,7 @@ export function SchedaStallo({
   return (
     <section
       aria-labelledby="titolo-scheda-stallo"
-      className="flex flex-col gap-4 rounded-lg border border-zinc-300 bg-white p-4"
+      className="flex flex-col gap-4 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm"
     >
       <div className="flex items-start justify-between gap-2">
         <div>
@@ -295,11 +295,11 @@ export function SchedaStallo({
             id="titolo-scheda-stallo"
             ref={titolo}
             tabIndex={-1}
-            className="text-lg font-semibold text-zinc-900"
+            className="text-lg font-semibold text-marca-900"
           >
             Stallo n. {stallo.numero}
           </h2>
-          <p className="text-base text-zinc-800">{stallo.areaDiSosta.nome}</p>
+          <p className="text-base text-slate-700">{stallo.areaDiSosta.nome}</p>
         </div>
         <Bottone
           variante="secondario"
@@ -310,7 +310,7 @@ export function SchedaStallo({
         </Bottone>
       </div>
 
-      <dl className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-2 text-base text-zinc-900">
+      <dl className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-2 text-base text-slate-900">
         <dt className="font-medium">Tipo</dt>
         <dd>
           <span aria-hidden="true">{tipo.simbolo} </span>
@@ -337,7 +337,7 @@ export function SchedaStallo({
       <NavigaVersoStallo stallo={stallo} />
 
       {!disponibilita.disponibile ? (
-        <p className="rounded-md border border-zinc-300 bg-zinc-50 p-3 text-base text-zinc-900">
+        <p className="rounded-xl border border-slate-200 bg-slate-50 p-3 text-base text-slate-900">
           {disponibilita.motivo}
         </p>
       ) : !modulo ? (
@@ -352,7 +352,7 @@ export function SchedaStallo({
         </Bottone>
       ) : (
         <form onSubmit={conferma} noValidate className="flex flex-col gap-4">
-          <h3 ref={titoloModulo} tabIndex={-1} className="text-base font-semibold text-zinc-900">
+          <h3 ref={titoloModulo} tabIndex={-1} className="text-base font-semibold text-marca-900">
             Avvio della sosta
           </h3>
           {errori.generale ? <Avviso tipo="errore">{errori.generale}</Avviso> : null}
@@ -395,7 +395,7 @@ export function SchedaStallo({
               onCambio={setPermesso}
             />
           ) : null}
-          <p className="text-base text-zinc-900" aria-live="polite">
+          <p className="text-base text-slate-900" aria-live="polite">
             {importo
               ? `Importo ${formattaEuro(importo.importo)}, scadenza alle ${formattaOra(importo.orarioDiScadenza)}.`
               : calcolo
@@ -403,8 +403,8 @@ export function SchedaStallo({
                 : ""}
           </p>
           {riquadro === "proposta" ? (
-            <div className="flex flex-col gap-3 rounded-md border-l-4 border-orange-700 bg-orange-50 p-3">
-              <p className="text-base text-orange-950" role="alert">
+            <div className="flex flex-col gap-3 rounded-xl border-l-4 border-amber-700 bg-amber-50 p-3">
+              <p className="text-base text-amber-950" role="alert">
                 <strong>Credito insufficiente.</strong>{" "}
                 {errori.credito ??
                   `Il saldo è ${formattaEuro(saldo ?? 0)}, l'importo è ${formattaEuro(importo?.importo ?? 0)}.`}{" "}

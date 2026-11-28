@@ -4,14 +4,14 @@ import type { ButtonHTMLAttributes, ReactNode } from "react";
 type Variante = "primario" | "secondario" | "pericolo";
 
 const CLASSI: Readonly<Record<Variante, string>> = {
-  primario: "bg-emerald-800 text-white hover:bg-emerald-900",
-  secondario: "border border-zinc-500 bg-white text-zinc-900 hover:bg-zinc-100",
-  pericolo: "border border-red-800 bg-white text-red-800 hover:bg-red-50",
+  primario: "bg-marca-700 text-white hover:bg-marca-800",
+  secondario: "border border-marca-700 bg-white text-marca-900 hover:bg-marca-50",
+  pericolo: "border border-rose-700 bg-white text-rose-800 hover:bg-rose-50",
 };
 
 /** Classi del bottone, anche per i link con l'aspetto di un bottone (OMP-67). */
 export function classiBottone(variante: Variante = "primario"): string {
-  return `min-h-11 rounded-md px-4 py-2 text-base font-semibold disabled:cursor-not-allowed disabled:opacity-60 ${CLASSI[variante]}`;
+  return `min-h-11 rounded-xl px-4 py-2 text-base font-semibold transition-colors duration-150 motion-reduce:transition-none disabled:cursor-not-allowed disabled:opacity-60 ${CLASSI[variante]}`;
 }
 
 export function Bottone({

@@ -83,7 +83,9 @@ export function PanoramicaEnti() {
         <Avviso tipo="informazione">Non ci sono enti clienti.</Avviso>
       ) : null}
       {enti === null && !entiNonDisponibili ? (
-        <p className="text-base text-zinc-800">Caricamento degli enti…</p>
+        <p className="rounded-xl border border-dashed border-slate-300 bg-white p-4 text-base text-slate-700">
+          Caricamento degli enti…
+        </p>
       ) : null}
       {righe.length > 0 ? (
         // Contenitore che scorre in orizzontale sul telefono: raggiungibile con Tab, così si scorre
@@ -92,15 +94,18 @@ export function PanoramicaEnti() {
           tabIndex={0}
           role="region"
           aria-labelledby="titolo-tabella-enti"
-          className="overflow-x-auto rounded-lg border border-zinc-300 bg-white"
+          className="overflow-x-auto rounded-2xl border border-slate-200 bg-white shadow-sm"
         >
-          <table className="w-full min-w-[32rem] border-collapse text-left text-base text-zinc-900">
-            <caption id="titolo-tabella-enti" className="px-4 pt-3 text-left text-sm text-zinc-800">
+          <table className="w-full min-w-[32rem] border-collapse text-left text-base text-slate-900">
+            <caption
+              id="titolo-tabella-enti"
+              className="px-4 pt-3 text-left text-sm text-slate-700"
+            >
               Riepilogo per ente cliente: stalli gestiti, soste attive e segnalazioni non ancora
               chiuse (aperte o prese in carico).
             </caption>
             <thead>
-              <tr className="border-b border-zinc-300">
+              <tr className="border-b border-slate-200 bg-slate-50">
                 <th scope="col" className="px-4 py-3 font-semibold">
                   Ente
                 </th>
@@ -119,11 +124,11 @@ export function PanoramicaEnti() {
               {righe.map((riga) => {
                 const inErrore = riepiloghi.get(riga.id)?.stato === "errore";
                 return (
-                  <tr key={riga.id} className="border-b border-zinc-200 last:border-b-0">
+                  <tr key={riga.id} className="border-b border-slate-200 last:border-b-0">
                     <th scope="row" className="px-4 py-3 font-medium">
                       {riga.ente}
                       {inErrore ? (
-                        <span className="mt-1 flex flex-wrap items-center gap-2 text-sm font-normal text-red-800">
+                        <span className="mt-1 flex flex-wrap items-center gap-2 text-sm font-normal text-rose-800">
                           Riepilogo non disponibile.
                           <Bottone
                             variante="secondario"

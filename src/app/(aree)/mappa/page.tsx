@@ -8,7 +8,7 @@ export const metadata: Metadata = { title: "Mappa degli stalli · OmniPark" };
 export default function Page() {
   return (
     <>
-      <h1 className="text-2xl font-bold text-zinc-900">Mappa degli stalli</h1>
+      <h1 className="text-2xl font-bold tracking-tight text-marca-950">Mappa degli stalli</h1>
       <MappaStalli />
     </>
   );

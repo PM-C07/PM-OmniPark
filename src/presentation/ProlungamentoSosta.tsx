@@ -136,7 +136,7 @@ export function ProlungamentoSosta({
   const disponibilita = disponibilitaProlungamento(statoMostrato, opzioni);
   if (!disponibilita.disponibile) {
     return statoMostrato === "ATTIVA" ? (
-      <p className="text-base text-zinc-800">{disponibilita.motivo}</p>
+      <p className="text-base text-slate-700">{disponibilita.motivo}</p>
     ) : null;
   }
 
@@ -221,12 +221,12 @@ export function ProlungamentoSosta({
       onSubmit={conferma}
       noValidate
       aria-label="Prolungamento della sosta"
-      className="flex flex-col gap-3 rounded-md border border-zinc-300 bg-zinc-50 p-3"
+      className="flex flex-col gap-3 rounded-xl border border-slate-200 bg-slate-50 p-3"
     >
-      <h3 className="text-base font-semibold text-zinc-900">Prolungamento</h3>
+      <h3 className="text-base font-semibold text-marca-900">Prolungamento</h3>
       {errori.generale ? <Avviso tipo="errore">{errori.generale}</Avviso> : null}
       <div className="flex flex-col gap-1">
-        <label htmlFor={idTempo} className="text-base font-medium text-zinc-900">
+        <label htmlFor={idTempo} className="text-base font-medium text-slate-900">
           Tempo aggiuntivo
         </label>
         <select
@@ -239,8 +239,8 @@ export function ProlungamentoSosta({
           }}
           aria-invalid={errori.tempo ? true : undefined}
           aria-describedby={errori.tempo ? `${idTempo}-errore` : undefined}
-          className={`min-h-11 rounded-md border bg-white px-3 py-2 text-base text-zinc-900 ${
-            errori.tempo ? "border-2 border-red-700" : "border-zinc-500"
+          className={`min-h-11 rounded-xl border bg-white px-3 py-2 text-base text-slate-900 ${
+            errori.tempo ? "border-2 border-rose-700" : "border-slate-500"
           }`}
         >
           {opzioni.map((minuti) => (
@@ -250,12 +250,12 @@ export function ProlungamentoSosta({
           ))}
         </select>
         {errori.tempo ? (
-          <p id={`${idTempo}-errore`} className="text-sm font-medium text-red-800">
+          <p id={`${idTempo}-errore`} className="text-sm font-medium text-rose-800">
             Errore: {errori.tempo}
           </p>
         ) : null}
       </div>
-      <p className="text-base text-zinc-900" aria-live="polite">
+      <p className="text-base text-slate-900" aria-live="polite">
         {anteprima
           ? `Importo aggiuntivo ${formattaEuro(anteprima.importo)}, nuova scadenza alle ${formattaOra(anteprima.orarioDiScadenza)}.`
           : calcolo
@@ -263,8 +263,8 @@ export function ProlungamentoSosta({
             : ""}
       </p>
       {riquadro === "proposta" ? (
-        <div className="flex flex-col gap-3 rounded-md border-l-4 border-orange-700 bg-orange-50 p-3">
-          <p className="text-base text-orange-950" role="alert">
+        <div className="flex flex-col gap-3 rounded-xl border-l-4 border-amber-700 bg-amber-50 p-3">
+          <p className="text-base text-amber-950" role="alert">
             <strong>Credito insufficiente.</strong>{" "}
             {errori.credito ??
               `Il saldo è ${formattaEuro(saldo ?? 0)}, l'importo aggiuntivo è ${formattaEuro(anteprima?.importo ?? 0)}.`}{" "}

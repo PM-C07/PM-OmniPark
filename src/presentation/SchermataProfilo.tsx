@@ -131,17 +131,19 @@ export function SchermataProfilo() {
           {targhe === null ? (
             // Se il primo caricamento fallisce resta solo l'avviso d'errore, non il caricamento.
             generale ? null : (
-              <p className="text-base text-zinc-800">Caricamento delle targhe…</p>
+              <p className="rounded-xl border border-dashed border-slate-300 bg-white p-4 text-base text-slate-700">
+                Caricamento delle targhe…
+              </p>
             )
           ) : (
             <ul className="flex flex-col gap-2" aria-label="Targhe del profilo">
               {targhe.map(({ targa }) => (
                 <li
                   key={targa}
-                  className="flex flex-col gap-1 rounded-md border border-zinc-300 p-3"
+                  className="flex flex-col gap-1 rounded-xl border border-slate-200 bg-white p-3"
                 >
                   <div className="flex items-center justify-between gap-2">
-                    <span className="font-mono text-lg font-semibold text-zinc-900">{targa}</span>
+                    <span className="font-mono text-lg font-semibold text-slate-900">{targa}</span>
                     <Bottone
                       variante="pericolo"
                       inCorso={inCorso === targa}
@@ -155,7 +157,7 @@ export function SchermataProfilo() {
                     </Bottone>
                   </div>
                   {erroriRiga[targa] ? (
-                    <p id={idRiga(targa)} className="text-sm font-medium text-red-800">
+                    <p id={idRiga(targa)} className="text-sm font-medium text-rose-800">
                       Errore: {erroriRiga[targa]}
                     </p>
                   ) : null}

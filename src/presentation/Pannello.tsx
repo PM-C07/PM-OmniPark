@@ -13,9 +13,9 @@ export function Pannello({
   return (
     <section
       aria-labelledby={idTitolo}
-      className="flex flex-col gap-3 rounded-lg border border-zinc-300 bg-white p-4"
+      className="mx-auto flex w-full max-w-3xl flex-col gap-3 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm"
     >
-      <h2 id={idTitolo} className="text-lg font-semibold text-zinc-900">
+      <h2 id={idTitolo} className="text-lg font-semibold text-marca-900">
         {titolo}
       </h2>
       {children}

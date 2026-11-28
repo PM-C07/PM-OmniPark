@@ -7,7 +7,7 @@ type Tipo = "informazione" | "successo" | "errore";
 const STILE: Readonly<Record<Tipo, { classi: string; titolo: string }>> = {
   informazione: { classi: "border-sky-700 bg-sky-50 text-sky-950", titolo: "Informazione" },
   successo: { classi: "border-emerald-700 bg-emerald-50 text-emerald-950", titolo: "Fatto" },
-  errore: { classi: "border-red-700 bg-red-50 text-red-950", titolo: "Errore" },
+  errore: { classi: "border-rose-700 bg-rose-50 text-rose-950", titolo: "Errore" },
 };
 
 export function Avviso({ tipo, children }: { tipo: Tipo; children: ReactNode }) {
@@ -15,7 +15,7 @@ export function Avviso({ tipo, children }: { tipo: Tipo; children: ReactNode }) 
   return (
     <div
       role={tipo === "errore" ? "alert" : "status"}
-      className={`rounded-md border-l-4 p-3 ${classi}`}
+      className={`rounded-xl border-l-4 p-3 ${classi}`}
     >
       <p className="font-semibold">{titolo}</p>
       <div>{children}</div>

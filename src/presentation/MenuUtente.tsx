@@ -1,6 +1,7 @@
 "use client";
 // Boundary :MenuUtente (barra comune, SD_AUTH_4 3.a1, np_00): utente collegato con il ruolo, menu del ruolo e «Esci».
 // Legge l'utente da GET /api/auth/io; con la sessione scaduta torna a /accesso.
+import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
@@ -47,11 +48,16 @@ export function MenuUtente() {
 
   const voci = utente ? vociDiMenu(utente.ruolo) : [];
   return (
-    <header className="border-b border-zinc-300 bg-white">
-      <div className="mx-auto flex w-full max-w-3xl flex-wrap items-center justify-between gap-2 px-4 py-3">
-        <p className="text-xl font-bold text-emerald-900">OmniPark</p>
+    // Dalla OMP-68: intestazione scura con la sfumatura della palette e il logo decorativo, uguale
+    // per i tre ruoli e per le pagine pubbliche ((pubblico)/layout.tsx).
+    <header className="border-b-4 bg-linear-to-r from-marca-900 to-marca-700 [border-image:linear-gradient(to_right,var(--color-marca-700),var(--color-foglia-400))_1]">
+      <div className="mx-auto flex w-full max-w-3xl flex-wrap items-center justify-between gap-2 px-4 py-3 lg:max-w-5xl">
+        <p className="flex items-center gap-2 text-xl font-bold text-white">
+          <Image src="/logo.png" alt="" width={40} height={40} className="h-10 w-10" />
+          OmniPark
+        </p>
         <div className="flex items-center gap-3">
-          <p className="text-sm text-zinc-800" aria-live="polite">
+          <p className="text-sm text-marca-50" aria-live="polite">
             {utente
               ? etichettaRuolo(utente.ruolo, utente.ente)
               : erroreUtente
@@ -63,14 +69,17 @@ export function MenuUtente() {
             onClick={esci}
             disabled={inUscita}
             aria-busy={inUscita || undefined}
-            className="min-h-11 rounded-md border border-zinc-500 px-3 text-sm font-semibold text-zinc-900 hover:bg-zinc-100 disabled:opacity-60"
+            className="min-h-11 rounded-xl border border-white/80 px-3 text-sm font-semibold text-white transition-colors duration-150 hover:bg-white/10 disabled:opacity-60 motion-reduce:transition-none"
           >
             {inUscita ? "Uscita…" : "Esci"}
           </button>
         </div>
       </div>
       {voci.length > 0 ? (
-        <nav aria-label="Menu principale" className="mx-auto w-full max-w-3xl px-2 pb-2">
+        <nav
+          aria-label="Menu principale"
+          className="mx-auto w-full max-w-3xl px-2 pb-2 lg:max-w-5xl"
+        >
           <ul className="flex gap-1 overflow-x-auto">
             {voci.map((voce) => {
               const corrente = percorso === voce.percorso;
@@ -79,10 +88,10 @@ export function MenuUtente() {
                   <Link
                     href={voce.percorso}
                     aria-current={corrente ? "page" : undefined}
-                    className={`inline-flex min-h-11 items-center rounded-md px-3 text-base ${
+                    className={`inline-flex min-h-11 items-center rounded-xl px-3 text-base transition-colors duration-150 motion-reduce:transition-none ${
                       corrente
-                        ? "bg-emerald-100 font-semibold text-emerald-950 underline"
-                        : "text-zinc-900 hover:bg-zinc-100"
+                        ? "bg-white font-semibold text-marca-900 underline decoration-2 underline-offset-4"
+                        : "text-white hover:bg-white/10"
                     }`}
                   >
                     {voce.etichetta}

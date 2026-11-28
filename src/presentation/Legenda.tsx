@@ -7,9 +7,9 @@ export type VoceLegenda = { tono?: Tono; simbolo: string; testo: string };
 
 export function Legenda({ voci }: { voci: readonly VoceLegenda[] }) {
   return (
-    <div className="rounded-md border border-zinc-300 bg-white p-3">
-      <h2 className="text-sm font-semibold text-zinc-900">Legenda</h2>
-      <ul className="mt-2 grid grid-cols-1 gap-x-4 gap-y-1 text-sm text-zinc-900 sm:grid-cols-2">
+    <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+      <h2 className="text-lg font-semibold text-marca-900">Legenda</h2>
+      <ul className="mt-2 grid grid-cols-1 gap-x-4 gap-y-1 text-sm text-slate-900 sm:grid-cols-2">
         {voci.map((voce) => (
           <li key={voce.testo} className="flex items-center gap-2">
             <span aria-hidden="true" className="legenda-simbolo" data-tono={voce.tono ?? "neutro"}>

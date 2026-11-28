@@ -8,8 +8,8 @@ export const metadata: Metadata = { title: "Gestione Ausiliari · OmniPark" };
 export default function Page() {
   return (
     <>
-      <h1 className="text-2xl font-bold text-zinc-900">Gestione Ausiliari</h1>
-      <p className="text-base text-zinc-800">
+      <h1 className="text-2xl font-bold tracking-tight text-marca-950">Gestione Ausiliari</h1>
+      <p className="text-base text-slate-700">
         Crea, modifica e disattiva gli account degli Ausiliari del Traffico degli enti clienti.
       </p>
       <SchermataAusiliari />

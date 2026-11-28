@@ -83,7 +83,7 @@ export function Ricarica({
 
   return (
     <div className="flex flex-col gap-3">
-      <h3 id={idTitolo} className="text-base font-semibold text-zinc-900">
+      <h3 id={idTitolo} className="text-base font-semibold text-marca-900">
         Ricarica simulata
       </h3>
       {esito ? <Avviso tipo={esito.tipo}>{esito.testo}</Avviso> : null}
@@ -102,8 +102,8 @@ export function Ricarica({
         ))}
       </div>
       {scelto !== null ? (
-        <div className="flex flex-col gap-3 rounded-md border border-zinc-300 bg-zinc-50 p-3">
-          <p className="text-base text-zinc-900">
+        <div className="flex flex-col gap-3 rounded-xl border border-slate-200 bg-slate-50 p-3">
+          <p className="text-base text-slate-900">
             Ricarica simulata di <strong>{formattaEuro(scelto)}</strong>: nessun addebito reale.
           </p>
           <div className="flex flex-wrap gap-2">
