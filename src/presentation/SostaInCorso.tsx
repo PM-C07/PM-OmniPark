@@ -112,15 +112,12 @@ export function SostaInCorso({
     return null;
   }
   return (
-    <section
-      aria-labelledby="titolo-mia-sosta"
-      className="flex flex-col gap-3 rounded-lg border border-zinc-300 bg-white p-4"
-    >
+    <section aria-labelledby="titolo-mia-sosta" className="scheda flex flex-col gap-3 p-4">
       <h2
         id="titolo-mia-sosta"
         ref={ref}
         tabIndex={-1}
-        className="text-lg font-semibold text-zinc-900"
+        className="-mx-4 -mt-4 rounded-t-2xl border-b border-slate-200 bg-marca-50 px-4 pt-4 pb-3 text-lg font-semibold text-marca-900"
       >
         La mia sosta
       </h2>
@@ -135,14 +132,14 @@ export function SostaInCorso({
           return (
             <li
               key={sosta.id}
-              className="flex flex-col gap-1 rounded-md border border-zinc-300 p-3"
+              className="riquadro-scuro flex flex-col gap-1 rounded-xl bg-linear-to-br from-marca-900 to-marca-700 p-4 text-white shadow-md"
             >
               <div className="flex flex-wrap items-center justify-between gap-2">
-                <span className="font-mono text-lg font-semibold text-zinc-900">{sosta.targa}</span>
+                <span className="font-mono text-lg font-semibold text-white">{sosta.targa}</span>
                 <BadgeStato tipo="sosta" stato={stato} />
               </div>
-              <p className="text-base text-zinc-900">{descriviStallo(sosta.stalloId)}</p>
-              <p className="text-base text-zinc-900">
+              <p className="text-base text-marca-50">{descriviStallo(sosta.stalloId)}</p>
+              <p className="text-xl font-semibold text-white">
                 Scadenza alle {formattaOra(sosta.orarioDiScadenza)}
                 {sosta.stato === "ATTIVA" && !tempo.scaduta ? (
                   <>

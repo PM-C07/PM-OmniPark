@@ -7,8 +7,8 @@ export const metadata: Metadata = { title: "Registrati · OmniPark" };
 export default function Page() {
   return (
     <>
-      <h1 className="text-2xl font-bold text-zinc-900">Registrati</h1>
-      <p className="text-base text-zinc-800">
+      <h1 className="text-2xl font-bold tracking-tight text-marca-950">Registrati</h1>
+      <p className="text-base text-slate-700">
         Crea il tuo account da Automobilista con email, password e la targa del tuo veicolo.
       </p>
       <SchermataAccesso vista="registrazione" />

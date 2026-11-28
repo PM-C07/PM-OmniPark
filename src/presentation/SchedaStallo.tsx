@@ -57,7 +57,7 @@ function CampoSelezione({
 }) {
   return (
     <div className="flex flex-col gap-1">
-      <label htmlFor={id} className="text-base font-medium text-zinc-900">
+      <label htmlFor={id} className="text-base font-medium text-slate-900">
         {etichetta}
       </label>
       <select
@@ -67,14 +67,14 @@ function CampoSelezione({
         onChange={(e) => onCambia(e.target.value)}
         aria-invalid={errore ? true : undefined}
         aria-describedby={errore ? `${id}-errore` : undefined}
-        className={`min-h-11 rounded-md border bg-white px-3 py-2 text-base text-zinc-900 ${
-          errore ? "border-2 border-red-700" : "border-zinc-500"
+        className={`min-h-11 rounded-xl border bg-white px-3 py-2 text-base text-slate-900 ${
+          errore ? "border-2 border-rose-700" : "border-slate-500"
         }`}
       >
         {children}
       </select>
       {errore ? (
-        <p id={`${id}-errore`} className="text-sm font-medium text-red-800">
+        <p id={`${id}-errore`} className="text-sm font-medium text-rose-800">
           Errore: {errore}
         </p>
       ) : null}
@@ -123,6 +123,8 @@ export function SchedaStallo({
   } | null>(null);
   const titolo = useRef<HTMLHeadingElement>(null);
   const titoloModulo = useRef<HTMLHeadingElement>(null);
+  // Vero solo dopo una ricarica approvata in questo avvio, fino al primo rendering che la applica.
+  const focusDopoRicarica = useRef(false);
   const sessione = useRef(onSessioneScaduta);
   useEffect(() => {
     sessione.current = onSessioneScaduta;
@@ -209,6 +211,23 @@ export function SchedaStallo({
     ricaricaApprovata: ricaricaApprovata !== null,
   });
   const conPermesso = richiedePermesso(stallo.tipoDiStallo);
+  // Condizione di «Conferma e paga» disabilitato, usata dal bottone e dal focus dopo la ricarica.
+  const confermaDisabilitata =
+    !importo || calcolo || creditoScarso || (conPermesso && !permesso) || invio;
+
+  // Dopo la ricarica il focus va su «Conferma e paga» (DIF-03), ma solo quando lo stato con il
+  // nuovo saldo è applicato e il bottone è abilitato: con un requestAnimationFrame il fotogramma
+  // poteva arrivare prima e il focus restava perso (OMP-68, TS-01 intermittente). Il ref si consuma
+  // al primo rendering dopo la ricarica: se il credito non basta ancora, il focus non si sposta più.
+  useEffect(() => {
+    if (!focusDopoRicarica.current) {
+      return;
+    }
+    focusDopoRicarica.current = false;
+    if (!confermaDisabilitata) {
+      document.getElementById("avvio-conferma")?.focus();
+    }
+  }, [confermaDisabilitata, ricaricaApprovata]);
 
   // Interazione 2: modulo già compilato con la prima targa e la durata proposta.
   function avviaSosta() {
@@ -222,6 +241,12 @@ export function SchedaStallo({
     setDurata(durataPredefinita(tariffa.durataMassima));
     setModulo(true);
     requestAnimationFrame(() => titoloModulo.current?.focus());
+  }
+
+  // «Annulla» (4.a1): il modulo si chiude e il focus torna su «Avvia sosta» (OMP-68, WCAG 2.4.3).
+  function annullaAvvio() {
+    setModulo(false);
+    requestAnimationFrame(() => document.getElementById("avvio-avvia")?.focus());
   }
 
   // Interazione 3: conferma e pagamento (POST /api/soste).
@@ -256,25 +281,22 @@ export function SchedaStallo({
     setSaldo(nuovoSaldo);
     setRicaricaApprovata({ importo: importoRicaricato, saldo: nuovoSaldo });
     setErrori((attuali) => senza(attuali, "credito"));
-    requestAnimationFrame(() => document.getElementById("avvio-conferma")?.focus());
+    focusDopoRicarica.current = true;
   }
 
   return (
-    <section
-      aria-labelledby="titolo-scheda-stallo"
-      className="flex flex-col gap-4 rounded-lg border border-zinc-300 bg-white p-4"
-    >
-      <div className="flex items-start justify-between gap-2">
+    <section aria-labelledby="titolo-scheda-stallo" className="scheda flex flex-col gap-4 p-4">
+      <div className="-mx-4 -mt-4 flex items-start justify-between gap-2 rounded-t-2xl border-b border-slate-200 bg-marca-50 px-4 pt-4 pb-3">
         <div>
           <h2
             id="titolo-scheda-stallo"
             ref={titolo}
             tabIndex={-1}
-            className="text-lg font-semibold text-zinc-900"
+            className="text-lg font-semibold text-marca-900"
           >
             Stallo n. {stallo.numero}
           </h2>
-          <p className="text-base text-zinc-800">{stallo.areaDiSosta.nome}</p>
+          <p className="text-base text-slate-700">{stallo.areaDiSosta.nome}</p>
         </div>
         <Bottone
           variante="secondario"
@@ -285,7 +307,7 @@ export function SchedaStallo({
         </Bottone>
       </div>
 
-      <dl className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-2 text-base text-zinc-900">
+      <dl className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-2 text-base text-slate-900">
         <dt className="font-medium">Tipo</dt>
         <dd>
           <span aria-hidden="true">{tipo.simbolo} </span>
@@ -312,11 +334,12 @@ export function SchedaStallo({
       <NavigaVersoStallo stallo={stallo} />
 
       {!disponibilita.disponibile ? (
-        <p className="rounded-md border border-zinc-300 bg-zinc-50 p-3 text-base text-zinc-900">
+        <p className="rounded-xl border border-slate-200 bg-velo-50 p-3 text-base text-slate-900">
           {disponibilita.motivo}
         </p>
       ) : !modulo ? (
         <Bottone
+          id="avvio-avvia"
           onClick={avviaSosta}
           inCorso={!tariffa || !targhe}
           testoInCorso="Caricamento…"
@@ -326,7 +349,7 @@ export function SchedaStallo({
         </Bottone>
       ) : (
         <form onSubmit={conferma} noValidate className="flex flex-col gap-4">
-          <h3 ref={titoloModulo} tabIndex={-1} className="text-base font-semibold text-zinc-900">
+          <h3 ref={titoloModulo} tabIndex={-1} className="text-base font-semibold text-marca-900">
             Avvio della sosta
           </h3>
           {errori.generale ? <Avviso tipo="errore">{errori.generale}</Avviso> : null}
@@ -369,7 +392,7 @@ export function SchedaStallo({
               onCambio={setPermesso}
             />
           ) : null}
-          <p className="text-base text-zinc-900" aria-live="polite">
+          <p className="text-base text-slate-900" aria-live="polite">
             {importo
               ? `Importo ${formattaEuro(importo.importo)}, scadenza alle ${formattaOra(importo.orarioDiScadenza)}.`
               : calcolo
@@ -377,8 +400,8 @@ export function SchedaStallo({
                 : ""}
           </p>
           {riquadro === "proposta" ? (
-            <div className="flex flex-col gap-3 rounded-md border-l-4 border-orange-700 bg-orange-50 p-3">
-              <p className="text-base text-orange-950" role="alert">
+            <div className="flex flex-col gap-3 rounded-xl border-l-4 border-amber-700 bg-amber-50 p-3">
+              <p className="text-base text-amber-950" role="alert">
                 <strong>Credito insufficiente.</strong>{" "}
                 {errori.credito ??
                   `Il saldo è ${formattaEuro(saldo ?? 0)}, l'importo è ${formattaEuro(importo?.importo ?? 0)}.`}{" "}
@@ -402,11 +425,11 @@ export function SchedaStallo({
               type="submit"
               inCorso={invio}
               testoInCorso="Pagamento in corso…"
-              disabled={!importo || calcolo || creditoScarso || (conPermesso && !permesso)}
+              disabled={confermaDisabilitata}
             >
               {importo ? etichettaConferma(importo.importo) : "Calcolo dell'importo…"}
             </Bottone>
-            <Bottone variante="secondario" disabled={invio} onClick={() => setModulo(false)}>
+            <Bottone variante="secondario" disabled={invio} onClick={annullaAvvio}>
               Annulla
             </Bottone>
           </div>

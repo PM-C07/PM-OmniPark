@@ -163,7 +163,7 @@ export function MappaSegnalazioni() {
           </span>
           <span className="flex-1" data-riga-segnalazione={s.id}>
             Stallo n. {s.numeroStallo}{" "}
-            <span className="text-zinc-700">
+            <span className="text-slate-700">
               · {descriviMotivo(s.motivo).testo} · {formattaDataOra(s.dataEOraDellaLettura)}
             </span>
           </span>
@@ -222,7 +222,7 @@ export function MappaSegnalazioni() {
               onPresaInCarico={presaInCarico}
             />
           ) : (
-            <p className="rounded-lg border border-dashed border-zinc-400 p-4 text-base text-zinc-800">
+            <p className="rounded-xl border border-dashed border-slate-300 bg-white p-4 text-base text-slate-700">
               {selezionato !== null
                 ? "La segnalazione selezionata non è più aperta: è stata chiusa."
                 : `Seleziona una segnalazione sulla mappa o nell'elenco per vederne il dettaglio e registrare l'esito: ${ESITI.SOSTA_IRREGOLARE_ACCERTATA.toLowerCase()} o ${ESITI.NON_CONFERMATA.toLowerCase()}.`}

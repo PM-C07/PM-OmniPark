@@ -39,7 +39,7 @@ async function riduciFoto(file: File): Promise<Blob> {
 }
 
 const CLASSI_SCELTA =
-  "inline-flex min-h-11 cursor-pointer items-center rounded-md border border-zinc-500 bg-white px-4 py-2 text-base font-semibold text-zinc-900 hover:bg-zinc-100 focus-within:outline-2 focus-within:outline-offset-2 focus-within:outline-emerald-800";
+  "inline-flex min-h-11 cursor-pointer items-center rounded-xl border border-marca-700 bg-white px-4 py-2 text-base font-semibold text-marca-900 transition-colors duration-150 hover:bg-marca-50 focus-within:outline-3 focus-within:outline-offset-2 focus-within:outline-marca-900 motion-reduce:transition-none";
 
 export function PermessoStallo({
   tipoDiStallo,
@@ -97,19 +97,19 @@ export function PermessoStallo({
   return (
     <fieldset
       aria-describedby={messaggio ? "permesso-errore" : undefined}
-      className={`flex flex-col gap-3 rounded-md border p-3 ${
-        messaggio ? "border-2 border-red-700" : "border-zinc-300"
+      className={`flex flex-col gap-3 rounded-xl border p-3 ${
+        messaggio ? "border-2 border-rose-700" : "border-slate-200"
       }`}
     >
-      <legend className="px-1 text-base font-semibold text-zinc-900">
+      <legend className="px-1 text-base font-semibold text-marca-900">
         Dichiarazione e foto del permesso
       </legend>
-      <p className="text-base text-zinc-800">
+      <p className="text-base text-slate-700">
         Questo stallo è riservato: per avviare la sosta dichiara di esporre il permesso e carica la
         foto del permesso esposto. Dichiarazione e foto valgono solo per questa sosta e si
         cancellano quando termina.
       </p>
-      <label className="flex min-h-11 items-start gap-3 text-base text-zinc-900">
+      <label className="flex min-h-11 items-start gap-3 text-base text-slate-900">
         <input
           type="checkbox"
           checked={dichiarata}
@@ -142,7 +142,7 @@ export function PermessoStallo({
           />
         </label>
       </div>
-      <p className="text-base text-zinc-900" aria-live="polite">
+      <p className="text-base text-slate-900" aria-live="polite">
         {lettura ? "Preparazione della foto…" : foto ? "Foto del permesso pronta." : ""}
       </p>
       {foto ? (
@@ -151,11 +151,11 @@ export function PermessoStallo({
         <img
           src={foto.anteprima}
           alt="Anteprima della foto del permesso"
-          className="max-h-48 w-auto self-start rounded-md border border-zinc-300"
+          className="max-h-48 w-auto self-start rounded-xl border border-slate-200"
         />
       ) : null}
       {messaggio ? (
-        <p id="permesso-errore" className="text-sm font-medium text-red-800">
+        <p id="permesso-errore" className="text-sm font-medium text-rose-800">
           Errore: {messaggio}
         </p>
       ) : null}

@@ -52,6 +52,9 @@ export function ProlungamentoSosta({
     saldo: number;
   } | null>(null);
   const [invio, setInvio] = useState(false);
+  // Vero solo dopo una ricarica approvata in questo prolungamento, fino al primo rendering che la
+  // applica.
+  const focusDopoRicarica = useRef(false);
   const sessione = useRef(onSessioneScaduta);
   useEffect(() => {
     sessione.current = onSessioneScaduta;
@@ -104,6 +107,28 @@ export function ProlungamentoSosta({
     };
   }, [aperto, tempo, sosta.id, sosta.orarioDiScadenza]);
 
+  // Calcolati prima dei return anticipati: servono anche all'effetto del focus dopo la ricarica.
+  const anteprima = calcolata !== null && calcolata.tempo === tempo ? calcolata.anteprima : null;
+  const calcolo =
+    aperto && tempo !== null && anteprima === null && !errori.tempo && !errori.generale;
+  const creditoScarso =
+    saldo !== null && anteprima !== null && !creditoSufficiente(saldo, anteprima.importo);
+  // Condizione di «Conferma e paga» disabilitato, usata dal bottone e dal focus dopo la ricarica.
+  const confermaDisabilitata = !anteprima || calcolo || creditoScarso || invio;
+
+  // Dopo la ricarica il focus va su «Conferma e paga», ma solo quando lo stato con il nuovo saldo è
+  // applicato e il bottone è abilitato (OMP-68, stessa correzione della scheda dello stallo). Il ref
+  // si consuma al primo rendering dopo la ricarica.
+  useEffect(() => {
+    if (!focusDopoRicarica.current) {
+      return;
+    }
+    focusDopoRicarica.current = false;
+    if (!confermaDisabilitata) {
+      document.getElementById(`prolunga-conferma-${sosta.id}`)?.focus();
+    }
+  }, [confermaDisabilitata, ricaricaApprovata, sosta.id]);
+
   if (durataMassima === null) {
     return null;
   }
@@ -111,15 +136,11 @@ export function ProlungamentoSosta({
   const disponibilita = disponibilitaProlungamento(statoMostrato, opzioni);
   if (!disponibilita.disponibile) {
     return statoMostrato === "ATTIVA" ? (
-      <p className="text-base text-zinc-800">{disponibilita.motivo}</p>
+      // Il motivo compare solo nel riquadro scuro di «La mia sosta» (OMP-68, B3).
+      <p className="text-base text-marca-50">{disponibilita.motivo}</p>
     ) : null;
   }
 
-  const anteprima = calcolata !== null && calcolata.tempo === tempo ? calcolata.anteprima : null;
-  const calcolo =
-    aperto && tempo !== null && anteprima === null && !errori.tempo && !errori.generale;
-  const creditoScarso =
-    saldo !== null && anteprima !== null && !creditoSufficiente(saldo, anteprima.importo);
   const riquadro = riquadroRicarica({
     creditoScarso,
     erroreCredito: errori.credito !== undefined,
@@ -133,6 +154,8 @@ export function ProlungamentoSosta({
       tempoAggiuntivoProposto(durataMassima ?? 0, sosta.orarioDiAvvio, sosta.orarioDiScadenza),
     );
     setAperto(true);
+    // «Prolunga» esce dalla pagina: il focus va sulla scelta del tempo (OMP-68, WCAG 2.4.3).
+    requestAnimationFrame(() => document.getElementById(`prolunga-tempo-${sosta.id}`)?.focus());
     void chiamaApi("/api/wallet", { method: "GET" }, {}).then((esito) => {
       if (esito.esito === "sessioneScaduta") {
         sessione.current();
@@ -174,13 +197,19 @@ export function ProlungamentoSosta({
     setSaldo(nuovoSaldo);
     setRicaricaApprovata({ importo: importoRicaricato, saldo: nuovoSaldo });
     setErrori((attuali) => ({ ...attuali, credito: undefined }));
-    requestAnimationFrame(() => document.getElementById(`prolunga-conferma-${sosta.id}`)?.focus());
+    focusDopoRicarica.current = true;
+  }
+
+  // «Annulla» (4.a1): il pannello si chiude e il focus torna su «Prolunga» (OMP-68, WCAG 2.4.3).
+  function annulla() {
+    setAperto(false);
+    requestAnimationFrame(() => document.getElementById(`prolunga-${sosta.id}`)?.focus());
   }
 
   if (!aperto) {
     return (
       <div>
-        <Bottone variante="secondario" onClick={apri}>
+        <Bottone id={`prolunga-${sosta.id}`} variante="secondario" onClick={apri}>
           Prolunga
         </Bottone>
       </div>
@@ -193,12 +222,12 @@ export function ProlungamentoSosta({
       onSubmit={conferma}
       noValidate
       aria-label="Prolungamento della sosta"
-      className="flex flex-col gap-3 rounded-md border border-zinc-300 bg-zinc-50 p-3"
+      className="flex flex-col gap-3 rounded-xl border border-slate-200 bg-velo-50 p-3"
     >
-      <h3 className="text-base font-semibold text-zinc-900">Prolungamento</h3>
+      <h3 className="text-base font-semibold text-marca-900">Prolungamento</h3>
       {errori.generale ? <Avviso tipo="errore">{errori.generale}</Avviso> : null}
       <div className="flex flex-col gap-1">
-        <label htmlFor={idTempo} className="text-base font-medium text-zinc-900">
+        <label htmlFor={idTempo} className="text-base font-medium text-slate-900">
           Tempo aggiuntivo
         </label>
         <select
@@ -211,8 +240,8 @@ export function ProlungamentoSosta({
           }}
           aria-invalid={errori.tempo ? true : undefined}
           aria-describedby={errori.tempo ? `${idTempo}-errore` : undefined}
-          className={`min-h-11 rounded-md border bg-white px-3 py-2 text-base text-zinc-900 ${
-            errori.tempo ? "border-2 border-red-700" : "border-zinc-500"
+          className={`min-h-11 rounded-xl border bg-white px-3 py-2 text-base text-slate-900 ${
+            errori.tempo ? "border-2 border-rose-700" : "border-slate-500"
           }`}
         >
           {opzioni.map((minuti) => (
@@ -222,12 +251,12 @@ export function ProlungamentoSosta({
           ))}
         </select>
         {errori.tempo ? (
-          <p id={`${idTempo}-errore`} className="text-sm font-medium text-red-800">
+          <p id={`${idTempo}-errore`} className="text-sm font-medium text-rose-800">
             Errore: {errori.tempo}
           </p>
         ) : null}
       </div>
-      <p className="text-base text-zinc-900" aria-live="polite">
+      <p className="text-base text-slate-900" aria-live="polite">
         {anteprima
           ? `Importo aggiuntivo ${formattaEuro(anteprima.importo)}, nuova scadenza alle ${formattaOra(anteprima.orarioDiScadenza)}.`
           : calcolo
@@ -235,8 +264,8 @@ export function ProlungamentoSosta({
             : ""}
       </p>
       {riquadro === "proposta" ? (
-        <div className="flex flex-col gap-3 rounded-md border-l-4 border-orange-700 bg-orange-50 p-3">
-          <p className="text-base text-orange-950" role="alert">
+        <div className="flex flex-col gap-3 rounded-xl border-l-4 border-amber-700 bg-amber-50 p-3">
+          <p className="text-base text-amber-950" role="alert">
             <strong>Credito insufficiente.</strong>{" "}
             {errori.credito ??
               `Il saldo è ${formattaEuro(saldo ?? 0)}, l'importo aggiuntivo è ${formattaEuro(anteprima?.importo ?? 0)}.`}{" "}
@@ -260,11 +289,11 @@ export function ProlungamentoSosta({
           type="submit"
           inCorso={invio}
           testoInCorso="Pagamento in corso…"
-          disabled={!anteprima || calcolo || creditoScarso}
+          disabled={confermaDisabilitata}
         >
           {anteprima ? etichettaConferma(anteprima.importo) : "Calcolo dell'importo…"}
         </Bottone>
-        <Bottone variante="secondario" disabled={invio} onClick={() => setAperto(false)}>
+        <Bottone variante="secondario" disabled={invio} onClick={annulla}>
           Annulla
         </Bottone>
       </div>

@@ -7,7 +7,7 @@ import { Avviso } from "./Avviso.tsx";
 import { formattaEuro } from "./logica/importi.ts";
 import { chiamaApi } from "./logica/risposteApi.ts";
 import { MovimentiWallet } from "./MovimentiWallet.tsx";
-import { Ricarica } from "./Ricarica.tsx";
+import { idTaglioRicarica, Ricarica } from "./Ricarica.tsx";
 import { vaiAllAccesso } from "./vaiAllAccesso.ts";
 
 export function PannelloWallet() {
@@ -39,17 +39,22 @@ export function PannelloWallet() {
   return (
     <div className="flex flex-col gap-4">
       {errore ? <Avviso tipo="errore">{errore}</Avviso> : null}
-      <div>
-        <p className="text-sm text-zinc-800">Saldo disponibile</p>
-        <p className="text-3xl font-bold text-zinc-900" aria-live="polite">
+      <div className="riquadro-scuro rounded-2xl bg-linear-to-br from-marca-900 to-marca-700 p-4 shadow-md">
+        <p className="text-sm text-marca-50">Saldo disponibile</p>
+        <p className="text-3xl font-bold text-white" aria-live="polite">
           {saldo === null ? (errore ? "—" : "Caricamento…") : formattaEuro(saldo)}
         </p>
       </div>
       <Ricarica
         idTitolo="titolo-ricarica-profilo"
-        onRicaricata={(nuovoSaldo) => {
+        onRicaricata={(nuovoSaldo, importo) => {
           setSaldo(nuovoSaldo);
           setVersioneMovimenti((v) => v + 1);
+          // «Conferma la ricarica» esce dalla pagina: il focus va sul taglio ricaricato (OMP-68,
+          // WCAG 2.4.3); il messaggio con il nuovo saldo resta sopra i tagli.
+          requestAnimationFrame(() =>
+            document.getElementById(idTaglioRicarica("titolo-ricarica-profilo", importo))?.focus(),
+          );
         }}
         onSessioneScaduta={() => vaiAllAccesso("/profilo")}
       />

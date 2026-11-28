@@ -20,11 +20,11 @@ export function Campo({
   const descrittori = [idSuggerimento, idErrore].filter(Boolean).join(" ") || undefined;
   return (
     <div className="flex flex-col gap-1">
-      <label htmlFor={id} className="text-base font-medium text-zinc-900">
+      <label htmlFor={id} className="text-base font-medium text-slate-900">
         {etichetta}
       </label>
       {suggerimento ? (
-        <p id={idSuggerimento} className="text-sm text-zinc-700">
+        <p id={idSuggerimento} className="text-sm text-slate-700">
           {suggerimento}
         </p>
       ) : null}
@@ -32,13 +32,13 @@ export function Campo({
         id={id}
         aria-invalid={errore ? true : undefined}
         aria-describedby={descrittori}
-        className={`min-h-11 rounded-md border px-3 py-2 text-base text-zinc-900 ${
-          errore ? "border-2 border-red-700" : "border-zinc-500"
+        className={`min-h-11 rounded-xl border bg-white px-3 py-2 text-base text-slate-900 ${
+          errore ? "border-2 border-rose-700" : "border-slate-500"
         } ${className}`}
         {...altri}
       />
       {errore ? (
-        <p id={idErrore} className="text-sm font-medium text-red-800">
+        <p id={idErrore} className="text-sm font-medium text-rose-800">
           Errore: {errore}
         </p>
       ) : null}

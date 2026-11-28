@@ -75,6 +75,18 @@ export function PermessiDaVerificare({ onSessioneScaduta }: { onSessioneScaduta(
     requestAnimationFrame(() => zonaMessaggio.current?.focus());
   }
 
+  // I bottoni premuti escono dalla pagina: dopo la scelta il focus va sull'esito scelto, dopo
+  // «Annulla» (3.a1) torna sul bottone di quell'esito (OMP-68, WCAG 2.4.3).
+  function scegliEsito(esito: EsitoVerifica) {
+    setDaConfermare(esito);
+    requestAnimationFrame(() => document.getElementById("permesso-esito-scelto")?.focus());
+  }
+
+  function annullaEsito(esito: EsitoVerifica) {
+    setDaConfermare(null);
+    requestAnimationFrame(() => document.getElementById(`permesso-esito-${esito}`)?.focus());
+  }
+
   // registraEsito (UC_OP_5 passo 4): dopo la risposta l'elenco si ricarica.
   async function conferma(sosta: number, esitoScelto: EsitoVerifica) {
     setErrore(null);
@@ -110,7 +122,7 @@ export function PermessiDaVerificare({ onSessioneScaduta }: { onSessioneScaduta(
 
   return (
     <section aria-labelledby="permessi-titolo" className="flex flex-col gap-3">
-      <h2 id="permessi-titolo" className="text-xl font-semibold text-zinc-900">
+      <h2 id="permessi-titolo" className="text-lg font-semibold text-marca-900">
         Permessi da verificare
       </h2>
       <div ref={zonaMessaggio} tabIndex={-1} aria-live="polite">
@@ -132,7 +144,7 @@ export function PermessiDaVerificare({ onSessioneScaduta }: { onSessioneScaduta(
                 type="button"
                 aria-pressed={p.sostaId === selezionato}
                 onClick={() => seleziona(p.sostaId === selezionato ? null : p.sostaId)}
-                className="min-h-11 w-full rounded-md border border-zinc-400 bg-white px-3 py-2 text-left text-base text-zinc-900 hover:bg-zinc-100 aria-pressed:border-emerald-800 aria-pressed:bg-emerald-50"
+                className="riga-con-tono min-h-11 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-left text-base text-slate-900 transition-colors duration-150 hover:bg-marca-50 aria-pressed:border-2 aria-pressed:border-marca-700 aria-pressed:bg-marca-50 motion-reduce:transition-none"
                 data-permesso={p.sostaId}
               >
                 {descriviPermesso(p)}
@@ -142,14 +154,11 @@ export function PermessiDaVerificare({ onSessioneScaduta }: { onSessioneScaduta(
         </ul>
       ) : null}
       {permesso ? (
-        <div
-          className="flex flex-col gap-3 rounded-lg border border-zinc-400 p-4"
-          data-scheda-permesso={permesso.sostaId}
-        >
-          <h3 className="text-lg font-semibold text-zinc-900">
+        <div className="scheda flex flex-col gap-3 p-4" data-scheda-permesso={permesso.sostaId}>
+          <h3 className="-mx-4 -mt-4 rounded-t-2xl border-b border-slate-200 bg-marca-50 px-4 pt-4 pb-3 text-base font-semibold text-marca-900">
             Stallo n. {permesso.numeroStallo}, {descriviTipo(permesso.tipoDiStallo).testo}
           </h3>
-          <dl className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-1 text-base text-zinc-900">
+          <dl className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-1 text-base text-slate-900">
             <dt className="font-semibold">Targa</dt>
             <dd>{permesso.targa}</dd>
             <dt className="font-semibold">Dichiarazione</dt>
@@ -161,20 +170,24 @@ export function PermessiDaVerificare({ onSessioneScaduta }: { onSessioneScaduta(
           <img
             src={`/api/permessi/${permesso.sostaId}/foto`}
             alt={`Foto del permesso caricata per la sosta della targa ${permesso.targa}`}
-            className="max-h-72 w-auto self-start rounded-md border border-zinc-300"
+            className="max-h-72 w-auto self-start rounded-xl border border-slate-200"
           />
           {daConfermare === null ? (
             <div className="flex flex-wrap gap-2">
-              <Bottone onClick={() => setDaConfermare("CONFORME")}>
+              <Bottone id="permesso-esito-CONFORME" onClick={() => scegliEsito("CONFORME")}>
                 {ESITI_VERIFICA.CONFORME}
               </Bottone>
-              <Bottone variante="pericolo" onClick={() => setDaConfermare("NON_CONFORME")}>
+              <Bottone
+                id="permesso-esito-NON_CONFORME"
+                variante="pericolo"
+                onClick={() => scegliEsito("NON_CONFORME")}
+              >
                 {ESITI_VERIFICA.NON_CONFORME}
               </Bottone>
             </div>
           ) : (
             <div className="flex flex-col gap-2">
-              <p className="text-base text-zinc-900">
+              <p id="permesso-esito-scelto" tabIndex={-1} className="text-base text-slate-900">
                 Esito scelto: <strong>{ESITI_VERIFICA[daConfermare]}</strong>
                 {daConfermare === "NON_CONFORME"
                   ? ". Verrà registrata una segnalazione di sosta irregolare accertata."
@@ -187,7 +200,7 @@ export function PermessiDaVerificare({ onSessioneScaduta }: { onSessioneScaduta(
                 <Bottone
                   variante="secondario"
                   disabled={inInvio}
-                  onClick={() => setDaConfermare(null)}
+                  onClick={() => annullaEsito(daConfermare)}
                 >
                   Annulla
                 </Bottone>

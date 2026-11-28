@@ -83,17 +83,29 @@ export function PanoramicaEnti() {
         <Avviso tipo="informazione">Non ci sono enti clienti.</Avviso>
       ) : null}
       {enti === null && !entiNonDisponibili ? (
-        <p className="text-base text-zinc-800">Caricamento degli enti…</p>
+        <p className="rounded-xl border border-dashed border-slate-300 bg-white p-4 text-base text-slate-700">
+          Caricamento degli enti…
+        </p>
       ) : null}
       {righe.length > 0 ? (
-        <div className="overflow-x-auto rounded-lg border border-zinc-300 bg-white">
-          <table className="w-full min-w-[32rem] border-collapse text-left text-base text-zinc-900">
-            <caption className="px-4 pt-3 text-left text-sm text-zinc-800">
+        // Contenitore che scorre in orizzontale sul telefono: raggiungibile con Tab, così si scorre
+        // anche con le frecce (OMP-68, WCAG 2.1.1).
+        <div
+          tabIndex={0}
+          role="region"
+          aria-labelledby="titolo-tabella-enti"
+          className="scheda overflow-x-auto"
+        >
+          <table className="w-full min-w-[32rem] border-separate border-spacing-2 text-left text-base text-slate-900">
+            <caption
+              id="titolo-tabella-enti"
+              className="border-b border-slate-200 bg-marca-50 px-4 pt-4 pb-3 text-left text-sm text-slate-700"
+            >
               Riepilogo per ente cliente: stalli gestiti, soste attive e segnalazioni non ancora
               chiuse (aperte o prese in carico).
             </caption>
             <thead>
-              <tr className="border-b border-zinc-300">
+              <tr className="border-b border-slate-200 bg-slate-50">
                 <th scope="col" className="px-4 py-3 font-semibold">
                   Ente
                 </th>
@@ -112,11 +124,11 @@ export function PanoramicaEnti() {
               {righe.map((riga) => {
                 const inErrore = riepiloghi.get(riga.id)?.stato === "errore";
                 return (
-                  <tr key={riga.id} className="border-b border-zinc-200 last:border-b-0">
+                  <tr key={riga.id}>
                     <th scope="row" className="px-4 py-3 font-medium">
                       {riga.ente}
                       {inErrore ? (
-                        <span className="mt-1 flex flex-wrap items-center gap-2 text-sm font-normal text-red-800">
+                        <span className="mt-1 flex flex-wrap items-center gap-2 text-sm font-normal text-rose-800">
                           Riepilogo non disponibile.
                           <Bottone
                             variante="secondario"
@@ -129,7 +141,10 @@ export function PanoramicaEnti() {
                       ) : null}
                     </th>
                     {riga.celle.map((cella, i) => (
-                      <td key={i} className="px-4 py-3 text-right tabular-nums">
+                      <td
+                        key={i}
+                        className="rounded-xl bg-marca-50 px-4 py-3 text-right text-xl font-semibold text-marca-900 tabular-nums"
+                      >
                         {cella}
                       </td>
                     ))}

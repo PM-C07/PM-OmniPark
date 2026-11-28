@@ -93,7 +93,17 @@ export function Mappa(props: PropsMappa) {
       return;
     }
     const { centro, zoom } = callback.current.vistaIniziale;
-    const istanza = L.map(contenitore.current, { center: centro, zoom, minZoom: 12 });
+    const istanza = L.map(contenitore.current, {
+      center: centro,
+      zoom,
+      minZoom: 12,
+      zoomControl: false,
+    });
+    // Bottoni di zoom con i nomi in italiano (OMP-68, WCAG 3.1.2): Leaflet li usa come title e
+    // aria-label.
+    L.control
+      .zoom({ zoomInTitle: "Ingrandisci la mappa", zoomOutTitle: "Riduci la mappa" })
+      .addTo(istanza);
     mappa.current = istanza;
 
     let caricate = 0;

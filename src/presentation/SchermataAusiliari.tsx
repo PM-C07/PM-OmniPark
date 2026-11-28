@@ -218,13 +218,13 @@ export function SchermataAusiliari() {
           onSubmit={salva}
           noValidate
           aria-labelledby="titolo-modulo-ausiliario"
-          className="flex flex-col gap-4 rounded-lg border border-zinc-300 bg-white p-4"
+          className="scheda flex flex-col gap-4 p-4 lg:max-w-3xl"
         >
           <h2
             id="titolo-modulo-ausiliario"
             ref={titoloModulo}
             tabIndex={-1}
-            className="text-lg font-semibold text-zinc-900"
+            className="-mx-4 -mt-4 rounded-t-2xl border-b border-slate-200 bg-marca-50 px-4 pt-4 pb-3 text-lg font-semibold text-marca-900"
           >
             {modulo.modalita === "creazione"
               ? "Nuovo Ausiliario del Traffico"
@@ -273,7 +273,7 @@ export function SchermataAusiliari() {
             />
           ) : null}
           <div className="flex flex-col gap-1">
-            <label htmlFor="ausiliario-ente" className="text-base font-medium text-zinc-900">
+            <label htmlFor="ausiliario-ente" className="text-base font-medium text-slate-900">
               Ente
             </label>
             <select
@@ -283,8 +283,8 @@ export function SchermataAusiliari() {
               disabled={modulo.invio}
               aria-invalid={modulo.errori.ente ? true : undefined}
               aria-describedby={modulo.errori.ente ? "ausiliario-ente-errore" : undefined}
-              className={`min-h-11 rounded-md border bg-white px-3 py-2 text-base text-zinc-900 ${
-                modulo.errori.ente ? "border-2 border-red-700" : "border-zinc-500"
+              className={`min-h-11 rounded-xl border bg-white px-3 py-2 text-base text-slate-900 ${
+                modulo.errori.ente ? "border-2 border-rose-700" : "border-slate-500"
               }`}
             >
               <option value="">Scegli l&apos;ente</option>
@@ -295,7 +295,7 @@ export function SchermataAusiliari() {
               ))}
             </select>
             {modulo.errori.ente ? (
-              <p id="ausiliario-ente-errore" className="text-sm font-medium text-red-800">
+              <p id="ausiliario-ente-errore" className="text-sm font-medium text-rose-800">
                 Errore: {modulo.errori.ente}
               </p>
             ) : null}
@@ -317,7 +317,7 @@ export function SchermataAusiliari() {
       )}
 
       <section aria-labelledby="titolo-elenco-ausiliari" className="flex flex-col gap-4">
-        <h2 id="titolo-elenco-ausiliari" className="text-lg font-semibold text-zinc-900">
+        <h2 id="titolo-elenco-ausiliari" className="text-lg font-semibold text-marca-900">
           Ausiliari del Traffico per ente
         </h2>
         {elencoNonDisponibile ? (
@@ -326,26 +326,28 @@ export function SchermataAusiliari() {
           </Avviso>
         ) : null}
         {ausiliari === null && !elencoNonDisponibile ? (
-          <p className="text-base text-zinc-800">Caricamento degli Ausiliari…</p>
+          <p className="rounded-xl border border-dashed border-slate-300 bg-white p-4 text-base text-slate-700">
+            Caricamento degli Ausiliari…
+          </p>
         ) : null}
         {ausiliari !== null && gruppi.length === 0 ? (
-          <p className="text-base text-zinc-800">
+          <p className="rounded-xl border border-dashed border-slate-300 bg-white p-4 text-base text-slate-700">
             Non è registrato alcun Ausiliario del Traffico: puoi crearne uno con «Nuovo Ausiliario».
           </p>
         ) : null}
         {gruppi.map((gruppo) => (
           <div key={gruppo.enteId} className="flex flex-col gap-2">
-            <h3 className="text-base font-semibold text-zinc-900">{gruppo.ente}</h3>
+            <h3 className="text-base font-semibold text-marca-900">{gruppo.ente}</h3>
             <ul className="flex flex-col gap-2">
               {gruppo.ausiliari.map((a) => (
                 <li
                   key={a.id}
-                  className="flex flex-col gap-2 rounded-md border border-zinc-300 bg-white p-3"
+                  className="flex flex-col gap-2 rounded-xl border border-slate-200 bg-velo-50 p-3"
                 >
                   <div className="flex flex-wrap items-start justify-between gap-2">
                     <div>
-                      <p className="text-base font-semibold text-zinc-900">{nomeCompleto(a)}</p>
-                      <p className="text-sm break-all text-zinc-800">{a.email}</p>
+                      <p className="text-base font-semibold text-slate-900">{nomeCompleto(a)}</p>
+                      <p className="text-sm break-all text-slate-700">{a.email}</p>
                     </div>
                     <BadgeStato tipo="account" stato={a.statoDellAccount} />
                   </div>
@@ -372,7 +374,7 @@ export function SchermataAusiliari() {
                       id={`errore-riga-${a.id}`}
                       tabIndex={-1}
                       role="alert"
-                      className="text-sm font-medium text-red-800"
+                      className="text-sm font-medium text-rose-800"
                     >
                       Errore: {erroriRiga[a.id]}
                     </p>
@@ -381,16 +383,16 @@ export function SchermataAusiliari() {
                     <div
                       role="group"
                       aria-labelledby={`conferma-${a.id}`}
-                      className="flex flex-col gap-3 rounded-md border-l-4 border-red-800 bg-red-50 p-3"
+                      className="flex flex-col gap-3 rounded-xl border-l-4 border-rose-700 bg-rose-50 p-3"
                     >
                       <p
                         id={`conferma-${a.id}`}
                         tabIndex={-1}
-                        className="text-base font-semibold text-zinc-900"
+                        className="text-base font-semibold text-slate-900"
                       >
                         Confermi la disattivazione di {nomeCompleto(a)}?
                       </p>
-                      <p className="text-base text-zinc-900">
+                      <p className="text-base text-slate-900">
                         Non potrà più accedere e le sue sessioni aperte saranno chiuse; le
                         segnalazioni e le verifiche già registrate restano associate a lui.
                       </p>

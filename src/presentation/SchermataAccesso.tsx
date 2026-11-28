@@ -152,16 +152,22 @@ export function SchermataAccesso({ vista }: { vista: Vista }) {
         </Bottone>
       )}
       {registrazione ? (
-        <p className="text-base text-zinc-800">
+        <p className="text-base text-slate-700">
           {/* annulla() di SD_AUTH_1: si torna all'accesso senza registrare nulla. */}
-          <Link href="/accesso" className="font-semibold text-emerald-900 underline">
+          <Link
+            href="/accesso"
+            className="font-semibold text-marca-800 underline decoration-2 underline-offset-2 hover:text-marca-950"
+          >
             Annulla e torna all&apos;accesso
           </Link>
         </p>
       ) : (
-        <p className="text-base text-zinc-800">
+        <p className="text-base text-slate-700">
           Non hai un account?{" "}
-          <Link href="/registrazione" className="font-semibold text-emerald-900 underline">
+          <Link
+            href="/registrazione"
+            className="font-semibold text-marca-800 underline decoration-2 underline-offset-2 hover:text-marca-950"
+          >
             Registrati
           </Link>
         </p>

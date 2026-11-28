@@ -7,7 +7,7 @@ export const metadata: Metadata = { title: "Profilo · OmniPark" };
 export default function Page() {
   return (
     <>
-      <h1 className="text-2xl font-bold text-zinc-900">Profilo</h1>
+      <h1 className="text-2xl font-bold tracking-tight text-marca-950">Profilo</h1>
       <SchermataProfilo />
     </>
   );
